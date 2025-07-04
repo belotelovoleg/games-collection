@@ -29,7 +29,7 @@ export default function LoginPage({ params }: { params: Promise<{ locale: string
       });
 
       if (result?.error) {
-        setError(t('common_error'));
+        setError(t('auth_invalidCredentials'));
       } else {
         router.push(`/${locale}`);
       }
