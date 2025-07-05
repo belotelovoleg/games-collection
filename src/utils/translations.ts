@@ -17,7 +17,10 @@ export function getTranslation(
   key: TranslationKey,
   params?: Record<string, string>
 ): string {
-  let translation = translations[locale][key] || translations.en[key] || key;
+  const localeTranslations = translations[locale] as Record<string, string>;
+  const fallbackTranslations = translations.en as Record<string, string>;
+  
+  let translation = localeTranslations[key] || fallbackTranslations[key] || key;
 
   // Replace parameters in translation string
   if (params) {

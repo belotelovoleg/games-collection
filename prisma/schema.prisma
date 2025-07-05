@@ -97,6 +97,25 @@ model Game {
   @@map("games")
 }
 
+// Console/Platform model for IGDB integration
+model Console {
+  id                    String   @id @default(cuid())
+  igdbConsoleID         Int?     @unique @map("igdb_console_id")
+  igdbConsoleVersionID  Int?     @unique @map("igdb_console_version_id")
+  name                  String
+  photo                 String?
+  abbreviation          String?
+  alternativeName       String?  @map("alternative_name")
+  generation            Int?
+  platformFamily        String?  @map("platform_family")
+  platformType          String?  @map("platform_type")
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("consoles")
+}
+
 // Enums
 enum Role {
   USER

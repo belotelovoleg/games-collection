@@ -31,6 +31,7 @@ import {
   PersonAdd as RegisterIcon,
   Logout as LogoutIcon,
   AccountCircle,
+  AdminPanelSettings as AdminIcon,
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
@@ -86,6 +87,15 @@ export function MainLayout({ children, locale }: MainLayoutProps) {
       href: `/${locale}/settings` 
     },
   ];
+
+  // Add admin menu items if user is admin
+  if (session?.user?.role === 'ADMIN') {
+    authenticatedMenuItems.push({
+      text: t('admin_consoles'),
+      icon: <AdminIcon />,
+      href: `/${locale}/admin/consoles`
+    });
+  }
 
   // Menu items for guests
   const guestMenuItems = [
