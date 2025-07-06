@@ -1,3 +1,5 @@
+import { IGDB_PLATFORM_FIELDS, IGDB_PLATFORM_VERSION_FIELDS, buildPlatformQuery, buildPlatformVersionQuery } from '@/constants/igdbFields';
+
 interface IGDBAuthResponse {
   access_token: string;
   expires_in: number;
@@ -148,7 +150,7 @@ export async function getIGDBAccessToken(): Promise<string> {
 /**
  * Make authenticated request to IGDB API with rate limiting and retry logic
  */
-async function makeIGDBRequest(
+export async function makeIGDBRequest(
   endpoint: string,
   query: string,
   maxRetries = 3
@@ -222,16 +224,9 @@ async function makeIGDBRequest(
 export async function searchIGDBPlatforms(searchQuery: string): Promise<any[]> {
   console.log(`[IGDB] Searching platforms for: "${searchQuery}"`);
   
-  const query = `
-    fields id, name, abbreviation, alternative_name, slug, summary, url,
-           generation, category, checksum, created_at, updated_at,
-           platform_family.id, platform_family.name, platform_family.slug,
-           platform_logo.id, platform_logo.url, platform_logo.image_id, platform_logo.width, platform_logo.height,
-           platform_type.id, platform_type.name,
-           versions.*, websites.*;
-    where name ~ *"${searchQuery}"* | alternative_name ~ *"${searchQuery}"*;
-    limit 20;
-  `;
+  const query = buildPlatformQuery(
+    `where name ~ *"${searchQuery}"* | alternative_name ~ *"${searchQuery}"*`
+  );
   
   const result = await makeIGDBRequest('platforms', query);
   console.log(`[IGDB] Found ${result.length} platforms with full data`);
@@ -245,14 +240,9 @@ export async function searchIGDBPlatformVersions(searchQuery: string): Promise<a
   console.log(`[IGDB] Searching platform versions for: "${searchQuery}"`);
   
   try {
-    const query = `
-      fields checksum, companies.*, connectivity, cpu, graphics,
-             main_manufacturer.*, media, memory, name, os, output,
-             platform_logo.*, platform_version_release_dates.*,
-             resolutions, slug, sound, storage, summary, url;
-      where name ~ *"${searchQuery}"*;
-      limit 20;
-    `;
+    const query = buildPlatformVersionQuery(
+      `where name ~ *"${searchQuery}"*`
+    );
     
     const result = await makeIGDBRequest('platform_versions', query);
     console.log(`[IGDB] Found ${result.length} platform versions with full data`);
@@ -268,15 +258,7 @@ export async function searchIGDBPlatformVersions(searchQuery: string): Promise<a
  * Get platform by ID from IGDB (with all available fields)
  */
 export async function getIGDBPlatformById(id: number): Promise<any> {
-  const query = `
-    fields id, name, abbreviation, alternative_name, slug, summary, url,
-           generation, category, checksum, created_at, updated_at,
-           platform_family.id, platform_family.name, platform_family.slug,
-           platform_logo.id, platform_logo.url, platform_logo.image_id, platform_logo.width, platform_logo.height,
-           platform_type.id, platform_type.name,
-           versions.*, websites.*;
-    where id = ${id};
-  `;
+  const query = buildPlatformQuery(`where id = ${id}`, 1);
   
   const results = await makeIGDBRequest('platforms', query);
   return results[0] || null;
@@ -286,13 +268,7 @@ export async function getIGDBPlatformById(id: number): Promise<any> {
  * Get platform version by ID from IGDB
  */
 export async function getIGDBPlatformVersionById(id: number): Promise<any> {
-  const query = `
-    fields checksum, companies.*, connectivity, cpu, graphics,
-           main_manufacturer.*, media, memory, name, os, output,
-           platform_logo.*, platform_version_release_dates.*,
-           resolutions, slug, sound, storage, summary, url;
-    where id = ${id};
-  `;
+  const query = buildPlatformVersionQuery(`where id = ${id}`, 1);
   
   const results = await makeIGDBRequest('platform_versions', query);
   return results[0] || null;
@@ -315,10 +291,7 @@ export async function getIGDBPlatformLogoById(id: number): Promise<any> {
  * Find parent platform by platform version ID
  */
 export async function getIGDBParentPlatformByVersionId(versionId: number): Promise<any> {
-  const query = `
-    fields id, name, abbreviation, alternative_name, generation, platform_type;
-    where versions = (${versionId});
-  `;
+  const query = buildPlatformQuery(`where versions = (${versionId})`, 1);
   
   const results = await makeIGDBRequest('platforms', query);
   return results[0] || null;

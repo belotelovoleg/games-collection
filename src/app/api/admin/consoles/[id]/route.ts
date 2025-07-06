@@ -24,10 +24,16 @@ export async function PUT(
     }
 
     const { id } = await params;
+    const consoleId = parseInt(id);
+    
+    if (isNaN(consoleId)) {
+      return NextResponse.json({ error: 'Invalid console ID' }, { status: 400 });
+    }
+
     const body = await request.json();
     const {
-      igdbConsoleID,
-      igdbConsoleVersionID,
+      igdbPlatformID,
+      igdbPlatformVersionID,
       name,
       photo,
       abbreviation,
@@ -43,10 +49,10 @@ export async function PUT(
     }
 
     const console = await prisma.console.update({
-      where: { id },
+      where: { id: consoleId },
       data: {
-        igdbConsoleID: igdbConsoleID ? parseInt(igdbConsoleID) : null,
-        igdbConsoleVersionID: igdbConsoleVersionID ? parseInt(igdbConsoleVersionID) : null,
+        igdbPlatformID: igdbPlatformID ? parseInt(igdbPlatformID) : null,
+        igdbPlatformVersionID: igdbPlatformVersionID ? parseInt(igdbPlatformVersionID) : null,
         name,
         photo,
         abbreviation,
@@ -76,9 +82,14 @@ export async function DELETE(
     }
 
     const { id } = await params;
+    const consoleId = parseInt(id);
+    
+    if (isNaN(consoleId)) {
+      return NextResponse.json({ error: 'Invalid console ID' }, { status: 400 });
+    }
 
     await prisma.console.delete({
-      where: { id }
+      where: { id: consoleId }
     });
 
     return NextResponse.json({ success: true });

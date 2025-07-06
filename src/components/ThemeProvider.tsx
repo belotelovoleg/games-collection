@@ -32,7 +32,11 @@ export function CustomThemeProvider({ children }: { children: ReactNode }) {
   });
 
   return (
-    <SessionProvider>
+    <SessionProvider 
+      refetchInterval={0}
+      refetchOnWindowFocus={true}
+      refetchWhenOffline={false}
+    >
       <ThemeContext.Provider value={{ isDark, toggleTheme }}>
         <ThemeProvider theme={theme}>
           <CssBaseline />

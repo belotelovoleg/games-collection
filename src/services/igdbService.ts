@@ -1,4 +1,6 @@
 // IGDB API Service with authentication and rate limiting
+import { IGDB_PLATFORM_FIELDS, IGDB_PLATFORM_VERSION_FIELDS, buildPlatformQuery, buildPlatformVersionQuery } from '@/constants/igdbFields';
+
 export interface IGDBAuthToken {
   access_token: string;
   expires_in: number;
@@ -63,11 +65,12 @@ class IGDBService {
     this.lastRequestTime = Date.now();
   }
 
-  private async makeRequest(
+  public async makeRequest(
     url: string, 
     body: string, 
     retries = 3
   ): Promise<any> {
+    await this.authenticate();
     await this.waitForRateLimit();
 
     try {
@@ -136,11 +139,7 @@ class IGDBService {
   public async searchPlatforms(searchQuery: string): Promise<IGDBPlatform[]> {
     await this.authenticate();
 
-    const query = `
-      fields id, name, abbreviation, alternative_name, generation, platform_family, platform_logo.url;
-      search "${searchQuery}";
-      limit 20;
-    `;
+    const query = buildPlatformQuery(`search "${searchQuery}"`, 20);
 
     return this.makeRequest('https://api.igdb.com/v4/platforms', query);
   }
@@ -148,11 +147,7 @@ class IGDBService {
   public async searchPlatformVersions(searchQuery: string): Promise<IGDBPlatformVersion[]> {
     await this.authenticate();
 
-    const query = `
-      fields id, name, abbreviation, alternative_name, platform_logo.url, main_manufacturer.name, platform.name;
-      search "${searchQuery}";
-      limit 20;
-    `;
+    const query = buildPlatformVersionQuery(`search "${searchQuery}"`, 20);
 
     return this.makeRequest('https://api.igdb.com/v4/platform_versions', query);
   }

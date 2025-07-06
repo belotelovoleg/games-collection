@@ -19,6 +19,7 @@ import {
   Avatar,
   Menu,
   MenuItem,
+  CircularProgress,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -111,7 +112,28 @@ export function MainLayout({ children, locale }: MainLayoutProps) {
     },
   ];
 
-  const menuItems = session ? authenticatedMenuItems : guestMenuItems;
+  const menuItems = (status as any) === 'loading' ? [] : (session ? authenticatedMenuItems : guestMenuItems);
+
+  // Show loading overlay during initial session resolution
+  if ((status as any) === 'loading') {
+    return (
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '100vh',
+          flexDirection: 'column',
+          gap: 2
+        }}
+      >
+        <CircularProgress size={60} />
+        <Typography variant="body1" color="text.secondary">
+          {t('common_loading')}
+        </Typography>
+      </Box>
+    );
+  }
 
   const drawer = (
     <div>
@@ -185,7 +207,12 @@ export function MainLayout({ children, locale }: MainLayoutProps) {
           </IconButton>
 
           {/* User Menu */}
-          {session ? (
+          {(status as any) === 'loading' ? (
+            // Show loading state
+            <Box sx={{ display: 'flex', alignItems: 'center', width: 100, justifyContent: 'center' }}>
+              <CircularProgress size={24} color="inherit" />
+            </Box>
+          ) : session ? (
             <div>
               <IconButton
                 size="large"

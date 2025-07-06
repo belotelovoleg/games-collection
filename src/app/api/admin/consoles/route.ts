@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
+import IGDBDataPopulationService from '@/services/igdbDataPopulationService';
 
 // Helper function to check admin access
 async function checkAdminAccess() {
@@ -21,7 +22,7 @@ export async function GET() {
     }
 
     const consoles = await prisma.console.findMany({
-      orderBy: { name: 'asc' }
+      orderBy: { name: 'asc' },
     });
 
     return NextResponse.json(consoles);
@@ -31,7 +32,7 @@ export async function GET() {
   }
 }
 
-// POST /api/admin/consoles - Create new console
+// POST /api/admin/consoles - Create new console (manual or IGDB-powered)
 export async function POST(request: NextRequest) {
   try {
     const isAdmin = await checkAdminAccess();
@@ -41,15 +42,21 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const {
-      igdbConsoleID,
-      igdbConsoleVersionID,
       name,
       photo,
       abbreviation,
       alternativeName,
       generation,
       platformFamily,
-      platformType
+      platformType,
+      // IGDB fields - if provided, create from IGDB data
+      igdbPlatformID,
+      igdbPlatformVersionID,
+      // Raw IGDB data objects (from UI selection)
+      igdbPlatformData,
+      igdbPlatformVersionData,
+      // Flag to indicate creation type
+      fromIGDB = false, // Default to manual creation
     } = body;
 
     // Validate required fields
@@ -57,23 +64,67 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
 
-    const console = await prisma.console.create({
-      data: {
-        igdbConsoleID: igdbConsoleID ? parseInt(igdbConsoleID) : null,
-        igdbConsoleVersionID: igdbConsoleVersionID ? parseInt(igdbConsoleVersionID) : null,
+    let console;
+
+    // Auto-detect IGDB creation: if we have IGDB IDs, raw IGDB data, or fromIGDB flag
+    const hasIGDBData = igdbPlatformID || igdbPlatformVersionID || igdbPlatformData || igdbPlatformVersionData || fromIGDB;
+
+    if (hasIGDBData) {
+      // IGDB-powered creation: search IGDB and populate all data
+      const igdbService = IGDBDataPopulationService.getInstance();
+
+      const consoleData = await igdbService.createConsoleWithIGDBData({
         name,
         photo,
         abbreviation,
         alternativeName,
-        generation: generation ? parseInt(generation) : null,
+        generation: generation ? parseInt(generation) : undefined,
         platformFamily,
-        platformType
-      }
-    });
+        platformType,
+        igdbPlatformID,
+        igdbPlatformVersionID,
+        igdbPlatformData,
+        igdbPlatformVersionData,
+      });
+
+      console = await igdbService.createConsole(consoleData);
+    } else {
+      // Manual creation: create console directly without IGDB search
+      console = await prisma.console.create({
+        data: {
+          name,
+          photo,
+          abbreviation,
+          alternativeName,
+          generation: generation ? parseInt(generation) : undefined,
+          platformFamily,
+          platformType,
+          igdbPlatformID: igdbPlatformID ? parseInt(igdbPlatformID) : null,
+          igdbPlatformVersionID: igdbPlatformVersionID ? parseInt(igdbPlatformVersionID) : null,
+        },
+        include: {
+          igdbPlatform: {
+            include: {
+              platformFamily: true,
+              platformLogo: true,
+              platformType: true,
+            },
+          },
+          igdbPlatformVersion: {
+            include: {
+              platformLogo: true,
+            },
+          },
+        },
+      });
+    }
 
     return NextResponse.json(console, { status: 201 });
   } catch (error) {
     console.error('Error creating console:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }

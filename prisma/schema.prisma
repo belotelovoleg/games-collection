@@ -99,9 +99,9 @@ model Game {
 
 // Console/Platform model for IGDB integration
 model Console {
-  id                    String   @id @default(cuid())
-  igdbConsoleID         Int?     @unique @map("igdb_console_id")
-  igdbConsoleVersionID  Int?     @unique @map("igdb_console_version_id")
+  id                    Int      @id @default(autoincrement())
+  igdbPlatformID        Int?     @map("igdb_platform_id")
+  igdbPlatformVersionID Int?     @map("igdb_platform_version_id")
   name                  String
   photo                 String?
   abbreviation          String?
@@ -110,10 +110,225 @@ model Console {
   platformFamily        String?  @map("platform_family")
   platformType          String?  @map("platform_type")
   
+  // Relations to cached IGDB data (updated to reference igdbId fields)
+  igdbPlatform          IgdbPlatform?        @relation(fields: [igdbPlatformID], references: [id])
+  igdbPlatformVersion   IgdbPlatformVersion? @relation(fields: [igdbPlatformVersionID], references: [id])
+  
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
   @@map("consoles")
+}
+
+// ============================================================================
+// IGDB NORMALIZED MODELS (CLEANED - NO LOCAL TIMESTAMPS)
+// ============================================================================
+
+model IgdbPlatformLogo {
+  id           Int      @id // IGDB ID directly
+  alphaChannel Boolean? @map("alpha_channel")
+  animated     Boolean?
+  checksum     String?
+  height       Int?
+  imageId      String?  @map("image_id")
+  url          String?
+  width        Int?
+
+  // Relations
+  platforms        IgdbPlatform[]
+  platformVersions IgdbPlatformVersion[]
+
+  @@map("igdb_platform_logos")
+}
+
+model IgdbPlatformFamily {
+  id        Int      @id // IGDB ID directly
+  checksum  String?
+  name      String
+  slug      String?
+
+  // Relations
+  platforms IgdbPlatform[]
+
+  @@map("igdb_platform_families")
+}
+
+model IgdbPlatformType {
+  id              Int      @id // IGDB ID directly
+  checksum        String?
+  name            String
+
+  // Relations
+  platforms IgdbPlatform[]
+
+  @@map("igdb_platform_types")
+}
+
+model IgdbCompanyLogo {
+  id           Int      @id // IGDB ID directly
+  alphaChannel Boolean? @map("alpha_channel")
+  animated     Boolean?
+  checksum     String?
+  height       Int?
+  imageId      String?  @map("image_id")
+  url          String?
+  width        Int?
+
+  // Relations
+  companies IgdbCompany[]
+
+  @@map("igdb_company_logos")
+}
+
+model IgdbCompany {
+  id                  Int      @id // IGDB ID directly
+  changeDate          BigInt?  @map("change_date")
+  changeDateFormatId  Int?     @map("change_date_format_id")
+  changedCompanyId    Int?     @map("changed_company_id")
+  checksum            String?
+  country             Int?
+  description         String?  @db.Text
+  logoId              Int?     @map("logo_id")
+  name                String
+  parentId            Int?     @map("parent_id")
+  slug                String?
+  startDate           BigInt?  @map("start_date")
+  startDateFormatId   Int?     @map("start_date_format_id")
+  statusId            Int?     @map("status_id")
+  url                 String?
+
+  // Relations - keep only logo relation, remove all foreign key constraints
+  logo                IgdbCompanyLogo? @relation(fields: [logoId], references: [id])
+
+  @@map("igdb_companies")
+}
+
+model IgdbWebsiteType {
+  id              Int      @id // IGDB ID directly
+  checksum        String?
+  type            String
+
+  // Relations
+  platformWebsites IgdbPlatformWebsite[]
+
+  @@map("igdb_website_types")
+}
+
+model IgdbPlatformWebsite {
+  id        Int      @id // IGDB ID directly
+  checksum  String?
+  trusted   Boolean  @default(false)
+  typeId    Int?     @map("type_id")
+  url       String
+
+  // Relations
+  type      IgdbWebsiteType? @relation(fields: [typeId], references: [id])
+  platformWebsiteRelations IgdbPlatformWebsiteRelation[]
+
+  @@map("igdb_platform_websites")
+}
+
+model IgdbPlatform {
+  id                Int      @id // IGDB ID directly
+  abbreviation      String?
+  alternativeName   String?  @map("alternative_name")
+  checksum          String?
+  generation        Int?
+  name              String
+  platformFamilyId  Int?     @map("platform_family_id")
+  platformLogoId    Int?     @map("platform_logo_id")
+  platformTypeId    Int?     @map("platform_type_id")
+  slug              String?
+  summary           String?  @db.Text
+  url               String?
+  versions          Int[]    // Array of platform version IDs from IGDB
+  igdbData          String?  @db.Text @map("igdb_data")
+
+  // Relations
+  platformFamily    IgdbPlatformFamily? @relation(fields: [platformFamilyId], references: [id])
+  platformLogo      IgdbPlatformLogo?   @relation(fields: [platformLogoId], references: [id])
+  platformType      IgdbPlatformType?   @relation(fields: [platformTypeId], references: [id])
+  
+  // Many-to-many relationships
+  platformVersionRelations IgdbPlatformVersionRelation[]
+  platformWebsiteRelations IgdbPlatformWebsiteRelation[]
+  
+  // Existing console relations
+  consoles          Console[]
+
+  @@map("igdb_platforms")
+}
+
+model IgdbPlatformVersion {
+  id                    Int      @id // IGDB ID directly
+  checksum              String?
+  connectivity          String?
+  cpu                   String?
+  graphics              String?
+  mainManufacturerId    Int?     @map("main_manufacturer_id")
+  media                 String?
+  memory                String?
+  name                  String
+  os                    String?
+  output                String?
+  platformLogoId        Int?     @map("platform_logo_id")
+  resolutions           String?
+  slug                  String?
+  sound                 String?
+  storage               String?
+  summary               String?  @db.Text
+  url                   String?
+  igdbData              String?  @db.Text @map("igdb_data")
+
+  // Relations - simplified, no strict foreign keys for companies
+  platformLogo          IgdbPlatformLogo? @relation(fields: [platformLogoId], references: [id])
+  
+  // Many-to-many relationships (removed release dates)
+  platformVersionRelations IgdbPlatformVersionRelation[]
+  
+  // Existing console relations
+  consoles              Console[]
+
+  @@map("igdb_platform_versions")
+}
+
+// ============================================================================
+// RELATIONSHIP MODELS (Many-to-Many)
+// ============================================================================
+
+model IgdbPlatformVersionRelation {
+  id                Int      @id @default(autoincrement())
+  platformId        Int      @map("platform_id")
+  versionId         Int      @map("version_id")
+
+  // Relations
+  platform          IgdbPlatform        @relation(fields: [platformId], references: [id])
+  platformVersion   IgdbPlatformVersion @relation(fields: [versionId], references: [id])
+
+  @@unique([platformId, versionId])
+  @@map("igdb_platform_version_relations")
+}
+
+model IgdbPlatformWebsiteRelation {
+  id                Int      @id @default(autoincrement())
+  platformId        Int      @map("platform_id")
+  websiteId         Int      @map("website_id")
+
+  // Relations
+  platform          IgdbPlatform        @relation(fields: [platformId], references: [id])
+  website           IgdbPlatformWebsite @relation(fields: [websiteId], references: [id])
+
+  @@unique([platformId, websiteId])
+  @@map("igdb_platform_website_relations")
+}
+
+model IgdbPlatformVersionCompanyRelation {
+  id                        Int      @id @default(autoincrement())
+  platformVersionId         Int      @map("platform_version_id")
+  companyId                 Int      @map("company_id")
+
+  @@unique([platformVersionId, companyId])
+  @@map("igdb_platform_version_company_relations")
 }
 
 // Enums

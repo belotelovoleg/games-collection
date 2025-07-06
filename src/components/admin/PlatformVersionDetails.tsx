@@ -35,7 +35,14 @@ const PlatformVersionDetails: React.FC<PlatformVersionDetailsProps> = ({
   const [platformTypeName, setPlatformTypeName] = useState<string>('console');
   const [loadingPlatformType, setLoadingPlatformType] = useState(false);
   
-  console.log('[PlatformVersionDetails] Received full platform data:', allPlatformData);
+  // Only log when there's actual platform data, not when it's null
+  if (allPlatformData) {
+    console.log('[PlatformVersionDetails] Received full platform data:', allPlatformData);
+    console.log('[PlatformVersionDetails] Image debugging:');
+    console.log('- platform_logo:', allPlatformData.platform_logo);
+    console.log('- platform_logo?.url:', allPlatformData.platform_logo?.url);
+    console.log('- All keys:', Object.keys(allPlatformData));
+  }
 
   // Fetch platform type name from IGDB API
   const fetchPlatformTypeName = async (platformTypeId: number): Promise<string> => {
@@ -81,8 +88,8 @@ const PlatformVersionDetails: React.FC<PlatformVersionDetailsProps> = ({
 
   // Fetch platform type name when parent platform is loaded
   useEffect(() => {
-    if (parentPlatform?.platform_type) {
-      fetchPlatformTypeName(parentPlatform.platform_type).then(name => {
+    if (parentPlatform?.platform_type?.id) {
+      fetchPlatformTypeName(parentPlatform.platform_type.id).then(name => {
         setPlatformTypeName(name);
       });
     }
@@ -132,9 +139,13 @@ const PlatformVersionDetails: React.FC<PlatformVersionDetailsProps> = ({
       platformFamily: parentPlatform?.name || platformVersion?.platform?.name || '',
       platformType: platformTypeName, // Use fetched platform type name
       
-      // IGDB IDs - parent platform ID and platform version ID
-      igdbConsoleID: parentPlatform?.id || platformVersion?.platform?.id || '',
-      igdbConsoleVersionID: platformVersion?.id || '',
+      // IGDB IDs - use new field names
+      igdbPlatformID: parentPlatform?.id || platformVersion?.platform?.id || '',
+      igdbPlatformVersionID: platformVersion?.id || '',
+      
+      // Include raw IGDB data for caching in database
+      igdbPlatformData: parentPlatform,
+      igdbPlatformVersionData: platformVersion,
       
       // Additional technical specifications from platform version
       manufacturer: platformVersion?.main_manufacturer?.name || '',
@@ -147,7 +158,7 @@ const PlatformVersionDetails: React.FC<PlatformVersionDetailsProps> = ({
       summary: platformVersion?.summary || '',
       
       // Parent platform specific data for reference
-      parentPlatformType: parentPlatform?.platform_type || '',
+      parentPlatformType: parentPlatform?.platform_type?.name || '',
       parentPlatformName: parentPlatform?.name || ''
     };
     
@@ -180,12 +191,28 @@ const PlatformVersionDetails: React.FC<PlatformVersionDetailsProps> = ({
           <Card sx={{ mb: 3 }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                {platformVersion.platform_logo?.url && (
-                  <Avatar 
-                    src={`https:${platformVersion.platform_logo.url}`}
-                    sx={{ width: 64, height: 64 }}
-                  />
-                )}
+                {(() => {
+                  // Try multiple possible image field paths
+                  const imageUrl = platformVersion.platform_logo?.url || 
+                                 platformVersion.logo?.url || 
+                                 platformVersion.image?.url ||
+                                 platformVersion.platform?.platform_logo?.url;
+                  
+                  console.log('[PlatformVersionDetails] Image URL attempts:', {
+                    'platform_logo.url': platformVersion.platform_logo?.url,
+                    'logo.url': platformVersion.logo?.url,
+                    'image.url': platformVersion.image?.url,
+                    'platform.platform_logo.url': platformVersion.platform?.platform_logo?.url,
+                    'final_imageUrl': imageUrl
+                  });
+                  
+                  return imageUrl ? (
+                    <Avatar 
+                      src={`https:${imageUrl}`}
+                      sx={{ width: 64, height: 64 }}
+                    />
+                  ) : null;
+                })()}
                 <Box>
                   <Typography variant="h5" component="h3">
                     {platformVersion.name}
@@ -281,7 +308,7 @@ const PlatformVersionDetails: React.FC<PlatformVersionDetailsProps> = ({
                           <Chip label={`Generation: ${parentPlatform.generation}`} size="small" variant="outlined" color="secondary" />
                         )}
                         {parentPlatform.platform_type && (
-                          <Chip label={parentPlatform.platform_type} size="small" variant="outlined" />
+                          <Chip label={parentPlatform.platform_type.name} size="small" variant="outlined" />
                         )}
                       </Box>
                     </Box>
@@ -344,7 +371,7 @@ const PlatformVersionDetails: React.FC<PlatformVersionDetailsProps> = ({
                 </Box>
                 <Box><strong>Platform Type:</strong> {platformTypeName}
                   {loadingPlatformType && ' (loading...)'}
-                  {parentPlatform?.platform_type && ` (from parent: ${parentPlatform.platform_type})`}
+                  {parentPlatform?.platform_type && ` (from parent: ${parentPlatform.platform_type.name})`}
                 </Box>
                 <Box><strong>Manufacturer:</strong> {platformVersion.main_manufacturer?.name || 'N/A'}</Box>
                 <Box><strong>IGDB Console ID:</strong> {parentPlatform?.id || platformVersion?.platform?.id || 'N/A'}
@@ -383,8 +410,10 @@ const PlatformVersionDetails: React.FC<PlatformVersionDetailsProps> = ({
         <Button 
           onClick={handleSelect}
           variant="contained"
+          disabled={loadingParent || loadingPlatformType}
+          startIcon={loadingParent || loadingPlatformType ? <CircularProgress size={16} /> : undefined}
         >
-          Add as Console
+          {loadingParent || loadingPlatformType ? 'Loading...' : 'Add as Console'}
         </Button>
       </DialogActions>
     </Dialog>

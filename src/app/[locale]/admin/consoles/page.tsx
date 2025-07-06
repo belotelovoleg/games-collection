@@ -28,7 +28,8 @@ import {
   useMediaQuery,
   Card,
   CardContent,
-  CardActions
+  CardActions,
+  CircularProgress
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -44,9 +45,9 @@ import { useTranslations } from '@/hooks/useTranslations';
 import PlatformVersionDetails from '@/components/admin/PlatformVersionDetails';
 
 interface Console {
-  id: string;
-  igdbConsoleID: number | null;
-  igdbConsoleVersionID: number | null;
+  id: number;
+  igdbPlatformID: number | null;
+  igdbPlatformVersionID: number | null;
   name: string;
   photo: string | null;
   abbreviation: string | null;
@@ -69,6 +70,15 @@ interface IGDBPlatform {
     id: number;
     url: string;
   };
+  versions?: Array<{
+    id: number;
+    name: string;
+    platform_logo?: {
+      id: number;
+      url: string;
+    };
+    [key: string]: any;
+  }>;
 }
 
 interface IGDBPlatformVersion {
@@ -91,15 +101,17 @@ interface IGDBPlatformVersion {
 }
 
 const initialFormData = {
-  igdbConsoleID: '',
-  igdbConsoleVersionID: '',
+  igdbPlatformID: '',
+  igdbPlatformVersionID: '',
   name: '',
   photo: '',
   abbreviation: '',
   alternativeName: '',
   generation: '',
   platformFamily: '',
-  platformType: ''
+  platformType: '',
+  igdbPlatformData: null as any,
+  igdbPlatformVersionData: null as any
 };
 
 export default function AdminConsolesPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -132,6 +144,9 @@ export default function AdminConsolesPage({ params }: { params: Promise<{ locale
   // Platform Version Details state
   const [platformVersionDetailsOpen, setPlatformVersionDetailsOpen] = useState(false);
   const [selectedPlatformVersion, setSelectedPlatformVersion] = useState<IGDBPlatformVersion | null>(null);
+  
+  // Selected Platform Versions state
+  const [selectedPlatformForVersions, setSelectedPlatformForVersions] = useState<IGDBPlatform | null>(null);
 
   // Check if user is admin
   useEffect(() => {
@@ -178,15 +193,17 @@ export default function AdminConsolesPage({ params }: { params: Promise<{ locale
   const handleEdit = (console: Console) => {
     setEditingConsole(console);
     setFormData({
-      igdbConsoleID: console.igdbConsoleID?.toString() || '',
-      igdbConsoleVersionID: console.igdbConsoleVersionID?.toString() || '',
+      igdbPlatformID: console.igdbPlatformID?.toString() || '',
+      igdbPlatformVersionID: console.igdbPlatformVersionID?.toString() || '',
       name: console.name,
       photo: console.photo || '',
       abbreviation: console.abbreviation || '',
       alternativeName: console.alternativeName || '',
       generation: console.generation?.toString() || '',
       platformFamily: console.platformFamily || '',
-      platformType: console.platformType || ''
+      platformType: console.platformType || '',
+      igdbPlatformData: null, // For editing existing consoles, we don't re-send IGDB data
+      igdbPlatformVersionData: null
     });
     setDialogOpen(true);
   };
@@ -298,19 +315,65 @@ export default function AdminConsolesPage({ params }: { params: Promise<{ locale
 
   const handleSelectPlatform = (platform: IGDBPlatform) => {
     setFormData({
-      igdbConsoleID: platform.id.toString(),
-      igdbConsoleVersionID: '',
+      igdbPlatformID: platform.id.toString(),
+      igdbPlatformVersionID: '',
       name: platform.name,
       photo: platform.platform_logo?.url ? `https:${platform.platform_logo.url}` : '',
       abbreviation: platform.abbreviation || '',
       alternativeName: platform.alternative_name || '',
       generation: platform.generation?.toString() || '',
       platformFamily: platform.platform_family?.toString() || '',
-      platformType: 'platform'
+      platformType: 'platform',
+      // Include raw IGDB data for caching
+      igdbPlatformData: platform,
+      igdbPlatformVersionData: null
     });
     setIgdbDialogOpen(false);
     setDialogOpen(true);
     setEditingConsole(null);
+  };
+
+  // Handle showing platform versions (fetch full version data using IDs)
+  const handleShowPlatformVersions = async (platform: IGDBPlatform) => {
+    if (!platform.versions || platform.versions.length === 0) {
+      console.log('[PLATFORM VERSIONS] No versions found for platform:', platform.name);
+      return;
+    }
+
+    console.log('[PLATFORM VERSIONS] Fetching full data for version IDs:', platform.versions);
+
+    try {
+      // Create a query to fetch full version data using the IDs
+      const versionIds = platform.versions.map(v => typeof v === 'number' ? v : v.id).join(',');
+      
+      const response = await fetch('/api/admin/igdb/platform-versions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ versionIds: versionIds })
+      });
+
+      if (response.ok) {
+        const responseData = await response.json();
+        const fullVersions = responseData.platformVersions || [];
+        console.log('[PLATFORM VERSIONS] Fetched full version data:', fullVersions);
+        
+        // Update the platform object with full version data
+        const platformWithFullVersions = {
+          ...platform,
+          versions: fullVersions
+        };
+        
+        setSelectedPlatformForVersions(platformWithFullVersions);
+      } else {
+        console.error('[PLATFORM VERSIONS] Failed to fetch version data');
+        setError('Failed to fetch platform version details');
+      }
+    } catch (error) {
+      console.error('[PLATFORM VERSIONS] Error fetching version data:', error);
+      setError('Error fetching platform version details');
+    }
   };
 
   const handleSelectPlatformVersion = (platformVersion: IGDBPlatformVersion) => {
@@ -336,17 +399,20 @@ export default function AdminConsolesPage({ params }: { params: Promise<{ locale
     // First clear IGDB results to prevent dialog reopening
     setIgdbResults(null);
     
-    // Map the platform version data properly
+    // Map the platform version data properly with new field names
     const formattedData = {
-      igdbConsoleID: consoleData.igdbConsoleID?.toString() || '',
-      igdbConsoleVersionID: consoleData.igdbConsoleVersionID?.toString() || '',
+      igdbPlatformID: consoleData.igdbPlatformID?.toString() || '',
+      igdbPlatformVersionID: consoleData.igdbPlatformVersionID?.toString() || '',
       name: consoleData.name || '',
       photo: consoleData.photo || '',
       abbreviation: consoleData.abbreviation || '',
       alternativeName: consoleData.alternativeName || '',
       generation: consoleData.generation?.toString() || '',
       platformFamily: consoleData.platformFamily || '',
-      platformType: consoleData.platformType || 'console'
+      platformType: consoleData.platformType || 'console',
+      // Include IGDB data for caching
+      igdbPlatformData: consoleData.igdbPlatformData,
+      igdbPlatformVersionData: consoleData.igdbPlatformVersionData
     };
     
     console.log('[MainPage] Formatted form data:', formattedData);
@@ -364,7 +430,17 @@ export default function AdminConsolesPage({ params }: { params: Promise<{ locale
   };
 
   // Don't render if not admin
-  if (status === 'loading') return null;
+  if (status === 'loading') {
+    return (
+      <MainLayout locale={locale}>
+        <Container maxWidth="lg">
+          <Box sx={{ py: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+            <CircularProgress />
+          </Box>
+        </Container>
+      </MainLayout>
+    );
+  }
   if (!session || session.user?.role !== 'ADMIN') return null;
 
   return (
@@ -659,16 +735,16 @@ export default function AdminConsolesPage({ params }: { params: Promise<{ locale
               fullWidth
               label={t('console_igdbId')}
               type="number"
-              value={formData.igdbConsoleID}
-              onChange={(e) => handleInputChange('igdbConsoleID', e.target.value)}
+              value={formData.igdbPlatformID}
+              onChange={(e) => handleInputChange('igdbPlatformID', e.target.value)}
               margin="normal"
             />
             <TextField
               fullWidth
               label={t('console_igdbVersionId')}
               type="number"
-              value={formData.igdbConsoleVersionID}
-              onChange={(e) => handleInputChange('igdbConsoleVersionID', e.target.value)}
+              value={formData.igdbPlatformVersionID}
+              onChange={(e) => handleInputChange('igdbPlatformVersionID', e.target.value)}
               margin="normal"
             />
           </Box>
@@ -760,16 +836,34 @@ export default function AdminConsolesPage({ params }: { params: Promise<{ locale
                                     variant="outlined" 
                                   />
                                 )}
+                                {platform.versions && platform.versions.length > 0 && (
+                                  <Chip 
+                                    label={`${platform.versions.length} versions`} 
+                                    size="small" 
+                                    variant="outlined" 
+                                    color="primary"
+                                  />
+                                )}
                               </Box>
                             </Box>
                           </Box>
-                          <Button 
-                            size="small" 
-                            variant="contained"
-                            onClick={() => handleSelectPlatform(platform)}
-                          >
-                            {t('igdb_selectPlatform')}
-                          </Button>
+                          {platform.versions && platform.versions.length > 0 ? (
+                            <Button 
+                              size="small" 
+                              variant="outlined"
+                              onClick={() => handleShowPlatformVersions(platform)}
+                            >
+                              Show Versions ({platform.versions.length})
+                            </Button>
+                          ) : (
+                            <Button 
+                              size="small" 
+                              variant="contained"
+                              onClick={() => handleSelectPlatform(platform)}
+                            >
+                              {t('igdb_selectPlatform')}
+                            </Button>
+                          )}
                         </Box>
                       </CardContent>
                     </Card>
@@ -789,52 +883,115 @@ export default function AdminConsolesPage({ params }: { params: Promise<{ locale
               ) : (
                 <Box sx={{ maxHeight: 200, overflow: 'auto' }}>
                   {igdbResults.platformVersions.map((version) => (
-                    <Card key={version.id} sx={{ mb: 1 }}>
-                      <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            {version.platform_logo?.url && (
-                              <Avatar 
-                                src={`https:${version.platform_logo.url}`}
-                                sx={{ width: 32, height: 32 }}
-                              />
-                            )}
-                            <Box>
-                              <Typography variant="subtitle1">{version.name}</Typography>
-                              <Box sx={{ display: 'flex', gap: 1 }}>
-                                {version.abbreviation && (
-                                  <Chip label={version.abbreviation} size="small" variant="outlined" />
-                                )}
-                                {version.main_manufacturer?.name && (
-                                  <Chip 
-                                    label={`${t('igdb_manufacturer')}: ${version.main_manufacturer.name}`} 
-                                    size="small" 
-                                    variant="outlined" 
-                                  />
-                                )}
-                                {version.platform?.name && (
-                                  <Chip 
-                                    label={`${t('igdb_family')}: ${version.platform.name}`} 
-                                    size="small" 
-                                    variant="outlined" 
-                                  />
-                                )}
+                      <Card key={`search-${version.id}`} sx={{ mb: 1 }}>
+                        <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                              {version.platform_logo?.url && (
+                                <Avatar 
+                                  src={`https:${version.platform_logo.url}`}
+                                  sx={{ width: 32, height: 32 }}
+                                />
+                              )}
+                              <Box>
+                                <Typography variant="subtitle1">{version.name}</Typography>
+                                <Box sx={{ display: 'flex', gap: 1 }}>
+                                  {version.abbreviation && (
+                                    <Chip label={version.abbreviation} size="small" variant="outlined" />
+                                  )}
+                                  {version.main_manufacturer?.name && (
+                                    <Chip 
+                                      label={`${t('igdb_manufacturer')}: ${version.main_manufacturer.name}`} 
+                                      size="small" 
+                                      variant="outlined" 
+                                    />
+                                  )}
+                                  {version.platform?.name && (
+                                    <Chip 
+                                      label={`${t('igdb_family')}: ${version.platform.name}`} 
+                                      size="small" 
+                                      variant="outlined" 
+                                    />
+                                  )}
+                                </Box>
                               </Box>
                             </Box>
+                            <Button 
+                              size="small" 
+                              variant="contained"
+                              onClick={() => handleSelectPlatformVersion(version)}
+                            >
+                              {t('igdb_selectVersion')}
+                            </Button>
                           </Box>
-                          <Button 
-                            size="small" 
-                            variant="contained"
-                            onClick={() => handleSelectPlatformVersion(version)}
-                          >
-                            {t('igdb_selectVersion')}
-                          </Button>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    ))}
                 </Box>
               )}
+
+              {/* Selected Platform Versions Section */}
+              {selectedPlatformForVersions && (
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="h6" sx={{ mb: 2 }}>
+                  Platform Versions for "{selectedPlatformForVersions.name}" ({selectedPlatformForVersions.versions?.length || 0})
+                </Typography>
+                
+                <Box sx={{ maxHeight: 200, overflow: 'auto' }}>
+                  {Array.isArray(selectedPlatformForVersions.versions) ? 
+                    selectedPlatformForVersions.versions.map((version, index) => (
+                      <Card key={`selected-${version.id || index}`} sx={{ mb: 1 }}>
+                        <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                              {version.platform_logo?.url && (
+                                <Avatar 
+                                  src={`https:${version.platform_logo.url}`}
+                                  sx={{ width: 32, height: 32 }}
+                                />
+                              )}
+                              <Box>
+                                <Typography variant="subtitle1">{version.name}</Typography>
+                                <Box sx={{ display: 'flex', gap: 1 }}>
+                                  {version.abbreviation && (
+                                    <Chip label={version.abbreviation} size="small" variant="outlined" />
+                                  )}
+                                  {version.main_manufacturer?.name && (
+                                    <Chip 
+                                      label={`${t('igdb_manufacturer')}: ${version.main_manufacturer.name}`} 
+                                      size="small" 
+                                      variant="outlined" 
+                                    />
+                                  )}
+                                  {version.platform?.name && (
+                                    <Chip 
+                                      label={`${t('igdb_family')}: ${version.platform.name}`} 
+                                      size="small" 
+                                      variant="outlined" 
+                                    />
+                                  )}
+                                </Box>
+                              </Box>
+                            </Box>
+                            <Button 
+                              size="small" 
+                              variant="contained"
+                              onClick={() => handleSelectPlatformVersion(version)}
+                            >
+                              {t('igdb_selectVersion')}
+                            </Button>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    ))
+                  : 
+                    <Typography variant="body2" color="error">
+                      Error: Versions data is not an array. Type: {typeof selectedPlatformForVersions.versions}
+                    </Typography>
+                  }
+                </Box>
+              </Box>
+            )}
             </Box>
           )}
         </DialogContent>
