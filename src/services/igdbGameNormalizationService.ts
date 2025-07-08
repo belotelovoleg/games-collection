@@ -360,12 +360,14 @@ export class IGDBGameNormalizationService {
                 name: altName.name,
                 comment: altName.comment,
                 checksum: altName.checksum,
+                gameId: igdbGameData.id,
               },
               create: {
                 id: altName.id,
                 name: altName.name,
                 comment: altName.comment,
                 checksum: altName.checksum,
+                gameId: igdbGameData.id,
               },
             });
           }
@@ -436,7 +438,7 @@ export class IGDBGameNormalizationService {
                 createdAt: engine.created_at ? BigInt(engine.created_at) : null,
                 updatedAt: engine.updated_at ? BigInt(engine.updated_at) : null,
                 description: engine.description,
-                logo: engine.logo,
+                // logo: engine.logo, // removed, not in schema
                 platforms: engine.platforms || [],
                 companies: engine.companies || [],
               },
@@ -449,7 +451,7 @@ export class IGDBGameNormalizationService {
                 createdAt: engine.created_at ? BigInt(engine.created_at) : null,
                 updatedAt: engine.updated_at ? BigInt(engine.updated_at) : null,
                 description: engine.description,
-                logo: engine.logo,
+                // logo: engine.logo, // removed, not in schema
                 platforms: engine.platforms || [],
                 companies: engine.companies || [],
               },
@@ -516,7 +518,7 @@ export class IGDBGameNormalizationService {
               where: { id: involvedCompany.id },
               update: {
                 checksum: involvedCompany.checksum,
-                company: involvedCompany.company,
+                companyId: involvedCompany.company,
                 createdAt: involvedCompany.created_at ? BigInt(involvedCompany.created_at) : null,
                 updatedAt: involvedCompany.updated_at ? BigInt(involvedCompany.updated_at) : null,
                 developer: involvedCompany.developer,
@@ -527,7 +529,7 @@ export class IGDBGameNormalizationService {
               create: {
                 id: involvedCompany.id,
                 checksum: involvedCompany.checksum,
-                company: involvedCompany.company,
+                companyId: involvedCompany.company,
                 createdAt: involvedCompany.created_at ? BigInt(involvedCompany.created_at) : null,
                 updatedAt: involvedCompany.updated_at ? BigInt(involvedCompany.updated_at) : null,
                 developer: involvedCompany.developer,
@@ -546,30 +548,24 @@ export class IGDBGameNormalizationService {
               where: { id: releaseDate.id },
               update: {
                 checksum: releaseDate.checksum,
-                createdAt: releaseDate.created_at ? BigInt(releaseDate.created_at) : null,
-                updatedAt: releaseDate.updated_at ? BigInt(releaseDate.updated_at) : null,
-                category: releaseDate.category,
                 date: releaseDate.date ? BigInt(releaseDate.date) : null,
                 human: releaseDate.human,
                 m: releaseDate.m,
-                platform: releaseDate.platform,
-                region: releaseDate.region,
+                platformId: releaseDate.platform,
+                regionId: releaseDate.region,
                 y: releaseDate.y,
-                status: releaseDate.status,
+                statusId: releaseDate.status,
               },
               create: {
                 id: releaseDate.id,
                 checksum: releaseDate.checksum,
-                createdAt: releaseDate.created_at ? BigInt(releaseDate.created_at) : null,
-                updatedAt: releaseDate.updated_at ? BigInt(releaseDate.updated_at) : null,
-                category: releaseDate.category,
                 date: releaseDate.date ? BigInt(releaseDate.date) : null,
                 human: releaseDate.human,
                 m: releaseDate.m,
-                platform: releaseDate.platform,
-                region: releaseDate.region,
+                platformId: releaseDate.platform,
+                regionId: releaseDate.region,
                 y: releaseDate.y,
-                status: releaseDate.status,
+                statusId: releaseDate.status,
               },
             });
           }
@@ -582,10 +578,7 @@ export class IGDBGameNormalizationService {
               where: { id: ageRating.id },
               update: {
                 checksum: ageRating.checksum,
-                category: ageRating.category,
-                createdAt: ageRating.created_at ? BigInt(ageRating.created_at) : null,
-                updatedAt: ageRating.updated_at ? BigInt(ageRating.updated_at) : null,
-                rating: ageRating.rating,
+                ratingCategoryId: ageRating.rating,
                 ratingCoverUrl: ageRating.rating_cover_url,
                 synopsis: ageRating.synopsis,
                 contentDescriptions: ageRating.content_descriptions || [],
@@ -593,10 +586,7 @@ export class IGDBGameNormalizationService {
               create: {
                 id: ageRating.id,
                 checksum: ageRating.checksum,
-                category: ageRating.category,
-                createdAt: ageRating.created_at ? BigInt(ageRating.created_at) : null,
-                updatedAt: ageRating.updated_at ? BigInt(ageRating.updated_at) : null,
-                rating: ageRating.rating,
+                ratingCategoryId: ageRating.rating,
                 ratingCoverUrl: ageRating.rating_cover_url,
                 synopsis: ageRating.synopsis,
                 contentDescriptions: ageRating.content_descriptions || [],
@@ -612,20 +602,14 @@ export class IGDBGameNormalizationService {
               where: { id: website.id },
               update: {
                 checksum: website.checksum,
-                category: website.category,
-                createdAt: website.created_at ? BigInt(website.created_at) : null,
-                updatedAt: website.updated_at ? BigInt(website.updated_at) : null,
                 trusted: website.trusted,
-                url: website.url,
+                url: website.url || "",
               },
               create: {
                 id: website.id,
                 checksum: website.checksum,
-                category: website.category,
-                createdAt: website.created_at ? BigInt(website.created_at) : null,
-                updatedAt: website.updated_at ? BigInt(website.updated_at) : null,
                 trusted: website.trusted,
-                url: website.url,
+                url: website.url || "",
               },
             });
           }
@@ -638,29 +622,21 @@ export class IGDBGameNormalizationService {
               where: { id: externalGame.id },
               update: {
                 checksum: externalGame.checksum,
-                category: externalGame.category,
-                createdAt: externalGame.created_at ? BigInt(externalGame.created_at) : null,
-                updatedAt: externalGame.updated_at ? BigInt(externalGame.updated_at) : null,
                 name: externalGame.name,
                 uid: externalGame.uid,
                 url: externalGame.url,
                 year: externalGame.year,
-                media: externalGame.media,
-                platform: externalGame.platform,
+                platformId: externalGame.platform,
                 countries: externalGame.countries || [],
               },
               create: {
                 id: externalGame.id,
                 checksum: externalGame.checksum,
-                category: externalGame.category,
-                createdAt: externalGame.created_at ? BigInt(externalGame.created_at) : null,
-                updatedAt: externalGame.updated_at ? BigInt(externalGame.updated_at) : null,
                 name: externalGame.name,
                 uid: externalGame.uid,
                 url: externalGame.url,
                 year: externalGame.year,
-                media: externalGame.media,
-                platform: externalGame.platform,
+                platformId: externalGame.platform,
                 countries: externalGame.countries || [],
               },
             });
@@ -676,16 +652,16 @@ export class IGDBGameNormalizationService {
                 checksum: video.checksum,
                 name: video.name,
                 videoId: video.video_id,
-                createdAt: video.created_at ? BigInt(video.created_at) : null,
-                updatedAt: video.updated_at ? BigInt(video.updated_at) : null,
+                // createdAt: video.created_at ? BigInt(video.created_at) : null, // not in schema
+                // updatedAt: video.updated_at ? BigInt(video.updated_at) : null, // not in schema
               },
               create: {
                 id: video.id,
                 checksum: video.checksum,
                 name: video.name,
                 videoId: video.video_id,
-                createdAt: video.created_at ? BigInt(video.created_at) : null,
-                updatedAt: video.updated_at ? BigInt(video.updated_at) : null,
+                // createdAt: video.created_at ? BigInt(video.created_at) : null, // not in schema
+                // updatedAt: video.updated_at ? BigInt(video.updated_at) : null, // not in schema
               },
             });
           }
@@ -698,18 +674,14 @@ export class IGDBGameNormalizationService {
               where: { id: languageSupport.id },
               update: {
                 checksum: languageSupport.checksum,
-                createdAt: languageSupport.created_at ? BigInt(languageSupport.created_at) : null,
-                updatedAt: languageSupport.updated_at ? BigInt(languageSupport.updated_at) : null,
-                language: languageSupport.language,
-                languageSupportType: languageSupport.language_support_type,
+                languageId: languageSupport.language,
+                languageSupportTypeId: languageSupport.language_support_type,
               },
               create: {
                 id: languageSupport.id,
                 checksum: languageSupport.checksum,
-                createdAt: languageSupport.created_at ? BigInt(languageSupport.created_at) : null,
-                updatedAt: languageSupport.updated_at ? BigInt(languageSupport.updated_at) : null,
-                language: languageSupport.language,
-                languageSupportType: languageSupport.language_support_type,
+                languageId: languageSupport.language,
+                languageSupportTypeId: languageSupport.language_support_type,
               },
             });
           }
@@ -722,20 +694,16 @@ export class IGDBGameNormalizationService {
               where: { id: gameLocalization.id },
               update: {
                 checksum: gameLocalization.checksum,
-                createdAt: gameLocalization.created_at ? BigInt(gameLocalization.created_at) : null,
-                updatedAt: gameLocalization.updated_at ? BigInt(gameLocalization.updated_at) : null,
                 name: gameLocalization.name,
-                region: gameLocalization.region,
-                cover: gameLocalization.cover,
+                regionId: gameLocalization.region,
+                coverId: gameLocalization.cover,
               },
               create: {
                 id: gameLocalization.id,
                 checksum: gameLocalization.checksum,
-                createdAt: gameLocalization.created_at ? BigInt(gameLocalization.created_at) : null,
-                updatedAt: gameLocalization.updated_at ? BigInt(gameLocalization.updated_at) : null,
                 name: gameLocalization.name,
-                region: gameLocalization.region,
-                cover: gameLocalization.cover,
+                regionId: gameLocalization.region,
+                coverId: gameLocalization.cover,
               },
             });
           }
@@ -797,7 +765,7 @@ export class IGDBGameNormalizationService {
             totalRating: igdbGameData.total_rating,
             totalRatingCount: igdbGameData.total_rating_count,
             firstReleaseDate: igdbGameData.first_release_date ? BigInt(igdbGameData.first_release_date) : null,
-            alternativeNames: igdbGameData.alternative_names?.map(an => an.name) || [],
+            alternativeNames: igdbGameData.alternative_names?.map(an => an.id) || [],
             platforms: igdbGameData.platforms || [],
             igdbData: JSON.stringify(igdbGameData),
           },
@@ -817,7 +785,7 @@ export class IGDBGameNormalizationService {
             totalRating: igdbGameData.total_rating,
             totalRatingCount: igdbGameData.total_rating_count,
             firstReleaseDate: igdbGameData.first_release_date ? BigInt(igdbGameData.first_release_date) : null,
-            alternativeNames: igdbGameData.alternative_names?.map(an => an.name) || [],
+            alternativeNames: igdbGameData.alternative_names?.map(an => an.id) || [],
             platforms: igdbGameData.platforms || [],
             igdbData: JSON.stringify(igdbGameData),
           },
@@ -1202,6 +1170,7 @@ export class IGDBGameNormalizationService {
       price?: number;
       purchaseDate?: Date;
       notes?: string;
+      photo?: string;
     }
   ): Promise<any> {
     console.log(`🎯 Creating user game from IGDB: ${igdbGameData.name} for user ${userId} on console ${consoleId}`);
@@ -1244,7 +1213,7 @@ export class IGDBGameNormalizationService {
             if (mm.campaign_coop) modes.push('Campaign Co-op');
             return modes.length > 0 ? modes.join(', ') : 'Multiplayer';
           }) || [],
-          consoleId: consoleId, // User's specific console
+          consoleIds: [consoleId], // User's specific console as array
           condition: (additionalData?.condition as any) || 'GOOD',
           price: additionalData?.price,
           purchaseDate: additionalData?.purchaseDate,

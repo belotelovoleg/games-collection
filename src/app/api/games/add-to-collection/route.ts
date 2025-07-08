@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { igdbGameId, consoleId, condition, price, purchaseDate, notes } = body;
+    const { igdbGameId, consoleId, condition, price, purchaseDate, notes, photo } = body;
 
     if (!igdbGameId || !consoleId) {
       return NextResponse.json(
@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
         price: price ? parseFloat(price) : undefined,
         purchaseDate: purchaseDate ? new Date(purchaseDate) : undefined,
         notes,
+        photo,
       }
     );
 
