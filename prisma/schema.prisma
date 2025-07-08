@@ -743,7 +743,7 @@ model IgdbKeyword {
   id        Int      @id // IGDB ID directly
   checksum  String?  @map("checksum")
   createdAt BigInt?  @map("created_at")
-  name      String   @map("name")
+  name      String?  @map("name")
   slug      String?  @map("slug")
   updatedAt BigInt?  @map("updated_at")
   url       String?  @map("url")
