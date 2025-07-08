@@ -25,6 +25,7 @@ import {
   Menu as MenuIcon,
   Home as HomeIcon,
   VideogameAsset as GamesIcon,
+  SportsEsports as ConsolesIcon,
   Settings as SettingsIcon,
   LightMode,
   DarkMode,
@@ -81,6 +82,11 @@ export function MainLayout({ children, locale }: MainLayoutProps) {
       text: t('nav_games'), 
       icon: <GamesIcon />, 
       href: `/${locale}/games` 
+    },
+    { 
+      text: t('nav_consoles'), 
+      icon: <ConsolesIcon />, 
+      href: `/${locale}/consoles` 
     },
     { 
       text: t('nav_settings'), 
@@ -177,8 +183,7 @@ export function MainLayout({ children, locale }: MainLayoutProps) {
       <AppBar
         position="fixed"
         sx={{
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` },
+          zIndex: (theme) => theme.zIndex.drawer + 1,
         }}
       >
         <Toolbar>
@@ -187,7 +192,7 @@ export function MainLayout({ children, locale }: MainLayoutProps) {
             aria-label="open drawer"
             edge="start"
             onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
+            sx={{ mr: 2 }}
           >
             <MenuIcon />
           </IconButton>
@@ -276,7 +281,6 @@ export function MainLayout({ children, locale }: MainLayoutProps) {
       
       <Box
         component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
       >
         <Drawer
           variant="temporary"
@@ -286,19 +290,12 @@ export function MainLayout({ children, locale }: MainLayoutProps) {
             keepMounted: true,
           }}
           sx={{
-            display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+            '& .MuiDrawer-paper': { 
+              boxSizing: 'border-box', 
+              width: drawerWidth,
+              bgcolor: 'background.paper'
+            },
           }}
-        >
-          {drawer}
-        </Drawer>
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-          }}
-          open
         >
           {drawer}
         </Drawer>
@@ -309,7 +306,7 @@ export function MainLayout({ children, locale }: MainLayoutProps) {
         sx={{
           flexGrow: 1,
           p: 3,
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
+          width: '100%',
         }}
       >
         <Toolbar />

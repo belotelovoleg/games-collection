@@ -1,13 +1,11 @@
 import NextAuth, { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -56,6 +54,26 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.role = user.role;
       }
+      
+      // Validate user exists in database during JWT processing
+      if (token.sub) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.sub },
+            select: { id: true }
+          });
+          
+          if (!dbUser) {
+            console.log('User not found in database during JWT validation:', token.sub);
+            // Return empty token to invalidate
+            return {};
+          }
+        } catch (error) {
+          console.error('Error validating user during JWT:', error);
+          return {};
+        }
+      }
+      
       return token;
     },
     async session({ session, token }) {

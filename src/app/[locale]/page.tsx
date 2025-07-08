@@ -1,13 +1,39 @@
 'use client';
 
-import { use } from 'react';
+import { use, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { MainLayout } from '@/components/MainLayout';
 import { useTranslations } from '@/hooks/useTranslations';
-import { Typography, Container, Box } from '@mui/material';
+import { Typography, Container, Box, CircularProgress } from '@mui/material';
 
 export default function LocalePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = use(params);
   const { t } = useTranslations();
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push(`/${locale}/login`);
+    }
+  }, [status, locale, router]);
+
+  // Show loading while checking authentication
+  if (status === 'loading') {
+    return (
+      <MainLayout locale={locale}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+          <CircularProgress />
+        </Box>
+      </MainLayout>
+    );
+  }
+
+  // If not authenticated, don't render content (will redirect)
+  if (status === 'unauthenticated') {
+    return null;
+  }
   
   return (
     <MainLayout locale={locale}>

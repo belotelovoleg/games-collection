@@ -26,6 +26,7 @@ model User {
   accounts Account[]
   sessions Session[]
   games    Game[]
+  userConsoles UserConsole[]
 
   @@map("users")
 }
@@ -113,6 +114,9 @@ model Console {
   // Relations to cached IGDB data (updated to reference igdbId fields)
   igdbPlatform          IgdbPlatform?        @relation(fields: [igdbPlatformID], references: [id])
   igdbPlatformVersion   IgdbPlatformVersion? @relation(fields: [igdbPlatformVersionID], references: [id])
+  
+  // User console relations
+  userConsoles          UserConsole[]
   
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
@@ -331,6 +335,24 @@ model IgdbPlatformVersionCompanyRelation {
   @@map("igdb_platform_version_company_relations")
 }
 
+// User console collection model
+model UserConsole {
+  id        String              @id @default(cuid())
+  userId    String              @map("user_id")
+  consoleId Int                 @map("console_id")
+  status    UserConsoleStatus   @default(OWNED)
+  notes     String?
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  // Relations
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  console   Console             @relation(fields: [consoleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, consoleId])
+  @@map("user_consoles")
+}
+
 // Enums
 enum Role {
   USER
@@ -361,4 +383,10 @@ enum Condition {
   GOOD
   FAIR
   POOR
+}
+
+enum UserConsoleStatus {
+  OWNED
+  WISHLIST
+  SOLD
 }

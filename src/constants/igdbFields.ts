@@ -37,6 +37,12 @@ export const IGDB_PLATFORM_VERSION_FIELDS = `*, platform_logo.*, main_manufactur
 export const IGDB_COMPANY_FIELDS = `*, logo.*`;
 
 /**
+ * Complete list of ALL possible fields for IGDB Games
+ * Using * to get ALL basic fields, plus expanded reference data
+ */
+export const IGDB_GAME_FIELDS = `*, cover.*, platforms, genres.*, release_dates.*, involved_companies.company.*, age_ratings.*, artworks.*, screenshots.*, videos.*, websites.*, game_engines.*, game_modes.*, themes.*, player_perspectives.*, multiplayer_modes.*, language_supports.*, alternative_names.*, collections.*, franchises.*, external_games.*`;
+
+/**
  * Helper function to build platform query with consistent fields
  */
 export function buildPlatformQuery(whereClause: string, limit: number = 20): string {
@@ -53,6 +59,17 @@ export function buildPlatformQuery(whereClause: string, limit: number = 20): str
 export function buildPlatformVersionQuery(whereClause: string, limit: number = 20): string {
   return `
     fields ${IGDB_PLATFORM_VERSION_FIELDS};
+    ${whereClause};
+    limit ${limit};
+  `.trim();
+}
+
+/**
+ * Helper function to build games query with consistent fields
+ */
+export function buildGamesQuery(whereClause: string, limit: number = 20): string {
+  return `
+    fields ${IGDB_GAME_FIELDS};
     ${whereClause};
     limit ${limit};
   `.trim();

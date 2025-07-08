@@ -1,5 +1,5 @@
 // IGDB API Service with authentication and rate limiting
-import { IGDB_PLATFORM_FIELDS, IGDB_PLATFORM_VERSION_FIELDS, buildPlatformQuery, buildPlatformVersionQuery } from '@/constants/igdbFields';
+import { IGDB_PLATFORM_FIELDS, IGDB_PLATFORM_VERSION_FIELDS, IGDB_GAME_FIELDS, buildPlatformQuery, buildPlatformVersionQuery, buildGamesQuery } from '@/constants/igdbFields';
 
 export interface IGDBAuthToken {
   access_token: string;
@@ -38,6 +38,36 @@ export interface IGDBPlatformVersion {
     id: number;
     name: string;
   };
+}
+
+export interface IGDBGame {
+  id: number;
+  name: string;
+  summary?: string;
+  storyline?: string;
+  cover?: {
+    id: number;
+    url: string;
+    image_id: string;
+  };
+  platforms?: number[];
+  genres?: Array<{
+    id: number;
+    name: string;
+  }>;
+  release_dates?: Array<{
+    id: number;
+    date: number;
+    human: string;
+    platform: number;
+  }>;
+  involved_companies?: Array<{
+    id: number;
+    company: {
+      id: number;
+      name: string;
+    };
+  }>;
 }
 
 class IGDBService {
@@ -150,6 +180,60 @@ class IGDBService {
     const query = buildPlatformVersionQuery(`search "${searchQuery}"`, 20);
 
     return this.makeRequest('https://api.igdb.com/v4/platform_versions', query);
+  }
+
+  public async searchGames(searchQuery: string, platformId: number): Promise<IGDBGame[]> {
+    await this.authenticate();
+
+    // IGDB API syntax: Let's try a comprehensive search approach
+    // We'll search in multiple fields: name, alternative names
+    // Using pattern matching for more flexible search
+    
+    const whereClause = `where (name ~ *"${searchQuery}"* | alternative_names.name ~ *"${searchQuery}"*) & platforms = (${platformId})`;
+    const query = buildGamesQuery(whereClause, 20);
+
+    console.log(`🔍 IGDB Games Query for platform ${platformId} (including alternative names):`);
+    console.log(query);
+
+    try {
+      const result = await this.makeRequest('https://api.igdb.com/v4/games', query);
+      console.log(`✅ Successfully got ${result.length} games (searched in name + alternative names)`);
+      return result;
+    } catch (error) {
+      console.error(`❌ IGDB query with alternative names failed for platform ${platformId}:`, error);
+      
+      // Fallback 1: Try without alternative names (original approach)
+      console.log(`🔄 Trying fallback 1: search only in main name`);
+      const fallback1WhereClause = `where name ~ *"${searchQuery}"* & platforms = (${platformId})`;
+      const fallback1Query = buildGamesQuery(fallback1WhereClause, 20);
+      
+      console.log(`🔍 Fallback 1 query:`, fallback1Query);
+      
+      try {
+        const fallback1Result = await this.makeRequest('https://api.igdb.com/v4/games', fallback1Query);
+        console.log(`✅ Fallback 1 found ${fallback1Result.length} games (main name only)`);
+        return fallback1Result;
+      } catch (fallback1Error) {
+        console.error(`❌ Fallback 1 also failed:`, fallback1Error);
+        
+        // Fallback 2: Simple search without platform filter, then manual filtering
+        console.log(`🔄 Trying fallback 2: simple search + manual filtering`);
+        const fallback2WhereClause = `search "${searchQuery}"`;
+        const fallback2Query = buildGamesQuery(fallback2WhereClause, 20);
+        
+        console.log(`🔍 Fallback 2 query:`, fallback2Query);
+        
+        const fallback2Result = await this.makeRequest('https://api.igdb.com/v4/games', fallback2Query);
+        
+        // Filter results manually for the platform
+        const filteredResults = fallback2Result.filter((game: any) => 
+          game.platforms && game.platforms.includes(platformId)
+        );
+        
+        console.log(`✅ Fallback 2 found ${fallback2Result.length} total games, ${filteredResults.length} for platform ${platformId}`);
+        return filteredResults;
+      }
+    }
   }
 }
 

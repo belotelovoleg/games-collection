@@ -15,11 +15,10 @@ async function checkAdminAccess() {
 // POST /api/admin/igdb/search - Search platforms and platform versions
 export async function POST(request: NextRequest) {
   try {
-    // Temporarily bypass auth for testing
-    // const isAdmin = await checkAdminAccess();
-    // if (!isAdmin) {
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    // }
+    const isAdmin = await checkAdminAccess();
+    if (!isAdmin) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const body = await request.json();
     const { query } = body;

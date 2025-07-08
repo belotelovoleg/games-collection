@@ -34,15 +34,6 @@ const PlatformVersionDetails: React.FC<PlatformVersionDetailsProps> = ({
   const [loadingParent, setLoadingParent] = useState(false);
   const [platformTypeName, setPlatformTypeName] = useState<string>('console');
   const [loadingPlatformType, setLoadingPlatformType] = useState(false);
-  
-  // Only log when there's actual platform data, not when it's null
-  if (allPlatformData) {
-    console.log('[PlatformVersionDetails] Received full platform data:', allPlatformData);
-    console.log('[PlatformVersionDetails] Image debugging:');
-    console.log('- platform_logo:', allPlatformData.platform_logo);
-    console.log('- platform_logo?.url:', allPlatformData.platform_logo?.url);
-    console.log('- All keys:', Object.keys(allPlatformData));
-  }
 
   // Fetch platform type name from IGDB API
   const fetchPlatformTypeName = async (platformTypeId: number): Promise<string> => {
@@ -111,7 +102,6 @@ const PlatformVersionDetails: React.FC<PlatformVersionDetailsProps> = ({
       if (response.ok) {
         const data = await response.json();
         setParentPlatform(data.platform);
-        console.log('[PlatformVersionDetails] Parent platform data:', data.platform);
       } else {
         console.error('Failed to fetch parent platform');
       }
@@ -197,14 +187,6 @@ const PlatformVersionDetails: React.FC<PlatformVersionDetailsProps> = ({
                                  platformVersion.logo?.url || 
                                  platformVersion.image?.url ||
                                  platformVersion.platform?.platform_logo?.url;
-                  
-                  console.log('[PlatformVersionDetails] Image URL attempts:', {
-                    'platform_logo.url': platformVersion.platform_logo?.url,
-                    'logo.url': platformVersion.logo?.url,
-                    'image.url': platformVersion.image?.url,
-                    'platform.platform_logo.url': platformVersion.platform?.platform_logo?.url,
-                    'final_imageUrl': imageUrl
-                  });
                   
                   return imageUrl ? (
                     <Avatar 
