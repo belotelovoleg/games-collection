@@ -175,5 +175,15 @@
   
   "theme_light": "Light",
   "theme_dark": "Dark",
-  "theme_switchTo": "Switch to {mode} theme"
+  "theme_switchTo": "Switch to {mode} theme",
+  
+  "games_photo": "Photo",
+  "games_uploadPhoto": "Upload Photo",
+  "games_cropPhoto": "Crop Photo",
+  "games_photoUploadSuccess": "Photo uploaded successfully",
+  "games_photoCropSuccess": "Photo cropped successfully",
+  "games_photoRemoveSuccess": "Photo removed successfully",
+  "games_photoUploadError": "Error uploading photo",
+  "games_photoCropError": "Error cropping photo",
+  "games_photoRemoveError": "Error removing photo"
 }

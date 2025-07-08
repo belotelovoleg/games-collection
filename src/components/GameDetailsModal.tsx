@@ -556,9 +556,9 @@ export function GameDetailsModal({ open, onClose, game, onAddToCollection }: Gam
           alignItems: 'center',
           color: 'white'
         }}>
-          <Typography variant="h6">
+          <Box>
             {galleryTitle} {galleryImages.length > 1 && `(${currentImageIndex + 1}/${galleryImages.length})`}
-          </Typography>
+          </Box>
           <IconButton onClick={() => setGalleryOpen(false)} sx={{ color: 'white' }}>
             <CloseIcon />
           </IconButton>

@@ -73,27 +73,45 @@ model VerificationToken {
 
 // Game collection models
 model Game {
-  id          String      @id @default(cuid())
-  title       String
-  platform    Platform
-  condition   Condition   @default(GOOD)
-  genre       String?
-  developer   String?
-  publisher   String?
-  releaseYear Int?
-  price       Float?
-  purchaseDate DateTime?
-  notes       String?
-  imageUrl    String?
-  completed   Boolean     @default(false)
-  favorite    Boolean     @default(false)
+  id              String      @id @default(cuid())
+  
+  // IGDB reference (optional - for games from IGDB)
+  igdbGameId      Int?        @map("igdb_game_id")
+  
+  // Basic game information (filled from IGDB or manually)
+  title           String      @map("name") // Game name
+  alternativeNames String[]   @map("alternative_names") // Array of alternative names
+  cover           String?     // Cover image URL (from IGDB or uploaded by user)
+  photo           String?     // User's personal photo of their copy
+  screenshot      String?     // One screenshot URL (from IGDB or uploaded by user)
+  summary         String?     @db.Text
+  
+  // Game metadata (filled from IGDB or manually)
+  genres          String[]    // Array of genre names
+  franchises      String[]    // Array of franchise names
+  platforms       Int[]       // Array of IGDB platform IDs
+  rating          Float?      // Game rating (0-100 scale from IGDB)
+  multiplayerModes String[]   @map("multiplayer_modes") // Array of multiplayer mode descriptions
+  
+  // User-specific collection data
+  consoleIds      Int[]       // Which consoles this game works on (array of console IDs)
+  condition       Condition   @default(GOOD)
+  developer       String?
+  publisher       String?
+  releaseYear     Int?
+  price           Float?      // What user paid for it
+  purchaseDate    DateTime?
+  notes           String?     @db.Text
+  completed       Boolean     @default(false)
+  favorite        Boolean     @default(false)
   
   // Relations
-  userId      String      @map("user_id")
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String      @map("user_id")
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  igdbGame        IgdbGame?   @relation(fields: [igdbGameId], references: [id])
   
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   @@map("games")
 }
@@ -353,28 +371,680 @@ model UserConsole {
   @@map("user_consoles")
 }
 
+// ============================================================================
+// IGDB GAME MODELS
+// ============================================================================
+
+model IgdbAlternativeName {
+  id        Int      @id // IGDB ID directly
+  checksum  String?
+  comment   String?  // Description of what kind of alternative name (Acronym, Working title, Japanese title etc)
+  gameId    Int      @map("game_id") // The game this alternative name is associated with
+  name      String   // An alternative name
+
+  // Relations
+  gameAlternativeNameRelations IgdbGameAlternativeNameRelation[]
+
+  @@map("igdb_alternative_names")
+}
+
+model IgdbCover {
+  id           Int      @id // IGDB ID directly
+  alphaChannel Boolean? @map("alpha_channel")
+  animated     Boolean?
+  checksum     String?
+  height       Int?
+  imageId      String?  @map("image_id")
+  url          String?
+  width        Int?
+
+  // Relations
+  games        IgdbGame[]
+
+  @@map("igdb_covers")
+}
+
+model IgdbScreenshot {
+  id           Int      @id // IGDB ID directly
+  alphaChannel Boolean? @map("alpha_channel")
+  animated     Boolean?
+  checksum     String?
+  height       Int?
+  imageId      String?  @map("image_id")
+  url          String?
+  width        Int?
+
+  // Relations
+  gameScreenshotRelations IgdbGameScreenshotRelation[]
+
+  @@map("igdb_screenshots")
+}
+
+model IgdbArtwork {
+  id           Int      @id // IGDB ID directly
+  alphaChannel Boolean? @map("alpha_channel")
+  animated     Boolean?
+  checksum     String?
+  height       Int?
+  imageId      String?  @map("image_id")
+  url          String?
+  width        Int?
+
+  // Relations
+  gameArtworkRelations IgdbGameArtworkRelation[]
+
+  @@map("igdb_artworks")
+}
+
+model IgdbGenre {
+  id        Int      @id // IGDB ID directly
+  checksum  String?
+  name      String
+  slug      String?
+  url       String?
+
+  // Relations
+  gameGenreRelations IgdbGameGenreRelation[]
+
+  @@map("igdb_genres")
+}
+
+model IgdbFranchise {
+  id        Int      @id // IGDB ID directly
+  checksum  String?
+  name      String
+  slug      String?
+  url       String?
+
+  // Relations
+  gameFranchiseRelations IgdbGameFranchiseRelation[]
+
+  @@map("igdb_franchises")
+}
+
+model IgdbMultiplayerMode {
+  id                  Int      @id // IGDB ID directly
+  campaignCoop        Boolean? @map("campaign_coop")
+  checksum            String?
+  dropin              Boolean?
+  lancoop             Boolean?
+  offlineCoop         Boolean? @map("offline_coop")
+  offlineCoopMax      Int?     @map("offline_coop_max")
+  offlineMax          Int?     @map("offline_max")
+  onlineCoop          Boolean? @map("online_coop")
+  onlineCoopMax       Int?     @map("online_coop_max")
+  onlineMax           Int?     @map("online_max")
+  splitscreen         Boolean?
+  splitscreenOnline   Boolean? @map("splitscreen_online")
+
+  // Relations
+  gameMultiplayerRelations IgdbGameMultiplayerRelation[]
+
+  @@map("igdb_multiplayer_modes")
+}
+
+model IgdbGame {
+  id                    Int      @id // IGDB ID directly
+  checksum              String?
+  coverId               Int?     @map("cover_id")
+  name                  String
+  slug                  String?
+  summary               String?  @db.Text
+  storyline             String?  @db.Text
+  url                   String?
+  
+  // Ratings
+  aggregatedRating      Float?   @map("aggregated_rating")
+  aggregatedRatingCount Int?     @map("aggregated_rating_count")
+  rating                Float?
+  ratingCount           Int?     @map("rating_count")
+  totalRating           Float?   @map("total_rating")
+  totalRatingCount      Int?     @map("total_rating_count")
+  
+  // Dates
+  firstReleaseDate      BigInt?  @map("first_release_date")
+  createdAt             BigInt?  @map("created_at")
+  updatedAt             BigInt?  @map("updated_at")
+  
+  // Game metadata
+  category              Int?     // Game category
+  gameType              Int?     @map("game_type") // Reference to Game Type
+  gameStatus            Int?     @map("game_status") // Reference to Game Status
+  parentGameId          Int?     @map("parent_game_id") // If DLC/expansion
+  versionParentId       Int?     @map("version_parent_id") // If version
+  versionTitle          String?  @map("version_title")
+  franchiseId           Int?     @map("franchise_id") // Main franchise
+  collectionId          Int?     @map("collection_id") // Main collection
+  
+  // Arrays - stored as IGDB IDs
+  alternativeNames      Int[]    @map("alternative_names") // Array of Alternative Name IDs
+  platforms             Int[]    // Array of Platform IDs
+  genres                Int[]    // Array of Genre IDs
+  themes                Int[]    // Array of Theme IDs
+  gameModes             Int[]    @map("game_modes") // Array of Game Mode IDs
+  playerPerspectives    Int[]    @map("player_perspectives") // Array of Player Perspective IDs
+  gameEngines           Int[]    @map("game_engines") // Array of Game Engine IDs
+  keywords              Int[]    // Array of Keyword IDs
+  involvedCompanies     Int[]    @map("involved_companies") // Array of Involved Company IDs
+  releaseDates          Int[]    @map("release_dates") // Array of Release Date IDs
+  ageRatings            Int[]    @map("age_ratings") // Array of Age Rating IDs
+  websites              Int[]    // Array of Website IDs
+  externalGames         Int[]    @map("external_games") // Array of External Game IDs
+  videos                Int[]    // Array of Game Video IDs
+  languageSupports      Int[]    @map("language_supports") // Array of Language Support IDs
+  gameLocalizations     Int[]    @map("game_localizations") // Array of Game Localization IDs
+  
+  // Related games
+  dlcs                  Int[]    // Array of DLC Game IDs
+  expansions            Int[]    // Array of Expansion Game IDs
+  expandedGames         Int[]    @map("expanded_games") // Array of Expanded Game IDs
+  standaloneExpansions  Int[]    @map("standalone_expansions") // Array of Standalone Expansion IDs
+  bundles               Int[]    // Array of Bundle Game IDs
+  forks                 Int[]    // Array of Fork Game IDs
+  ports                 Int[]    // Array of Port Game IDs
+  remakes               Int[]    // Array of Remake Game IDs
+  remasters             Int[]    // Array of Remaster Game IDs
+  similarGames          Int[]    @map("similar_games") // Array of Similar Game IDs
+  
+  // Stats
+  follows               Int?     // Number of follows (deprecated but might still be present)
+  hypes                 Int?     // Number of follows before release
+  
+  // Full IGDB data JSON backup
+  igdbData              String?  @db.Text @map("igdb_data")
+
+  // Relations to our normalized tables
+  cover                 IgdbCover? @relation(fields: [coverId], references: [id])
+
+  // User game relations (required by Prisma for bidirectional relation)
+  userGames             Game[]
+
+  // Many-to-many relationships to our detailed tables
+  gameScreenshotRelations IgdbGameScreenshotRelation[]
+  gameArtworkRelations    IgdbGameArtworkRelation[]
+  gameGenreRelations      IgdbGameGenreRelation[]
+  gameFranchiseRelations  IgdbGameFranchiseRelation[]
+  gameMultiplayerRelations IgdbGameMultiplayerRelation[]
+  gameAlternativeNameRelations IgdbGameAlternativeNameRelation[]
+
+  // Additional many-to-many relationships for array fields
+  gameGameModeRelations          IgdbGameModeRelation[]                @relation("IgdbGameGameModes")
+  gamePlayerPerspectiveRelations IgdbGamePlayerPerspectiveRelation[]  @relation("IgdbGamePlayerPerspectives")
+  gameEngineRelations            IgdbGameEngineRelation[]              @relation("IgdbGameEngines")
+  gameThemeRelations             IgdbGameThemeRelation[]               @relation("IgdbGameThemes")
+  gameKeywordRelations           IgdbGameKeywordRelation[]             @relation("IgdbGameKeywords")
+  gameInvolvedCompanyRelations   IgdbGameInvolvedCompanyRelation[]     @relation("IgdbGameInvolvedCompanies")
+  gameReleaseDateRelations       IgdbGameReleaseDateRelation[]         @relation("IgdbGameReleaseDates")
+  gameAgeRatingRelations         IgdbGameAgeRatingRelation[]           @relation("IgdbGameAgeRatings")
+  gameWebsiteRelations           IgdbGameWebsiteRelation[]             @relation("IgdbGameWebsites")
+  gameExternalGameRelations      IgdbGameExternalGameRelation[]        @relation("IgdbGameExternalGames")
+  gameVideoRelations             IgdbGameVideoRelation[]               @relation("IgdbGameVideos")
+  gameLanguageSupportRelations   IgdbGameLanguageSupportRelation[]     @relation("IgdbGameLanguageSupports")
+  gameLocalizationRelations      IgdbGameLocalizationRelation[]        @relation("IgdbGameLocalizations")
+
+  @@map("igdb_games")
+}
+
+// ============================================================================
+// IGDB GAME RELATIONSHIP MODELS (Many-to-Many)
+// ============================================================================
+
+model IgdbGameScreenshotRelation {
+  id           Int             @id @default(autoincrement())
+  gameId       Int             @map("game_id")
+  screenshotId Int             @map("screenshot_id")
+
+  // Relations
+  game         IgdbGame        @relation(fields: [gameId], references: [id])
+  screenshot   IgdbScreenshot  @relation(fields: [screenshotId], references: [id])
+
+  @@unique([gameId, screenshotId])
+  @@map("igdb_game_screenshot_relations")
+}
+
+model IgdbGameArtworkRelation {
+  id        Int         @id @default(autoincrement())
+  gameId    Int         @map("game_id")
+  artworkId Int         @map("artwork_id")
+
+  // Relations
+  game      IgdbGame    @relation(fields: [gameId], references: [id])
+  artwork   IgdbArtwork @relation(fields: [artworkId], references: [id])
+
+  @@unique([gameId, artworkId])
+  @@map("igdb_game_artwork_relations")
+}
+
+model IgdbGameGenreRelation {
+  id      Int       @id @default(autoincrement())
+  gameId  Int       @map("game_id")
+  genreId Int       @map("genre_id")
+
+  // Relations
+  game    IgdbGame  @relation(fields: [gameId], references: [id])
+  genre   IgdbGenre @relation(fields: [genreId], references: [id])
+
+  @@unique([gameId, genreId])
+  @@map("igdb_game_genre_relations")
+}
+
+model IgdbGameFranchiseRelation {
+  id          Int           @id @default(autoincrement())
+  gameId      Int           @map("game_id")
+  franchiseId Int           @map("franchise_id")
+
+  // Relations
+  game        IgdbGame      @relation(fields: [gameId], references: [id])
+  franchise   IgdbFranchise @relation(fields: [franchiseId], references: [id])
+
+  @@unique([gameId, franchiseId])
+  @@map("igdb_game_franchise_relations")
+}
+
+model IgdbGameMultiplayerRelation {
+  id               Int                 @id @default(autoincrement())
+  gameId           Int                 @map("game_id")
+  multiplayerModeId Int                @map("multiplayer_mode_id")
+
+  // Relations
+  game             IgdbGame            @relation(fields: [gameId], references: [id])
+  multiplayerMode  IgdbMultiplayerMode @relation(fields: [multiplayerModeId], references: [id])
+
+  @@unique([gameId, multiplayerModeId])
+  @@map("igdb_game_multiplayer_relations")
+}
+
+// ============================================================================
+// IGDB JUNCTION/RELATION TABLES
+// ============================================================================
+
+model IgdbGameAlternativeNameRelation {
+  gameId            Int @map("game_id")
+  alternativeNameId Int @map("alternative_name_id")
+
+  // Relations
+  game            IgdbGame           @relation(fields: [gameId], references: [id])
+  alternativeName IgdbAlternativeName @relation(fields: [alternativeNameId], references: [id])
+
+  @@id([gameId, alternativeNameId])
+  @@map("igdb_game_alternative_name_relations")
+}
+
+// IGDB Game Mode normalization
+model IgdbGameMode {
+  id        Int      @id // IGDB ID directly
+  checksum  String?  @map("checksum")
+  createdAt BigInt?  @map("created_at")
+  name      String   @map("name")
+  slug      String?  @map("slug")
+  updatedAt BigInt?  @map("updated_at")
+  url       String?  @map("url")
+
+  // Relations
+  games IgdbGameModeRelation[]
+
+  @@map("igdb_game_modes")
+}
+
+// IGDB Player Perspective normalization
+model IgdbPlayerPerspective {
+  id        Int      @id // IGDB ID directly
+  checksum  String?  @map("checksum")
+  createdAt BigInt?  @map("created_at")
+  name      String   @map("name")
+  slug      String?  @map("slug")
+  updatedAt BigInt?  @map("updated_at")
+  url       String?  @map("url")
+
+  // Relations
+  games IgdbGamePlayerPerspectiveRelation[]
+
+  @@map("igdb_player_perspectives")
+}
+
+// IGDB Game Engine normalization
+model IgdbGameEngine {
+  id          Int      @id // IGDB ID directly
+  checksum    String?  @map("checksum")
+  companies   Int[]    @map("companies") // Array of Company IDs
+  createdAt   BigInt?  @map("created_at")
+  description String?  @map("description") @db.Text
+  logoId      Int?     @map("logo_id") // Reference to Game Engine Logo
+  name        String   @map("name")
+  platforms   Int[]    @map("platforms") // Array of Platform IDs
+  slug        String?  @map("slug")
+  updatedAt   BigInt?  @map("updated_at")
+  url         String?  @map("url")
+
+  // Relations
+  games IgdbGameEngineRelation[]
+
+  @@map("igdb_game_engines")
+}
+
+// IGDB Theme normalization
+model IgdbTheme {
+  id        Int      @id // IGDB ID directly
+  checksum  String?  @map("checksum")
+  createdAt BigInt?  @map("created_at")
+  name      String   @map("name")
+  slug      String?  @map("slug")
+  updatedAt BigInt?  @map("updated_at")
+  url       String?  @map("url")
+
+  // Relations
+  games IgdbGameThemeRelation[]
+
+  @@map("igdb_themes")
+}
+
+// IGDB Keyword normalization
+model IgdbKeyword {
+  id        Int      @id // IGDB ID directly
+  checksum  String?  @map("checksum")
+  createdAt BigInt?  @map("created_at")
+  name      String   @map("name")
+  slug      String?  @map("slug")
+  updatedAt BigInt?  @map("updated_at")
+  url       String?  @map("url")
+
+  // Relations
+  games IgdbGameKeywordRelation[]
+
+  @@map("igdb_keywords")
+}
+
+// IGDB Involved Company normalization
+model IgdbInvolvedCompany {
+  id         Int      @id // IGDB ID directly
+  checksum   String?  @map("checksum")
+  companyId  Int?     @map("company_id") // Reference to Company
+  createdAt  BigInt?  @map("created_at")
+  developer  Boolean? @map("developer")
+  gameId     Int?     @map("game_id") // Reference to Game
+  porting    Boolean? @map("porting")
+  publisher  Boolean? @map("publisher")
+  supporting Boolean? @map("supporting")
+  updatedAt  BigInt?  @map("updated_at")
+
+  // Relations
+  games IgdbGameInvolvedCompanyRelation[]
+
+  @@map("igdb_involved_companies")
+}
+
+// IGDB Release Date normalization
+model IgdbReleaseDate {
+  id           Int      @id // IGDB ID directly
+  checksum     String?  @map("checksum")
+  createdAt    BigInt?  @map("created_at")
+  date         BigInt?  @map("date") // Unix timestamp
+  dateFormatId Int?     @map("date_format_id") // Reference to Date Format
+  gameId       Int?     @map("game_id") // Reference to Game
+  human        String?  @map("human") // Human readable date
+  m            Int?     @map("m") // Month
+  platformId   Int?     @map("platform_id") // Reference to Platform
+  regionId     Int?     @map("release_region_id") // Reference to Release Date Region
+  statusId     Int?     @map("status_id") // Reference to Release Date Status
+  updatedAt    BigInt?  @map("updated_at")
+  y            Int?     @map("y") // Year
+
+  // Relations
+  games IgdbGameReleaseDateRelation[]
+
+  @@map("igdb_release_dates")
+}
+
+// IGDB Age Rating normalization
+model IgdbAgeRating {
+  id                        Int     @id // IGDB ID directly
+  checksum                  String? @map("checksum")
+  contentDescriptions       Int[]   @map("content_descriptions") // Array of Age Rating Content Description IDs
+  organizationId            Int?    @map("organization_id") // Reference to Age Rating Organization
+  ratingCategoryId          Int?    @map("rating_category_id") // Reference to Age Rating Category
+  ratingContentDescriptions Int[]   @map("rating_content_descriptions") // Array of Age Rating Content Description V2 IDs
+  ratingCoverUrl            String? @map("rating_cover_url")
+  synopsis                  String? @map("synopsis")
+
+  // Relations
+  games IgdbGameAgeRatingRelation[]
+
+  @@map("igdb_age_ratings")
+}
+
+// IGDB Website normalization
+model IgdbWebsite {
+  id         Int      @id // IGDB ID directly
+  checksum   String?  @map("checksum")
+  gameId     Int?     @map("game_id") // Reference to Game
+  trusted    Boolean? @map("trusted")
+  typeId     Int?     @map("type_id") // Reference to Website Type
+  url        String   @map("url")
+
+  // Relations
+  games IgdbGameWebsiteRelation[]
+
+  @@map("igdb_websites")
+}
+
+// IGDB External Game normalization
+model IgdbExternalGame {
+  id                  Int     @id // IGDB ID directly
+  checksum            String? @map("checksum")
+  countries           Int[]   @map("countries") // Array of country codes
+  createdAt           BigInt? @map("created_at")
+  externalGameSourceId Int?   @map("external_game_source_id") // Reference to External Game Source
+  gameId              Int?    @map("game_id") // Reference to Game
+  gameReleaseFormatId Int?    @map("game_release_format_id") // Reference to Game Release Format
+  name                String? @map("name")
+  platformId          Int?    @map("platform_id") // Reference to Platform
+  uid                 String? @map("uid") // External ID
+  updatedAt           BigInt? @map("updated_at")
+  url                 String? @map("url")
+  year                Int?    @map("year")
+
+  // Relations
+  games IgdbGameExternalGameRelation[]
+
+  @@map("igdb_external_games")
+}
+
+// IGDB Video normalization
+model IgdbVideo {
+  id       Int     @id // IGDB ID directly
+  checksum String? @map("checksum")
+  gameId   Int?    @map("game_id") // Reference to Game
+  name     String? @map("name")
+  videoId  String? @map("video_id") // YouTube video ID
+
+  // Relations
+  games IgdbGameVideoRelation[]
+
+  @@map("igdb_videos")
+}
+
+// IGDB Language Support normalization
+model IgdbLanguageSupport {
+  id                    Int     @id // IGDB ID directly
+  checksum              String? @map("checksum")
+  createdAt             BigInt? @map("created_at")
+  gameId                Int?    @map("game_id") // Reference to Game
+  languageId            Int?    @map("language_id") // Reference to Language
+  languageSupportTypeId Int?    @map("language_support_type_id") // Reference to Language Support Type
+  updatedAt             BigInt? @map("updated_at")
+
+  // Relations
+  games IgdbGameLanguageSupportRelation[]
+
+  @@map("igdb_language_supports")
+}
+
+// IGDB Game Localization normalization
+model IgdbGameLocalization {
+  id        Int     @id // IGDB ID directly
+  checksum  String? @map("checksum")
+  coverId   Int?    @map("cover_id") // Reference to Cover
+  createdAt BigInt? @map("created_at")
+  gameId    Int?    @map("game_id") // Reference to Game
+  name      String? @map("name")
+  regionId  Int?    @map("region_id") // Reference to Region
+  updatedAt BigInt? @map("updated_at")
+
+  // Relations
+  games IgdbGameLocalizationRelation[]
+
+  @@map("igdb_game_localizations")
+}
+
+// Junction tables for many-to-many relationships
+
+model IgdbGameModeRelation {
+  gameId     Int @map("game_id")
+  gameModeId Int @map("game_mode_id")
+
+  game     IgdbGame     @relation("IgdbGameGameModes", fields: [gameId], references: [id], onDelete: Cascade)
+  gameMode IgdbGameMode @relation(fields: [gameModeId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, gameModeId])
+  @@map("igdb_game_mode_relations")
+}
+
+model IgdbGamePlayerPerspectiveRelation {
+  gameId              Int @map("game_id")
+  playerPerspectiveId Int @map("player_perspective_id")
+
+  game               IgdbGame             @relation("IgdbGamePlayerPerspectives", fields: [gameId], references: [id], onDelete: Cascade)
+  playerPerspective  IgdbPlayerPerspective @relation(fields: [playerPerspectiveId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, playerPerspectiveId])
+  @@map("igdb_game_player_perspective_relations")
+}
+
+model IgdbGameEngineRelation {
+  gameId       Int @map("game_id")
+  gameEngineId Int @map("game_engine_id")
+
+  game       IgdbGame       @relation("IgdbGameEngines", fields: [gameId], references: [id], onDelete: Cascade)
+  gameEngine IgdbGameEngine @relation(fields: [gameEngineId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, gameEngineId])
+  @@map("igdb_game_engine_relations")
+}
+
+model IgdbGameThemeRelation {
+  gameId  Int @map("game_id")
+  themeId Int @map("theme_id")
+
+  game  IgdbGame  @relation("IgdbGameThemes", fields: [gameId], references: [id], onDelete: Cascade)
+  theme IgdbTheme @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, themeId])
+  @@map("igdb_game_theme_relations")
+}
+
+model IgdbGameKeywordRelation {
+  gameId    Int @map("game_id")
+  keywordId Int @map("keyword_id")
+
+  game    IgdbGame    @relation("IgdbGameKeywords", fields: [gameId], references: [id], onDelete: Cascade)
+  keyword IgdbKeyword @relation(fields: [keywordId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, keywordId])
+  @@map("igdb_game_keyword_relations")
+}
+
+model IgdbGameInvolvedCompanyRelation {
+  gameId             Int @map("game_id")
+  involvedCompanyId  Int @map("involved_company_id")
+
+  game             IgdbGame             @relation("IgdbGameInvolvedCompanies", fields: [gameId], references: [id], onDelete: Cascade)
+  involvedCompany  IgdbInvolvedCompany  @relation(fields: [involvedCompanyId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, involvedCompanyId])
+  @@map("igdb_game_involved_company_relations")
+}
+
+model IgdbGameReleaseDateRelation {
+  gameId        Int @map("game_id")
+  releaseDateId Int @map("release_date_id")
+
+  game        IgdbGame        @relation("IgdbGameReleaseDates", fields: [gameId], references: [id], onDelete: Cascade)
+  releaseDate IgdbReleaseDate @relation(fields: [releaseDateId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, releaseDateId])
+  @@map("igdb_game_release_date_relations")
+}
+
+model IgdbGameAgeRatingRelation {
+  gameId      Int @map("game_id")
+  ageRatingId Int @map("age_rating_id")
+
+  game      IgdbGame      @relation("IgdbGameAgeRatings", fields: [gameId], references: [id], onDelete: Cascade)
+  ageRating IgdbAgeRating @relation(fields: [ageRatingId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, ageRatingId])
+  @@map("igdb_game_age_rating_relations")
+}
+
+model IgdbGameWebsiteRelation {
+  gameId    Int @map("game_id")
+  websiteId Int @map("website_id")
+
+  game    IgdbGame    @relation("IgdbGameWebsites", fields: [gameId], references: [id], onDelete: Cascade)
+  website IgdbWebsite @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, websiteId])
+  @@map("igdb_game_website_relations")
+}
+
+model IgdbGameExternalGameRelation {
+  gameId         Int @map("game_id")
+  externalGameId Int @map("external_game_id")
+
+  game         IgdbGame         @relation("IgdbGameExternalGames", fields: [gameId], references: [id], onDelete: Cascade)
+  externalGame IgdbExternalGame @relation(fields: [externalGameId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, externalGameId])
+  @@map("igdb_game_external_game_relations")
+}
+
+model IgdbGameVideoRelation {
+  gameId  Int @map("game_id")
+  videoId Int @map("video_id")
+
+  game  IgdbGame  @relation("IgdbGameVideos", fields: [gameId], references: [id], onDelete: Cascade)
+  video IgdbVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, videoId])
+  @@map("igdb_game_video_relations")
+}
+
+model IgdbGameLanguageSupportRelation {
+  gameId            Int @map("game_id")
+  languageSupportId Int @map("language_support_id")
+
+  game            IgdbGame            @relation("IgdbGameLanguageSupports", fields: [gameId], references: [id], onDelete: Cascade)
+  languageSupport IgdbLanguageSupport @relation(fields: [languageSupportId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, languageSupportId])
+  @@map("igdb_game_language_support_relations")
+}
+
+model IgdbGameLocalizationRelation {
+  gameId             Int @map("game_id")
+  gameLocalizationId Int @map("game_localization_id")
+
+  game             IgdbGame             @relation("IgdbGameLocalizations", fields: [gameId], references: [id], onDelete: Cascade)
+  gameLocalization IgdbGameLocalization @relation(fields: [gameLocalizationId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, gameLocalizationId])
+  @@map("igdb_game_localization_relations")
+}
+
 // Enums
 enum Role {
   USER
   ADMIN
-}
-
-enum Platform {
-  PLAYSTATION_1
-  PLAYSTATION_2
-  PLAYSTATION_3
-  PLAYSTATION_4
-  PLAYSTATION_5
-  XBOX
-  XBOX_360
-  XBOX_ONE
-  XBOX_SERIES
-  NINTENDO_SWITCH
-  NINTENDO_3DS
-  NINTENDO_WII
-  NINTENDO_WII_U
-  PC
-  OTHER
 }
 
 enum Condition {

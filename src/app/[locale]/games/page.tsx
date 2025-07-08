@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "@/hooks/useTranslations";
 import { MainLayout } from "@/components/MainLayout";
 import { GameDetailsModal } from "@/components/GameDetailsModal";
+import AddToCollectionModal from "@/components/AddToCollectionModal";
 import { 
   Box, 
   Container, 
@@ -65,6 +66,8 @@ export default function GamesPage({ params }: { params: { locale: string } }) {
   const [resultsDialogOpen, setResultsDialogOpen] = useState(false);
   const [selectedGame, setSelectedGame] = useState<any>(null);
   const [gameDetailsOpen, setGameDetailsOpen] = useState(false);
+  const [addToCollectionOpen, setAddToCollectionOpen] = useState(false);
+  const [gameToAdd, setGameToAdd] = useState<any>(null);
 
   // Authentication check
   useEffect(() => {
@@ -182,8 +185,16 @@ export default function GamesPage({ params }: { params: { locale: string } }) {
   };
 
   const handleAddGameToCollection = (game: any) => {
-    // TODO: Implement add to collection
-    console.log("Add game to collection:", game);
+    setGameToAdd(game);
+    setAddToCollectionOpen(true);
+    setGameDetailsOpen(false); // Close the details modal
+  };
+
+  const handleAddToCollectionSuccess = (addedGame: any) => {
+    console.log("✅ Game successfully added to collection:", addedGame);
+    setAddToCollectionOpen(false);
+    setGameToAdd(null);
+    // Optionally, you could show a success message or refresh the user's collection
   };
 
   // Show loading while checking authentication
@@ -353,10 +364,10 @@ export default function GamesPage({ params }: { params: { locale: string } }) {
             borderColor: 'divider'
           }}>
             <Box>
-              <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                 <SportsEsportsIcon color="primary" />
                 {t("games_searchResults")}
-              </Typography>
+              </Box>
               {searchResults && (
                 <Typography variant="body2" color="text.secondary">
                   {searchResults.games.length} {t("games_foundFor")} "{searchResults.searchQuery}" 
@@ -518,6 +529,19 @@ export default function GamesPage({ params }: { params: { locale: string } }) {
           onClose={() => setGameDetailsOpen(false)}
           game={selectedGame}
           onAddToCollection={handleAddGameToCollection}
+        />
+
+        {/* Add to Collection Modal */}
+        <AddToCollectionModal
+          open={addToCollectionOpen}
+          onClose={() => {
+            setAddToCollectionOpen(false);
+            setGameToAdd(null);
+          }}
+          game={gameToAdd}
+          selectedConsole={selectedConsole ? userConsoles.find(uc => uc.console.id.toString() === selectedConsole) : null}
+          userConsoles={userConsoles}
+          onSuccess={handleAddToCollectionSuccess}
         />
       </Container>
     </MainLayout>
