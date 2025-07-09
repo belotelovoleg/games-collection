@@ -20,8 +20,9 @@ const ImageCropperFull: React.FC<ImageCropperFullProps> = ({
   value,
   onChange,
   aspect,
+
   cropShape = 'rect',
-  cropSize = 400,
+  cropSize = 500,
   label = 'Upload Image',
   avatarProps = {},
   icon = null,
@@ -33,6 +34,7 @@ const ImageCropperFull: React.FC<ImageCropperFullProps> = ({
   const [cropping, setCropping] = useState(false);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
+  const [imageSize, setImageSize] = useState<{ width: number; height: number } | null>(null);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -57,6 +59,39 @@ const ImageCropperFull: React.FC<ImageCropperFullProps> = ({
   }, []);
 
   // Utility to crop and return a blob
+  // When a file is loaded for cropping, get its natural size
+  useEffect(() => {
+    if (!file) {
+      setImageSize(null);
+      return;
+    }
+    const img = new window.Image();
+    const url = URL.createObjectURL(file);
+    img.src = url;
+    img.onload = () => {
+      setImageSize({ width: img.naturalWidth, height: img.naturalHeight });
+      URL.revokeObjectURL(url);
+    };
+    img.onerror = () => {
+      setImageSize(null);
+      URL.revokeObjectURL(url);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [file]);
+
+  // Calculate the minimum zoom to fit the image fully in the crop area
+  const getFitZoom = () => {
+    if (!imageSize) return 1;
+    // Use cropSize as the crop area size in pixels
+    const cropW = cropSize;
+    const cropH = cropShape === 'rect' ? cropSize / aspect : cropSize;
+    const { width, height } = imageSize;
+    const zoomW = cropW / width;
+    const zoomH = cropH / height;
+    return Math.max(zoomW, zoomH);
+  };
+
+
   async function getCroppedImg(file: File, crop: { x: number; y: number; width: number; height: number }, size: number): Promise<Blob> {
     return new Promise((resolve, reject) => {
       const image = new window.Image();
@@ -170,7 +205,18 @@ const ImageCropperFull: React.FC<ImageCropperFullProps> = ({
         style={{ display: 'none' }}
         onChange={handleFileChange}
       />
-      <Dialog open={cropping && !!file} onClose={handleCancel} maxWidth="xs" fullWidth>
+      <Dialog
+        open={cropping && !!file}
+        onClose={handleCancel}
+        maxWidth={false}
+        PaperProps={{
+          sx: {
+            width: cropSize + 64, // crop area + padding
+            maxWidth: '95vw',
+            m: 1,
+          },
+        }}
+      >
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', p: 2 }}>
           {file && cropperPreviewUrl && (
             <Box sx={{ position: 'relative', width: cropSize, height: cropSize }}>
@@ -187,14 +233,20 @@ const ImageCropperFull: React.FC<ImageCropperFullProps> = ({
               />
             </Box>
           )}
+
         </DialogContent>
         <DialogActions>
           <Button size="small" onClick={handleCancel}>Cancel</Button>
           <Button size="small" variant="contained" onClick={handleCrop}>Crop</Button>
         </DialogActions>
       </Dialog>
+      {/* Reset crop and zoom when a new file is selected */}
+      {/* This useEffect should be inside the component, not after the return */}
     </Box>
   );
-};
+}
+
+// Reset crop and zoom when a new file is selected
+// (Moved inside the component above)
 
 export default ImageCropperFull;

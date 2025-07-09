@@ -378,11 +378,15 @@ export default function AddToCollectionModal({
       <Dialog
         open={open}
         onClose={onClose}
-        maxWidth="md"
+        maxWidth={false}
         fullWidth
         PaperProps={{
           sx: {
             borderRadius: 2,
+            width: '100%',
+            maxWidth: { xs: '100vw', sm: 600, md: 900 },
+            m: { xs: 0, sm: 'auto' },
+            p: 0,
           }
         }}
       >
@@ -402,7 +406,14 @@ export default function AddToCollectionModal({
         </Button>
       </DialogTitle>
 
-      <DialogContent sx={{ py: 3, px: { xs: 1, sm: 3 } }}>
+      <DialogContent
+        sx={{
+          py: { xs: 2, sm: 3 },
+          px: { xs: 1, sm: 3 },
+          overflowX: 'hidden',
+          minWidth: 0,
+        }}
+      >
         {error && (
           <Alert severity="error" sx={{ mb: 3 }}>
             {error}
@@ -415,16 +426,17 @@ export default function AddToCollectionModal({
             sx={{
               display: 'flex',
               flexDirection: { xs: 'column', sm: 'row' },
-              gap: 2,
+              gap: { xs: 2, sm: 2 },
               mb: 3,
-              p: 2,
+              p: { xs: 1, sm: 2 },
               bgcolor: 'background.default',
               borderRadius: 2,
               alignItems: { xs: 'stretch', sm: 'flex-start' },
+              minWidth: 0,
             }}
           >
             {/* Text block: Title, Summary, Completed, Favorite */}
-            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
               <TextField
                 fullWidth
                 label={t('games_title') || 'Title'}
@@ -441,7 +453,16 @@ export default function AddToCollectionModal({
                 rows={4}
                 sx={{ minHeight: 120 }}
               />
-              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  gap: 2,
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  alignItems: { xs: 'center', sm: 'center' },
+                  justifyContent: { xs: 'center', sm: 'flex-start' },
+                  width: '100%',
+                }}
+              >
                 <FormControlLabel
                   control={<Checkbox checked={formData.completed} onChange={e => setFormData(prev => ({ ...prev, completed: e.target.checked }))} />}
                   label={<span>{t('games_completed') || 'Completed'} <span style={{ color: '#43A047', fontSize: 18, verticalAlign: 'middle' }}>✓</span></span>}
@@ -450,17 +471,29 @@ export default function AddToCollectionModal({
                   control={<Checkbox checked={formData.favorite} onChange={e => setFormData(prev => ({ ...prev, favorite: e.target.checked }))} />}
                   label={<span>{t('games_favorite') || 'Favorite'} <span style={{ color: '#E91E63', fontSize: 18, verticalAlign: 'middle' }}>❤</span></span>}
                 />
-                <Box sx={{ flex: 1, ml: 2 }}>
-                  <Typography variant="body2" sx={{ mb: 0.5 }}>{t('games_rating') || 'Rating'}: <b>{formData.rating}</b></Typography>
-                  <Slider
-                    value={formData.rating}
-                    min={1}
-                    max={100}
-                    step={1}
-                    onChange={(_, value) => setFormData(prev => ({ ...prev, rating: value as number }))}
-                    valueLabelDisplay="auto"
-                    sx={{ width: '100px', display: 'inline-block', verticalAlign: 'middle' }}
-                  />
+                <Box
+                  sx={{
+                    flex: 1,
+                    ml: { xs: 0, sm: 2 },
+                    mt: { xs: 1, sm: 0 },
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: { xs: 'center', sm: 'flex-start' },
+                    width: { xs: '100%', sm: 'auto' },
+                    maxWidth: '100%',
+                  }}
+                >
+                  <Typography variant="body2" sx={{ mb: 0.5, textAlign: { xs: 'center', sm: 'left' } }}>{t('games_rating') || 'Rating'}: <b>{formData.rating}</b></Typography>
+                  <Box sx={{ width: { xs: '70%', sm: '80px', md: '80px' }, maxWidth: '100%' }}>
+                    <Slider
+                      value={formData.rating}
+                      min={1}
+                      max={100}
+                      step={1}
+                      onChange={(_, value) => setFormData(prev => ({ ...prev, rating: value as number }))}
+                      valueLabelDisplay="auto"
+                    />
+                  </Box>
                 </Box>
               </Box>
             </Box>
@@ -471,39 +504,52 @@ export default function AddToCollectionModal({
                 flexDirection: { xs: 'row', sm: 'column' },
                 alignItems: 'center',
                 gap: 2,
-                minWidth: { xs: '100%', sm: 120 },
+                minWidth: { xs: 0, sm: 120 },
                 mt: { xs: 2, sm: 0 },
                 justifyContent: { xs: 'center', sm: 'flex-start' },
+                flexWrap: { xs: 'wrap', sm: 'nowrap' },
               }}
             >
-              <ImageCropperFull
-                value={cover}
-                onChange={(file: File | null, url: string | null) => { setCover(url); setCoverFile(file); }}
-                label={cover ? t('games_changeCover') : t('games_uploadCover')}
-                aspect={0.8}
-                cropShape="rect"
-                cropSize={400}
-                avatarProps={{ variant: 'rounded', sx: { width: 80, height: 100, bgcolor: 'grey.200', mb: 1 } }}
-                icon={<SportsEsportsIcon />}
-              />
-              <ImageCropperFull
-                value={screenshot}
-                onChange={(file: File | null, url: string | null) => { setScreenshot(url); setScreenshotFile(file); }}
-                label={screenshot ? t('games_changeScreenshot') : t('games_uploadScreenshot')}
-                aspect={1}
-                cropShape="rect"
-                cropSize={400}
-                avatarProps={{ variant: 'rounded', sx: { width: 80, height: 80, bgcolor: 'grey.200', mb: 1 } }}
-                icon={<SportsEsportsIcon />}
-              />
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 0 }}>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>{t('games_cover')}</Typography>
+                <ImageCropperFull
+                  value={cover}
+                  onChange={(file: File | null, url: string | null) => { setCover(url); setCoverFile(file); }}
+                  label={cover ? t('games_changeCover') : t('games_uploadCover')}
+                  aspect={0.8}
+                  cropShape="rect"
+                  cropSize={400}
+                  avatarProps={{ variant: 'rounded', sx: { width: 80, height: 100, bgcolor: 'grey.200', mb: 1 } }}
+                  icon={<SportsEsportsIcon />}
+                />
+              </Box>
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 0 }}>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>{t('games_screenshot')}</Typography>
+                <ImageCropperFull
+                  value={screenshot}
+                  onChange={(file: File | null, url: string | null) => { setScreenshot(url); setScreenshotFile(file); }}
+                  label={screenshot ? t('games_changeScreenshot') : t('games_uploadScreenshot')}
+                  aspect={1}
+                  cropShape="rect"
+                  cropSize={400}
+                  avatarProps={{ variant: 'rounded', sx: { width: 80, height: 80, bgcolor: 'grey.200', mb: 1 } }}
+                  icon={<SportsEsportsIcon />}
+                />
+              </Box>
             </Box>
           </Box>
         )}
 
         {/* Multi-Photo Upload & Crop (middle block): Always show */}
-        <Box sx={{ mb: 3 }}>
+        <Box sx={{ mb: 3, minWidth: 0 }}>
           <Typography variant="subtitle2" sx={{ mb: 1 }}>{t('games_photos')}</Typography>
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{
+            display: 'flex',
+            gap: 2,
+            flexWrap: { xs: 'wrap', sm: 'nowrap' },
+            minWidth: 0,
+            justifyContent: { xs: 'center', sm: 'flex-start' },
+          }}>
             {photos.map((photo, idx) => {
               // Only show the slot if:
               // - it's the first slot
@@ -511,7 +557,7 @@ export default function AddToCollectionModal({
               // - or this slot is already filled
               if (idx === 0 || photos[idx - 1]) {
                 return (
-                  <Box key={idx} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <Box key={idx} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 0 }}>
                     <ImageCropperFull
                       value={photo}
                       onChange={(file: File | null, url: string | null) => {
@@ -542,9 +588,9 @@ export default function AddToCollectionModal({
           </Box>
         </Box>
 
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
             {/* Console Selection */}
-            <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' }, minWidth: 0 }}>
               <FormControl fullWidth required>
                 <InputLabel>{t('games_console')}</InputLabel>
                 <Select
@@ -596,6 +642,7 @@ export default function AddToCollectionModal({
                 InputProps={{
                   startAdornment: <Typography variant="body2" sx={{ mr: 1 }}>$</Typography>,
                 }}
+                sx={{ minWidth: 0 }}
               />
 
               <TextField
@@ -607,6 +654,7 @@ export default function AddToCollectionModal({
                 InputLabelProps={{
                   shrink: true,
                 }}
+                sx={{ minWidth: 0 }}
               />
             </Box>
 
@@ -618,6 +666,7 @@ export default function AddToCollectionModal({
               value={formData.notes}
               onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
               placeholder={t('games_notes_placeholder')}
+              sx={{ minWidth: 0 }}
             />
 
             {/* Advanced Edit Block (edit mode only) */}
@@ -636,7 +685,7 @@ export default function AddToCollectionModal({
           </Box>
       </DialogContent>
 
-      <DialogActions sx={{ px: { xs: 1, sm: 3 }, py: 2, borderTop: 1, borderColor: 'divider', flexWrap: 'wrap', gap: 1 }}>
+      <DialogActions sx={{ px: { xs: 1, sm: 3 }, py: 2, borderTop: 1, borderColor: 'divider', flexWrap: 'wrap', gap: 1, minWidth: 0 }}>
         <Button onClick={onClose} disabled={loading}>
           {t("common_cancel")}
         </Button>
