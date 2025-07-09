@@ -117,16 +117,33 @@ const ImageCropperFull: React.FC<ImageCropperFullProps> = ({
     setFile(null);
   };
 
-  // Helper to get a stable cropper preview URL and clean up previous
-  const getCropperPreviewUrl = (file: File) => {
+
+  // Manage cropper preview URL for the current file
+  const [cropperPreviewUrl, setCropperPreviewUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!file) {
+      if (cropperPreviewUrlRef.current) {
+        URL.revokeObjectURL(cropperPreviewUrlRef.current);
+        cropperPreviewUrlRef.current = null;
+      }
+      setCropperPreviewUrl(null);
+      return;
+    }
+    // Clean up previous
     if (cropperPreviewUrlRef.current) {
       URL.revokeObjectURL(cropperPreviewUrlRef.current);
       cropperPreviewUrlRef.current = null;
     }
     const url = URL.createObjectURL(file);
     cropperPreviewUrlRef.current = url;
-    return url;
-  };
+    setCropperPreviewUrl(url);
+    return () => {
+      if (cropperPreviewUrlRef.current) {
+        URL.revokeObjectURL(cropperPreviewUrlRef.current);
+        cropperPreviewUrlRef.current = null;
+      }
+    };
+  }, [file]);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mr: 2 }}>
@@ -155,10 +172,10 @@ const ImageCropperFull: React.FC<ImageCropperFullProps> = ({
       />
       <Dialog open={cropping && !!file} onClose={handleCancel} maxWidth="xs" fullWidth>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', p: 2 }}>
-          {file && (
+          {file && cropperPreviewUrl && (
             <Box sx={{ position: 'relative', width: cropSize, height: cropSize }}>
               <Cropper
-                image={getCropperPreviewUrl(file)}
+                image={cropperPreviewUrl}
                 crop={crop}
                 zoom={zoom}
                 aspect={aspect}
