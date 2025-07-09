@@ -11,7 +11,6 @@ import {
   MenuItem,
   TextField,
   Button,
-  // @ts-ignore
   Grid as MuiGrid,
   CircularProgress,
   Card,
@@ -20,19 +19,10 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemAvatar,
-  ListItemText,
   Avatar,
   Rating,
   IconButton,
-  Badge,
-  Skeleton,
   Paper,
-  ImageList,
-  ImageListItem
 } from "@mui/material";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
@@ -49,10 +39,12 @@ import { useRouter } from "next/navigation";
 import { useTheme } from '@mui/material/styles';
 import { useMediaQuery } from '@mui/material';
 import { useTranslations } from "@/hooks/useTranslations";
+
 import { MainLayout } from "@/components/MainLayout";
 import { GameDetailsModal } from "@/components/GameDetailsModal";
 import AddToCollectionModal from "@/components/AddToCollectionModal";
-// --- COMPONENT ---
+import EnhancedSearchResultsModal from "@/components/EnhancedSearchResultsModal";
+
 
 export default function GamesPage() {
   const { t, locale } = useTranslations();
@@ -138,7 +130,6 @@ export default function GamesPage() {
       setDeletingGameId(null);
     }
   };
-
 
 
 
@@ -316,10 +307,16 @@ export default function GamesPage() {
         {/* Compact Search Controls */}
         <Card sx={{ mb: 2 }}>
           <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+            {/* Show search error if present */}
+            {searchError && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {searchError}
+              </Alert>
+            )}
             <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, alignItems: 'center' }}>
               {/* Console Selection */}
-              <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 30%' } }}>
-                <FormControl fullWidth size="small">
+              <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 30%' }, minWidth: { xs: 200, sm: 180 }, maxWidth: { xs: '100%', sm: 300 } }}>
+                <FormControl fullWidth size="small" sx={{ minWidth: { xs: 200, sm: 180 } }}>
                   <InputLabel id="console-select-label">
                     {t("games_selectConsole")}
                   </InputLabel>
@@ -329,6 +326,7 @@ export default function GamesPage() {
                     label={t("games_selectConsole")}
                     onChange={(e) => setSelectedConsole(e.target.value)}
                     disabled={loading}
+                    sx={{ minWidth: { xs: 120, sm: 180 }, width: '100%' }}
                   >
                     {userConsoles.map((userConsole) => (
                       <MenuItem key={userConsole.id} value={String(userConsole.console.id)}>
@@ -348,7 +346,7 @@ export default function GamesPage() {
               </Box>
 
               {/* Game Search */}
-              <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 40%' } }}>
+              <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 40%' }, minWidth: { xs: 200, sm: 240 }, maxWidth: { xs: '100%', sm: 400 } }}>
                 <TextField
                   fullWidth
                   size="small"
@@ -358,6 +356,7 @@ export default function GamesPage() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleSearchKeyDown}
                   disabled={loading || !selectedConsole}
+                  sx={{ minWidth: { xs: 200, sm: 240 } }}
                 />
               </Box>
 
@@ -418,11 +417,19 @@ export default function GamesPage() {
                       <Card variant="outlined" sx={{ p: 2, display: 'flex', gap: 2 }}>
                         <Box sx={{ cursor: game.photos?.length ? 'pointer' : 'default', minWidth: 80 }} onClick={() => game.photos?.length && openPhotoGallery(game.photos, 0)}>
                           <Avatar
-                            src={game.photos?.[0] || undefined}
+                            src={
+                              game.cover
+                                ? game.cover
+                                : game.photos?.[0]
+                                  ? game.photos[0]
+                                  : game.screenshot
+                                    ? game.screenshot
+                                    : undefined
+                            }
                             variant="rounded"
                             sx={{ width: 80, height: 80, bgcolor: 'grey.200' }}
                           >
-                            {!game.photos?.[0] && <SportsEsportsIcon />}
+                            {!(game.cover || game.photos?.[0] || game.screenshot) && <SportsEsportsIcon />}
                           </Avatar>
                           {game.photos?.length > 1 && (
                             <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', width: '100%' }}>
@@ -435,7 +442,28 @@ export default function GamesPage() {
                           <Typography variant="body2" color="text.secondary">{platformStr}</Typography>
                           {game.condition && <Typography variant="body2" color="text.secondary">{t('games_condition') || 'Condition'}: {game.condition}</Typography>}
                           {game.notes && <Typography variant="body2" color="text.secondary">{t('games_notes') || 'Notes'}: {game.notes}</Typography>}
-                          {game.purchaseDate && <Typography variant="body2" color="text.secondary">{t('games_purchaseDate') || 'Purchase Date'}: {game.purchaseDate}</Typography>}
+                          {/* Show rating as stars if available */}
+                          {getGameRating(game) > 0 && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                              <Rating value={getGameRating(game)} precision={0.1} size="small" readOnly />
+                              <Typography variant="caption" color="text.secondary">
+                                ({getGameRating(game).toFixed(1)})
+                              </Typography>
+                            </Box>
+                          )}
+                          {/* Favorite and Completed status as icons */}
+                          <Box sx={{ display: 'flex', gap: 1, mb: 0.5, alignItems: 'center' }}>
+                            {game.favorite && (
+                              <span title={t('games_favorite') || 'Favorite'} style={{ color: '#E91E63', fontSize: 22, lineHeight: 1 }}>
+                                ❤
+                              </span>
+                            )}
+                            {game.completed && (
+                              <span title={t('games_completed') || 'Completed'} style={{ color: '#43A047', fontSize: 22, lineHeight: 1 }}>
+                                ✓
+                              </span>
+                            )}
+                          </Box>
                           <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
                             <Button size="small" onClick={() => handleEditGame(game)}>{t("common_edit")}</Button>
                             <Button size="small" color="error" onClick={() => handleDeleteGame(game)} disabled={deletingGameId === game.id}>
@@ -502,188 +530,21 @@ export default function GamesPage() {
           </Alert>
         </Snackbar>
 
-        {/* Enhanced Search Results Modal */}
-        <Dialog 
-          open={resultsDialogOpen} 
+        {/* Enhanced Search Results Modal (extracted) */}
+        <EnhancedSearchResultsModal
+          open={resultsDialogOpen}
           onClose={() => setResultsDialogOpen(false)}
-          maxWidth="lg"
-          fullWidth
-          fullScreen={isMobile}
-          PaperProps={{
-            sx: {
-              minHeight: { xs: '100%', sm: '70vh' },
-              maxHeight: { xs: '100%', sm: '90vh' },
-              backgroundColor: theme.palette.background.default
-            }
-          }}
-        >
-          <DialogTitle sx={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            pb: 1,
-            borderBottom: 1,
-            borderColor: 'divider'
-          }}>
-            <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                <SportsEsportsIcon color="primary" />
-                {t("games_searchResults") || 'Search Results'}
-              </Box>
-              {searchResults && (
-                <Typography variant="body2" color="text.secondary">
-                  {searchResults.games.length} {t("games_foundFor") || 'found for'} "{searchResults.searchQuery}" 
-                  {" "}{t("games_on") || 'on'} {searchResults.console.name}
-                </Typography>
-              )}
-            </Box>
-            <IconButton onClick={() => setResultsDialogOpen(false)} size="large">
-              <CloseIcon />
-            </IconButton>
-          </DialogTitle>
-          
-          <DialogContent sx={{ px: { xs: 2, sm: 3 }, py: 2 }}>
-            {searchResults && searchResults.games.length > 0 ? (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {searchResults.games.map((game: any, index: number) => (
-                  <Paper 
-                    key={game.id}
-                    elevation={2}
-                    sx={{ 
-                      p: 2,
-                      borderRadius: 2,
-                      transition: 'all 0.2s ease-in-out',
-                      '&:hover': {
-                        elevation: 4,
-                        transform: 'translateY(-2px)'
-                      }
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-                      {/* Game Cover */}
-                      <Box sx={{ flexShrink: 0 }}>
-                        <Avatar
-                          src={getGameCoverUrl(game.cover) || undefined}
-                          variant="rounded"
-                          sx={{ 
-                            width: { xs: 80, sm: 100 }, 
-                            height: { xs: 100, sm: 130 },
-                            bgcolor: theme.palette.mode === 'dark' ? 'grey.800' : 'grey.200'
-                          }}
-                        >
-                          <SportsEsportsIcon sx={{ fontSize: { xs: '2rem', sm: '2.5rem' } }} />
-                        </Avatar>
-                      </Box>
-                      
-                      {/* Game Information */}
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        {/* Title and Rating */}
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, flexWrap: 'wrap' }}>
-                          <Typography variant="h6" fontWeight="bold" sx={{ mr: 1 }}>
-                            {game.name}
-                          </Typography>
-                          {getGameRating(game) > 0 && (
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                              <Rating 
-                                value={getGameRating(game)} 
-                                precision={0.1} 
-                                size="small" 
-                                readOnly 
-                              />
-                              <Typography variant="caption" color="text.secondary">
-                                ({getGameRating(game).toFixed(1)})
-                              </Typography>
-                            </Box>
-                          )}
-                        </Box>
-                        
-                        {/* Summary */}
-                        {game.summary && (
-                          <Typography 
-                            variant="body2" 
-                            color="text.secondary" 
-                            sx={{ 
-                              mb: 2,
-                              display: '-webkit-box',
-                              WebkitLineClamp: { xs: 2, sm: 3 },
-                              WebkitBoxOrient: 'vertical',
-                              overflow: 'hidden'
-                            }}
-                          >
-                            {game.summary}
-                          </Typography>
-                        )}
-                        
-                        {/* Metadata Chips */}
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 2 }}>
-                          {game.genres?.slice(0, 3).map((genre: any) => (
-                            <Chip 
-                              key={genre.id} 
-                              label={genre.name} 
-                              size="small" 
-                              variant="outlined"
-                              color="primary"
-                            />
-                          ))}
-                          {game.first_release_date && (
-                            <Chip 
-                              icon={<CalendarTodayIcon />}
-                              label={formatReleaseDate(game.first_release_date)} 
-                              size="small" 
-                              variant="outlined"
-                              color="secondary"
-                            />
-                          )}
-                          {game.involved_companies && game.involved_companies.length > 0 && (
-                            <Chip 
-                              icon={<BusinessIcon />}
-                              label={formatCompanies(game.involved_companies)} 
-                              size="small" 
-                              variant="outlined"
-                              color="default"
-                            />
-                          )}
-                        </Box>
-
-                        {/* Action Buttons */}
-                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            startIcon={<VisibilityIcon />}
-                            onClick={() => handleViewGameDetails(game)}
-                            sx={{ flexShrink: 0 }}
-                          >
-                            {t("games_viewDetails")}
-                          </Button>
-                          <Button
-                            variant="contained"
-                            size="small"
-                            startIcon={<AddCircleIcon />}
-                            onClick={() => handleAddGameToCollection(game)}
-                            sx={{ flexShrink: 0 }}
-                          >
-                            {t("games_addToCollection")}
-                          </Button>
-                        </Box>
-                      </Box>
-                    </Box>
-                  </Paper>
-                ))}
-              </Box>
-            ) : searchResults ? (
-              <Box sx={{ textAlign: 'center', py: 6 }}>
-                <SportsEsportsIcon sx={{ fontSize: '4rem', color: 'text.disabled', mb: 2 }} />
-                <Typography variant="h6" color="text.secondary" gutterBottom>
-                  {t("games_noGamesFound") || 'No games found'}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {t("games_tryDifferentSearch") || 'Try a different search'}
-                </Typography>
-              </Box>
-            ) : null}
-          </DialogContent>
-        </Dialog>
+          searchResults={searchResults}
+          isMobile={isMobile}
+          theme={theme}
+          t={t}
+          getGameCoverUrl={getGameCoverUrl}
+          getGameRating={getGameRating}
+          formatReleaseDate={formatReleaseDate}
+          formatCompanies={formatCompanies}
+          handleViewGameDetails={handleViewGameDetails}
+          handleAddGameToCollection={handleAddGameToCollection}
+        />
 
         {/* Game Details Modal Component */}
         <GameDetailsModal

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { uploadImageToS3 } from '../utils/s3Uploader';
+import ImageCropperFull from './ImageCropperFull';
 import {
   Dialog,
   DialogTitle,
@@ -19,7 +20,8 @@ import {
   CircularProgress,
   IconButton,
   FormControlLabel,
-  Checkbox
+  Checkbox,
+  Slider
 } from '@mui/material';
 import Cropper from 'react-easy-crop';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
@@ -74,72 +76,28 @@ export default function AddToCollectionModal({
     notes: '',
     completed: false,
     favorite: false,
+    rating: 50,
   });
-  // Cover and screenshot upload state
+  // Cover, screenshot, and photos state (all use ImageCropperFull now)
   const [cover, setCover] = useState<string | null>(null);
-  const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
-  const [coverCrop, setCoverCrop] = useState({ x: 0, y: 0 });
-  const [coverZoom, setCoverZoom] = useState(1);
-  const [coverCroppedAreaPixels, setCoverCroppedAreaPixels] = useState<any>(null);
-  const [coverCropping, setCoverCropping] = useState(false);
-  const coverInputRef = useRef<HTMLInputElement | null>(null);
-
   const [screenshot, setScreenshot] = useState<string | null>(null);
-  const [screenshotPreviewUrl, setScreenshotPreviewUrl] = useState<string | null>(null);
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
-  const [screenshotCrop, setScreenshotCrop] = useState({ x: 0, y: 0 });
-  const [screenshotZoom, setScreenshotZoom] = useState(1);
-  const [screenshotCroppedAreaPixels, setScreenshotCroppedAreaPixels] = useState<any>(null);
-  const [screenshotCropping, setScreenshotCropping] = useState(false);
-  const screenshotInputRef = useRef<HTMLInputElement | null>(null);
-  // Support up to 5 photos
   const [photos, setPhotos] = useState<(string | null)[]>([null, null, null, null, null]);
-  const [selectedImages, setSelectedImages] = useState<(File | null)[]>([null, null, null, null, null]);
-  const [croppingIndex, setCroppingIndex] = useState<number | null>(null);
-
-  // Image upload/crop state (per slot)
-  const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+  const [photoFiles, setPhotoFiles] = useState<(File | null)[]>([null, null, null, null, null]);
   const [uploading, setUploading] = useState(false);
-  const inputFileRefs = useRef<(HTMLInputElement | null)[]>([]);
-  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-    // Clean up cover preview blob URLs
-  useEffect(() => {
-    if (coverFile) {
-      const url = URL.createObjectURL(coverFile);
-      setCoverPreviewUrl(url);
-      return () => {
-        URL.revokeObjectURL(url);
-      };
-    } else {
-      setCoverPreviewUrl(null);
-    }
-  }, [coverFile]);
-
-  // Clean up screenshot preview blob URLs
-  useEffect(() => {
-    if (screenshotFile) {
-      const url = URL.createObjectURL(screenshotFile);
-      setScreenshotPreviewUrl(url);
-      return () => {
-        URL.revokeObjectURL(url);
-      };
-    } else {
-      setScreenshotPreviewUrl(null);
-    }
-  }, [screenshotFile]);
+  const inputFileRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Update form fields when editing or selectedConsole changes
+  // Only update consoleId from selectedConsole if not editing an existing game
   useEffect(() => {
-    if (selectedConsole) {
+    if (selectedConsole && !(game && game.id)) {
       setFormData(prev => ({ ...prev, consoleId: selectedConsole.console?.id ? String(selectedConsole.console.id) : '' }));
     }
-  }, [selectedConsole]);
+  }, [selectedConsole, game]);
 
   useEffect(() => {
     // If editing or manual add, prefill fields
@@ -150,15 +108,18 @@ export default function AddToCollectionModal({
         summary: game.summary || '',
         completed: !!game.completed,
         favorite: !!game.favorite,
+        rating: typeof game.rating === 'number' ? game.rating : 50,
+        consoleId: game.consoleIds && game.consoleIds.length > 0 ? String(game.consoleIds[0]) : prev.consoleId,
       }));
       setCover(game.cover || null);
       setScreenshot(game.screenshot || null);
     } else if (!game) {
-      setFormData(prev => ({ ...prev, title: '', summary: '', completed: false, favorite: false }));
+      setFormData(prev => ({ ...prev, title: '', summary: '', completed: false, favorite: false, rating: 50 }));
       setCover(null);
       setScreenshot(null);
     }
   }, [game]);
+
 
   const handleSubmit = async () => {
     if (!formData.consoleId) {
@@ -175,6 +136,7 @@ export default function AddToCollectionModal({
         summary: formData.summary,
         completed: formData.completed,
         favorite: formData.favorite,
+        rating: formData.rating,
         consoleId: Number(formData.consoleId),
         condition: formData.condition,
         price: formData.price || null,
@@ -184,11 +146,11 @@ export default function AddToCollectionModal({
       let response;
 
 
-      // --- CREATE GAME FIRST (no cover/screenshot upload yet) ---
+      // --- CREATE OR EDIT GAME FIRST (no cover/screenshot upload yet) ---
       if (game && game.id) {
-        payload.igdbGameId = game.id;
-        response = await fetch('/api/games/add-to-collection', {
-          method: 'POST',
+        // Editing existing game
+        response = await fetch(`/api/games/${game.id}/edit`, {
+          method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
@@ -213,13 +175,7 @@ export default function AddToCollectionModal({
       let coverUrl = null;
       if (coverFile && cover) {
         setUploading(true);
-        let blob: Blob;
-        if (coverCroppedAreaPixels) {
-          blob = await getCroppedImg(coverFile, coverCroppedAreaPixels, 400);
-        } else {
-          blob = coverFile as Blob;
-        }
-        const fileToUpload = blob instanceof File ? blob : new File([blob], 'cover.jpg', { type: blob.type || 'image/jpeg' });
+        const fileToUpload = coverFile instanceof File ? coverFile : new File([coverFile], 'cover.jpg', { type: coverFile.type || 'image/jpeg' });
         coverUrl = await uploadImageToS3({
           file: fileToUpload,
           userId: newGame.userId,
@@ -228,17 +184,10 @@ export default function AddToCollectionModal({
         });
       }
 
-      // --- WORKING, photo-like logic for screenshot ---
       let screenshotUrl = null;
       if (screenshotFile && screenshot) {
         setUploading(true);
-        let blob: Blob;
-        if (screenshotCroppedAreaPixels) {
-          blob = await getCroppedImg(screenshotFile, screenshotCroppedAreaPixels, 400);
-        } else {
-          blob = screenshotFile as Blob;
-        }
-        const fileToUpload = blob instanceof File ? blob : new File([blob], 'screenshot.jpg', { type: blob.type || 'image/jpeg' });
+        const fileToUpload = screenshotFile instanceof File ? screenshotFile : new File([screenshotFile], 'screenshot.jpg', { type: screenshotFile.type || 'image/jpeg' });
         screenshotUrl = await uploadImageToS3({
           file: fileToUpload,
           userId: newGame.userId,
@@ -247,22 +196,12 @@ export default function AddToCollectionModal({
         });
       }
 
-
-
       // 4. Upload photos to S3 (one by one) using reusable uploader
       let uploadedUrls: string[] = [];
       for (let i = 0; i < 5; i++) {
-        if (selectedImages[i]) {
+        if (photoFiles[i]) {
           setUploading(true);
-          // Crop if needed (assume croppedAreaPixels is set for the current slot)
-          let blob: Blob;
-          if (croppingIndex === i && croppedAreaPixels) {
-            blob = await getCroppedImg(selectedImages[i] as File, croppedAreaPixels, 500);
-          } else {
-            blob = selectedImages[i] as Blob;
-          }
-          // Always wrap as File for upload
-          const fileToUpload = blob instanceof File ? blob : new File([blob], `game-photo_${i + 1}.jpg`, { type: blob.type || 'image/jpeg' });
+          const fileToUpload = photoFiles[i] instanceof File ? photoFiles[i] : new File([photoFiles[i] as Blob], `game-photo_${i + 1}.jpg`, { type: (photoFiles[i] as Blob).type || 'image/jpeg' });
           const url = await uploadImageToS3({
             file: fileToUpload,
             userId: newGame.userId,
@@ -302,9 +241,10 @@ export default function AddToCollectionModal({
         notes: '',
         completed: false,
         favorite: false,
+        rating: 50,
       });
       setPhotos([null, null, null, null, null]);
-      setSelectedImages([null, null, null, null, null]);
+      setPhotoFiles([null, null, null, null, null]);
       setCover(null);
       setCoverFile(null);
       setScreenshot(null);
@@ -318,43 +258,7 @@ export default function AddToCollectionModal({
     }
   };
 
-  // Cropper helpers
-  const onCropComplete = (_croppedArea: any, croppedAreaPixels: any) => {
-    setCroppedAreaPixels(croppedAreaPixels);
-  };
 
-  // Utility to crop and return a blob
-  async function getCroppedImg(file: File, crop: { x: number; y: number; width: number; height: number }, size: number): Promise<Blob> {
-    return new Promise((resolve, reject) => {
-      const image = new window.Image();
-      const url = URL.createObjectURL(file);
-      image.src = url;
-      image.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return reject(new Error('No canvas context'));
-        ctx.drawImage(
-          image,
-          crop.x,
-          crop.y,
-          crop.width,
-          crop.height,
-          0,
-          0,
-          size,
-          size
-        );
-        canvas.toBlob(blob => {
-          URL.revokeObjectURL(url);
-          if (!blob) return reject(new Error('Failed to crop image'));
-          resolve(blob);
-        }, 'image/jpeg', 0.95);
-      };
-      image.onerror = reject;
-    });
-  }
 
   const getGameCoverUrl = (cover: any) => {
     if (!cover?.image_id) return null;
@@ -399,14 +303,14 @@ export default function AddToCollectionModal({
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <AddCircleIcon color="primary" />
-          {t("games_addToCollection")}
+          {game && game.id ? t("common_edit") : t("games_addToCollection")}
         </Box>
         <Button onClick={onClose} size="small" sx={{ minWidth: 'auto' }}>
           <CloseIcon />
         </Button>
       </DialogTitle>
 
-      <DialogContent sx={{ py: 3 }}>
+      <DialogContent sx={{ py: 3, px: { xs: 1, sm: 3 } }}>
         {error && (
           <Alert severity="error" sx={{ mb: 3 }}>
             {error}
@@ -415,64 +319,26 @@ export default function AddToCollectionModal({
 
         {/* Game Info (manual add/edit only) */}
         {(!game || !game.igdbGameId || game.id) && (
-          <Box sx={{ display: 'flex', gap: 2, mb: 3, p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
-            {/* Cover uploader/cropper */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mr: 2 }}>
-              <Avatar
-                src={coverPreviewUrl || cover || undefined}
-                variant="rounded"
-                sx={{ width: 80, height: 100, bgcolor: 'grey.200', mb: 1 }}
-              >
-                <SportsEsportsIcon />
-              </Avatar>
-              <Button size="small" variant="outlined" onClick={() => coverInputRef.current?.click()}>{cover ? 'Change Cover' : 'Upload Cover'}</Button>
-              <input
-                ref={coverInputRef}
-                type="file"
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={e => {
-                  if (e.target.files && e.target.files[0]) {
-                    setCoverFile(e.target.files[0]);
-                    setCoverCropping(true);
-                  }
-                }}
-              />
-              {coverCropping && coverFile && (
-                <Box sx={{ position: 'relative', width: 200, height: 250, mt: 2 }}>
-                  <Cropper
-                    image={coverPreviewUrl!}
-                    crop={coverCrop}
-                    zoom={coverZoom}
-                    aspect={0.8}
-                    cropShape="rect"
-                    showGrid={true}
-                    onCropChange={setCoverCrop}
-                    onZoomChange={setCoverZoom}
-                    onCropComplete={(_c, area) => setCoverCroppedAreaPixels(area)}
-                  />
-                  <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                    <Button size="small" onClick={() => { setCoverFile(null); setCoverCropping(false); }}>Cancel</Button>
-                    <Button size="small" variant="contained" onClick={async () => {
-                      setCoverCropping(false);
-                      const blob = await getCroppedImg(coverFile, coverCroppedAreaPixels, 400);
-                      const file = new File([blob], 'cover.jpg', { type: 'image/jpeg' });
-                      const url = URL.createObjectURL(file);
-                      setCover(url);
-                      setCoverFile(file);
-                    }}>Crop</Button>
-                  </Box>
-                </Box>
-              )}
-            </Box>
-            <Box sx={{ flex: 1 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: 2,
+              mb: 3,
+              p: 2,
+              bgcolor: 'background.default',
+              borderRadius: 2,
+              alignItems: { xs: 'stretch', sm: 'flex-start' },
+            }}
+          >
+            {/* Text block: Title, Summary, Completed, Favorite */}
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
               <TextField
                 fullWidth
                 label={t('games_title') || 'Title'}
                 value={formData.title}
                 onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
                 required
-                sx={{ mb: 2 }}
               />
               <TextField
                 fullWidth
@@ -480,154 +346,107 @@ export default function AddToCollectionModal({
                 value={formData.summary}
                 onChange={e => setFormData(prev => ({ ...prev, summary: e.target.value }))}
                 multiline
-                rows={2}
-                sx={{ mb: 2 }}
+                rows={4}
+                sx={{ minHeight: 120 }}
               />
-              {/* Screenshot uploader/cropper */}
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2">Screenshot</Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Avatar src={screenshotPreviewUrl || screenshot || undefined} variant="rounded" sx={{ width: 80, height: 80, bgcolor: 'grey.200' }}>
-                    <SportsEsportsIcon />
-                  </Avatar>
-                  <Button size="small" variant="outlined" onClick={() => screenshotInputRef.current?.click()}>{screenshot ? 'Change Screenshot' : 'Upload Screenshot'}</Button>
-                  <input
-                    ref={screenshotInputRef}
-                    type="file"
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                    onChange={e => {
-                      if (e.target.files && e.target.files[0]) {
-                        setScreenshotFile(e.target.files[0]);
-                        setScreenshotCropping(true);
-                      }
-                    }}
-                  />
-                </Box>
-                {screenshotCropping && screenshotFile && (
-                  <Box sx={{ position: 'relative', width: 200, height: 200, mt: 2 }}>
-                    <Cropper
-                      image={screenshotPreviewUrl!}
-                      crop={screenshotCrop}
-                      zoom={screenshotZoom}
-                      aspect={1}
-                      cropShape="rect"
-                      showGrid={true}
-                      onCropChange={setScreenshotCrop}
-                      onZoomChange={setScreenshotZoom}
-                      onCropComplete={(_c, area) => setScreenshotCroppedAreaPixels(area)}
-                    />
-                    <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                      <Button size="small" onClick={() => { setScreenshotFile(null); setScreenshotCropping(false); }}>Cancel</Button>
-                      <Button size="small" variant="contained" onClick={async () => {
-                        setScreenshotCropping(false);
-                        const blob = await getCroppedImg(screenshotFile, screenshotCroppedAreaPixels, 400);
-                        const file = new File([blob], 'screenshot.jpg', { type: 'image/jpeg' });
-                        const url = URL.createObjectURL(file);
-                        setScreenshot(url);
-                        setScreenshotFile(file);
-                      }}>Crop</Button>
-                    </Box>
-                  </Box>
-                )}
-              </Box>
-              <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                 <FormControlLabel
                   control={<Checkbox checked={formData.completed} onChange={e => setFormData(prev => ({ ...prev, completed: e.target.checked }))} />}
-                  label={t('games_completed') || 'Completed'}
+                  label={<span>{t('games_completed') || 'Completed'} <span style={{ color: '#43A047', fontSize: 18, verticalAlign: 'middle' }}>✓</span></span>}
                 />
                 <FormControlLabel
                   control={<Checkbox checked={formData.favorite} onChange={e => setFormData(prev => ({ ...prev, favorite: e.target.checked }))} />}
-                  label={t('games_favorite') || 'Favorite'}
+                  label={<span>{t('games_favorite') || 'Favorite'} <span style={{ color: '#E91E63', fontSize: 18, verticalAlign: 'middle' }}>❤</span></span>}
                 />
+                <Box sx={{ flex: 1, ml: 2 }}>
+                  <Typography variant="body2" sx={{ mb: 0.5 }}>{t('games_rating') || 'Rating'}: <b>{formData.rating}</b></Typography>
+                  <Slider
+                    value={formData.rating}
+                    min={1}
+                    max={100}
+                    step={1}
+                    onChange={(_, value) => setFormData(prev => ({ ...prev, rating: value as number }))}
+                    valueLabelDisplay="auto"
+                    sx={{ width: '100px', display: 'inline-block', verticalAlign: 'middle' }}
+                  />
+                </Box>
               </Box>
+            </Box>
+            {/* Images block: Cover and Screenshot */}
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: { xs: 'row', sm: 'column' },
+                alignItems: 'center',
+                gap: 2,
+                minWidth: { xs: '100%', sm: 120 },
+                mt: { xs: 2, sm: 0 },
+                justifyContent: { xs: 'center', sm: 'flex-start' },
+              }}
+            >
+              <ImageCropperFull
+                value={cover}
+                onChange={(file: File | null, url: string | null) => { setCover(url); setCoverFile(file); }}
+                label={cover ? 'Change Cover' : 'Upload Cover'}
+                aspect={0.8}
+                cropShape="rect"
+                cropSize={400}
+                avatarProps={{ variant: 'rounded', sx: { width: 80, height: 100, bgcolor: 'grey.200', mb: 1 } }}
+                icon={<SportsEsportsIcon />}
+              />
+              <ImageCropperFull
+                value={screenshot}
+                onChange={(file: File | null, url: string | null) => { setScreenshot(url); setScreenshotFile(file); }}
+                label={screenshot ? 'Change Screenshot' : 'Upload Screenshot'}
+                aspect={1}
+                cropShape="rect"
+                cropSize={400}
+                avatarProps={{ variant: 'rounded', sx: { width: 80, height: 80, bgcolor: 'grey.200', mb: 1 } }}
+                icon={<SportsEsportsIcon />}
+              />
             </Box>
           </Box>
         )}
 
-        {/* Multi-Photo Upload & Crop */}
+        {/* Multi-Photo Upload & Crop (progressive slots) */}
         <Box sx={{ mb: 3 }}>
           <Typography variant="subtitle2" sx={{ mb: 1 }}>{t('games_photos') || 'Photos (up to 5)'}</Typography>
           <Box sx={{ display: 'flex', gap: 2 }}>
-            {photos.map((photo, idx) => (
-              <Box key={idx} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                {photo ? (
-                  <Box sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Avatar src={photo} sx={{ width: 80, height: 80 }} />
-                    <IconButton onClick={() => {
-                      const newPhotos = [...photos];
-                      newPhotos[idx] = null;
-                      setPhotos(newPhotos);
-                      const newSelected = [...selectedImages];
-                      newSelected[idx] = null;
-                      setSelectedImages(newSelected);
-                    }}><DeleteIcon /></IconButton>
-                  </Box>
-                ) : (
-                  <Button
-                    variant="outlined"
-                    startIcon={<PhotoCameraIcon />}
-                    onClick={() => inputFileRefs.current[idx]?.click()}
-                    disabled={uploading}
-                  >
-                    {t('games_uploadPhoto') || 'Upload Photo'}
-                  </Button>
-                )}
-                <input
-                  ref={(el) => {
-                    inputFileRefs.current[idx] = el;
-                  }}
-                  type="file"
-                  accept="image/*"
-                  style={{ display: 'none' }}
-                  onChange={e => {
-                    if (e.target.files && e.target.files[0]) {
-                      const file = e.target.files[0];
-                      const newSelected = [...selectedImages];
-                      newSelected[idx] = file;
-                      setSelectedImages(newSelected);
-                      setCroppingIndex(idx);
-                    }
-                  }}
-                />
-                {/* Cropper for this slot */}
-                {croppingIndex === idx && selectedImages[idx] && (
-                  <Box sx={{ position: 'relative', width: 300, height: 300, mt: 2 }}>
-                    <Cropper
-                      image={URL.createObjectURL(selectedImages[idx]!)}
-                      crop={crop}
-                      zoom={zoom}
+            {photos.map((photo, idx) => {
+              // Only show the slot if:
+              // - it's the first slot
+              // - or the previous slot is filled
+              // - or this slot is already filled
+              if (idx === 0 || photos[idx - 1]) {
+                return (
+                  <Box key={idx} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <ImageCropperFull
+                      value={photo}
+                      onChange={(file: File | null, url: string | null) => {
+                        setPhotos(prev => {
+                          const arr = [...prev];
+                          arr[idx] = url;
+                          return arr;
+                        });
+                        setPhotoFiles(prev => {
+                          const arr = [...prev];
+                          arr[idx] = file;
+                          return arr;
+                        });
+                      }}
+                      label={photo ? 'Change Photo' : 'Upload Photo'}
                       aspect={1}
                       cropShape="rect"
-                      showGrid={true}
-                      onCropChange={setCrop}
-                      onZoomChange={setZoom}
-                      onCropComplete={onCropComplete}
+                      cropSize={500}
+                      avatarProps={{ variant: 'rounded', sx: { width: 80, height: 80, bgcolor: 'grey.200', mb: 1 } }}
+                      icon={<PhotoCameraIcon />}
+                      allowDelete
                     />
-                    <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                      <Button size="small" onClick={() => { 
-                        const newSelected = [...selectedImages];
-                        newSelected[idx] = null;
-                        setSelectedImages(newSelected);
-                        setCroppingIndex(null);
-                      }}>Cancel</Button>
-                      <Button size="small" variant="contained" onClick={async () => {
-                        setCroppingIndex(null);
-                        // Save preview (not upload yet)
-                        const blob = await getCroppedImg(selectedImages[idx]!, croppedAreaPixels as any, 500);
-                        const url = URL.createObjectURL(blob);
-                        const newPhotos = [...photos];
-                        newPhotos[idx] = url;
-                        setPhotos(newPhotos);
-                        const newSelected = [...selectedImages];
-                        newSelected[idx] = blob as any as File;
-                        setSelectedImages(newSelected);
-                      }}>Crop</Button>
-                    </Box>
                   </Box>
-                )}
-              </Box>
-            ))}
+                );
+              }
+              return null;
+            })}
           </Box>
         </Box>
 
@@ -712,7 +531,7 @@ export default function AddToCollectionModal({
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, py: 2, borderTop: 1, borderColor: 'divider' }}>
+      <DialogActions sx={{ px: { xs: 1, sm: 3 }, py: 2, borderTop: 1, borderColor: 'divider', flexWrap: 'wrap', gap: 1 }}>
         <Button onClick={onClose} disabled={loading}>
           {t("common_cancel")}
         </Button>
@@ -722,7 +541,7 @@ export default function AddToCollectionModal({
           disabled={loading || !formData.consoleId}
           startIcon={loading ? <CircularProgress size={16} /> : <AddCircleIcon />}
         >
-          {loading ? 'Adding...' : t("games_addToCollection")}
+          {loading ? (game && game.id ? t('common_saving') : t('common_adding')) : (game && game.id ? t('common_save') : t("games_addToCollection"))}
         </Button>
       </DialogActions>
     </Dialog>

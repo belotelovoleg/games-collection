@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
       notes,
       completed,
       favorite,
+      rating,
       cover,
       screenshot,
       photos
@@ -47,6 +48,7 @@ export async function POST(request: NextRequest) {
         notes,
         completed: !!completed,
         favorite: !!favorite,
+        rating: typeof rating === 'number' ? rating : 50,
         cover: cover || null,
         screenshot: screenshot || null,
         photos: Array.isArray(photos) ? photos.filter(Boolean) : [],
