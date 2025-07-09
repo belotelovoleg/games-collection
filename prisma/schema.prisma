@@ -526,11 +526,6 @@ model IgdbGame {
   remakes               Int[]    // Array of Remake Game IDs
   remasters             Int[]    // Array of Remaster Game IDs
   
-  // Stats
-  
-  // Full IGDB data JSON backup
-  igdbData              String?  @db.Text @map("igdb_data")
-
   // Relations to our normalized tables
   cover                 IgdbCover? @relation(fields: [coverId], references: [id])
 

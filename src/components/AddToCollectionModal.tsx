@@ -14,18 +14,16 @@ import {
   TextField,
   Box,
   Typography,
-  Avatar,
   Chip,
   Alert,
   CircularProgress,
-  IconButton,
   FormControlLabel,
   Checkbox,
-  Slider
+  Slider,
+  Backdrop,
 } from '@mui/material';
-import Cropper from 'react-easy-crop';
+import AdvancedGameFieldsAccordion, { AdvancedFields } from './AdvancedGameFieldsAccordion';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
-import DeleteIcon from '@mui/icons-material/Delete';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import CloseIcon from '@mui/icons-material/Close';
@@ -38,6 +36,7 @@ interface AddToCollectionModalProps {
   selectedConsole?: any;
   userConsoles?: any[]; // Array of user's consoles
   onSuccess?: (game: any) => void;
+  mode?: 'create' | 'edit' | 'igdb'; // NEW: mode prop
 }
 
 const CONDITIONS = [
@@ -54,7 +53,8 @@ export default function AddToCollectionModal({
   game,
   selectedConsole,
   userConsoles = [],
-  onSuccess 
+  onSuccess,
+  mode = 'create', // default to create
 }: AddToCollectionModalProps) {
   const { t } = useTranslations();
   
@@ -89,7 +89,20 @@ export default function AddToCollectionModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const inputFileRefs = useRef<(HTMLInputElement | null)[]>([]);
+    // Advanced fields state (edit mode only)
+  const [advancedFields, setAdvancedFields] = useState<AdvancedFields>({
+    alternativeNames: game?.alternativeNames || [],
+    genres: game?.genres || [],
+    franchises: game?.franchises || [],
+    platforms: game?.platforms || [],
+    developer: game?.developer || [],
+    publisher: game?.publisher || [],
+    releaseYear: game?.releaseYear || null,
+  });
+  const [genreOptions, setGenreOptions] = useState<string[]>([]);
+  const [platformOptions, setPlatformOptions] = useState<{id: number, name: string}[]>([]);
+  const [loadingGenres, setLoadingGenres] = useState(false);
+  const [loadingPlatforms, setLoadingPlatforms] = useState(false);
 
   // Update form fields when editing or selectedConsole changes
   // Only update consoleId from selectedConsole if not editing an existing game
@@ -113,10 +126,35 @@ export default function AddToCollectionModal({
       }));
       setCover(game.cover || null);
       setScreenshot(game.screenshot || null);
+      // Prefill photos array in edit mode
+      if (Array.isArray(game.photos) && game.photos.length > 0) {
+        // Fill up to 5 slots, pad with nulls if needed
+        const filledPhotos = [...game.photos];
+        while (filledPhotos.length < 5) filledPhotos.push(null);
+        setPhotos(filledPhotos.slice(0, 5));
+        setPhotoFiles([null, null, null, null, null]); // No files for prefilled URLs
+      } else {
+        setPhotos([null, null, null, null, null]);
+        setPhotoFiles([null, null, null, null, null]);
+      }
+
+      setLoadingGenres(true);
+      fetch('/api/genres')
+        .then(res => res.json())
+        .then(data => setGenreOptions(data.map((g: any) => g.name)))
+        .finally(() => setLoadingGenres(false));
+      setLoadingPlatforms(true);
+      fetch('/api/platforms')
+        .then(res => res.json())
+        .then(data => setPlatformOptions(data.map((p: any) => ({ id: p.id, name: p.name }))))
+        .finally(() => setLoadingPlatforms(false));
+
     } else if (!game) {
       setFormData(prev => ({ ...prev, title: '', summary: '', completed: false, favorite: false, rating: 50 }));
       setCover(null);
       setScreenshot(null);
+      setPhotos([null, null, null, null, null]);
+      setPhotoFiles([null, null, null, null, null]);
     }
   }, [game]);
 
@@ -129,81 +167,124 @@ export default function AddToCollectionModal({
     setLoading(true);
     setError('');
     try {
-      // 1. Create the game first
-      // Only include igdbGameId if game exists and has id (IGDB add)
-      const payload: any = {
-        title: formData.title,
-        summary: formData.summary,
-        completed: formData.completed,
-        favorite: formData.favorite,
-        rating: formData.rating,
-        consoleId: Number(formData.consoleId),
-        condition: formData.condition,
-        price: formData.price || null,
-        purchaseDate: formData.purchaseDate || null,
-        notes: formData.notes || null,
-      };
       let response;
-
-
-      // --- CREATE OR EDIT GAME FIRST (no cover/screenshot upload yet) ---
-      if (game && game.id) {
-        // Editing existing game
+      let newGame;
+      // --- MODE: EDIT ---
+      if (mode === 'edit') {
+        // ...existing code for edit...
+        const payload: any = {
+          title: formData.title,
+          summary: formData.summary,
+          completed: formData.completed,
+          favorite: formData.favorite,
+          rating: formData.rating,
+          consoleId: Number(formData.consoleId),
+          condition: formData.condition,
+          price: formData.price || null,
+          purchaseDate: formData.purchaseDate || null,
+          notes: formData.notes || null,
+        };
         response = await fetch(`/api/games/${game.id}/edit`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
-      } else {
-        // Manual add: send all fields, including photos (but not cover/screenshot yet)
-        payload.photos = photos.filter(Boolean);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to edit game');
+        }
+        const result = await response.json();
+        newGame = result.game;
+      }
+      // --- MODE: CREATE ---
+      else if (mode === 'create') {
+        // ...existing code for create...
+        const payload: any = {
+          title: formData.title,
+          summary: formData.summary,
+          completed: formData.completed,
+          favorite: formData.favorite,
+          rating: formData.rating,
+          consoleId: Number(formData.consoleId),
+          condition: formData.condition,
+          price: formData.price || null,
+          purchaseDate: formData.purchaseDate || null,
+          notes: formData.notes || null,
+          photos: photos.filter(Boolean),
+        };
         response = await fetch('/api/games/create-manual', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to add game to collection');
+        }
+        const result = await response.json();
+        newGame = result.game;
       }
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to add game to collection');
+      // --- MODE: IGDB ---
+      else if (mode === 'igdb') {
+        // IGDB add-to-collection logic
+        if (!game || !game.id) throw new Error('No game to add to collection');
+        // 1. Add the game to collection (creates the game in DB)
+        response = await fetch('/api/games/add-to-collection', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            igdbGameId: game.id,
+            consoleId: formData.consoleId,
+            condition: formData.condition,
+            price: formData.price || null,
+            purchaseDate: formData.purchaseDate || null,
+            notes: formData.notes || null,
+          }),
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to add game to collection');
+        }
+        const result = await response.json();
+        newGame = result.game;
       }
-      const result = await response.json();
-      const newGame = result.game;
 
       // --- UPLOAD COVER AND SCREENSHOT (if present) after game is created ---
-      // --- WORKING, photo-like logic for cover ---
       let coverUrl = null;
-      if (coverFile && cover) {
-        setUploading(true);
-        const fileToUpload = coverFile instanceof File ? coverFile : new File([coverFile], 'cover.jpg', { type: coverFile.type || 'image/jpeg' });
-        coverUrl = await uploadImageToS3({
-          file: fileToUpload,
-          userId: newGame.userId,
-          gameId: newGame.id,
-          filename: 'cover.jpg',
-        });
-      }
-
       let screenshotUrl = null;
-      if (screenshotFile && screenshot) {
-        setUploading(true);
-        const fileToUpload = screenshotFile instanceof File ? screenshotFile : new File([screenshotFile], 'screenshot.jpg', { type: screenshotFile.type || 'image/jpeg' });
-        screenshotUrl = await uploadImageToS3({
-          file: fileToUpload,
-          userId: newGame.userId,
-          gameId: newGame.id,
-          filename: 'screenshot.jpg',
-        });
+      if (mode !== 'igdb') {
+        if (coverFile && cover && newGame) {
+          setUploading(true);
+          if (coverFile instanceof File) {
+            coverUrl = await uploadImageToS3({
+              file: coverFile,
+              userId: newGame.userId,
+              gameId: newGame.id,
+              filename: 'cover.jpg',
+            });
+          }
+        }
+
+        if (screenshotFile && screenshot && newGame) {
+          setUploading(true);
+          if (screenshotFile instanceof File) {
+            screenshotUrl = await uploadImageToS3({
+              file: screenshotFile,
+              userId: newGame.userId,
+              gameId: newGame.id,
+              filename: 'screenshot.jpg',
+            });
+          }
+        }
       }
 
       // 4. Upload photos to S3 (one by one) using reusable uploader
       let uploadedUrls: string[] = [];
       for (let i = 0; i < 5; i++) {
-        if (photoFiles[i]) {
+        if (photoFiles[i] && newGame && photoFiles[i] instanceof File) {
           setUploading(true);
-          const fileToUpload = photoFiles[i] instanceof File ? photoFiles[i] : new File([photoFiles[i] as Blob], `game-photo_${i + 1}.jpg`, { type: (photoFiles[i] as Blob).type || 'image/jpeg' });
           const url = await uploadImageToS3({
-            file: fileToUpload,
+            file: photoFiles[i],
             userId: newGame.userId,
             gameId: newGame.id,
             photoNumber: i + 1,
@@ -217,20 +298,27 @@ export default function AddToCollectionModal({
       setUploading(false);
 
       // 5. PATCH the game with the array of photo URLs, cover, and screenshot
-      const validUrls = uploadedUrls.filter(Boolean);
-      const patchBody: any = {};
-      if (validUrls.length > 0) patchBody.photos = validUrls;
-      if (coverUrl) patchBody.cover = coverUrl;
-      if (screenshotUrl) patchBody.screenshot = screenshotUrl;
-      if (Object.keys(patchBody).length > 0) {
-        await fetch(`/api/games/${newGame.id}/photos`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(patchBody),
-        });
+      if (newGame) {
+        const validUrls = uploadedUrls.filter(Boolean);
+        const patchBody: any = {};
+        if (validUrls.length > 0) patchBody.photos = validUrls;
+        // Only patch cover and screenshot if not IGDB mode
+        if (mode !== 'igdb') {
+          if (coverUrl) patchBody.cover = coverUrl;
+          if (screenshotUrl) patchBody.screenshot = screenshotUrl;
+        }
+        if (Object.keys(patchBody).length > 0) {
+          await fetch(`/api/games/${newGame.id}/photos`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(patchBody),
+          });
+        }
       }
 
-      if (onSuccess) onSuccess(newGame);
+      if (onSuccess && newGame) onSuccess(newGame);
+
+
       setFormData({
         title: '',
         summary: '',
@@ -258,12 +346,10 @@ export default function AddToCollectionModal({
     }
   };
 
-
-
-  const getGameCoverUrl = (cover: any) => {
-    if (!cover?.image_id) return null;
-    return `https://images.igdb.com/igdb/image/upload/t_cover_big/${cover.image_id}.jpg`;
-  };
+  // const getGameCoverUrl = (cover: any) => {
+  //   if (!cover?.image_id) return null;
+  //   return `https://images.igdb.com/igdb/image/upload/t_cover_big/${cover.image_id}.jpg`;
+  // };
 
 
   // Debug: Log the game data when the modal opens
@@ -274,6 +360,11 @@ export default function AddToCollectionModal({
     }
   }, [open, game]);
 
+  // Clear error when modal is opened
+  useEffect(() => {
+    if (open) setError('');
+  }, [open]);
+
   // Allow modal to open for three cases:
   // 1. Adding new game manually (game is null or empty object)
   // 2. Editing existing game (game has id)
@@ -283,17 +374,18 @@ export default function AddToCollectionModal({
   if (!open) return null;
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="md"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 2,
-        }
-      }}
-    >
+    <>
+      <Dialog
+        open={open}
+        onClose={onClose}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+          }
+        }}
+      >
       <DialogTitle sx={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
@@ -317,8 +409,8 @@ export default function AddToCollectionModal({
           </Alert>
         )}
 
-        {/* Game Info (manual add/edit only) */}
-        {(!game || !game.igdbGameId || game.id) && (
+        {/* Top block: Only for create and edit */}
+        {(mode === 'create' || mode === 'edit') && (
           <Box
             sx={{
               display: 'flex',
@@ -387,7 +479,7 @@ export default function AddToCollectionModal({
               <ImageCropperFull
                 value={cover}
                 onChange={(file: File | null, url: string | null) => { setCover(url); setCoverFile(file); }}
-                label={cover ? 'Change Cover' : 'Upload Cover'}
+                label={cover ? t('games_changeCover') : t('games_uploadCover')}
                 aspect={0.8}
                 cropShape="rect"
                 cropSize={400}
@@ -397,7 +489,7 @@ export default function AddToCollectionModal({
               <ImageCropperFull
                 value={screenshot}
                 onChange={(file: File | null, url: string | null) => { setScreenshot(url); setScreenshotFile(file); }}
-                label={screenshot ? 'Change Screenshot' : 'Upload Screenshot'}
+                label={screenshot ? t('games_changeScreenshot') : t('games_uploadScreenshot')}
                 aspect={1}
                 cropShape="rect"
                 cropSize={400}
@@ -408,9 +500,9 @@ export default function AddToCollectionModal({
           </Box>
         )}
 
-        {/* Multi-Photo Upload & Crop (progressive slots) */}
+        {/* Multi-Photo Upload & Crop (middle block): Always show */}
         <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>{t('games_photos') || 'Photos (up to 5)'}</Typography>
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>{t('games_photos')}</Typography>
           <Box sx={{ display: 'flex', gap: 2 }}>
             {photos.map((photo, idx) => {
               // Only show the slot if:
@@ -434,7 +526,7 @@ export default function AddToCollectionModal({
                           return arr;
                         });
                       }}
-                      label={photo ? 'Change Photo' : 'Upload Photo'}
+                      label={photo ? t('games_changePhoto') : t('games_uploadPhoto')}
                       aspect={1}
                       cropShape="rect"
                       cropSize={500}
@@ -450,85 +542,98 @@ export default function AddToCollectionModal({
           </Box>
         </Box>
 
-        {/* Form Fields */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {/* Console Selection */}
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <FormControl fullWidth required>
-              <InputLabel>Console</InputLabel>
-              <Select
-                value={formData.consoleId}
-                label="Console"
-                onChange={(e) => {
-                  setFormData(prev => ({ ...prev, consoleId: e.target.value }));
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {/* Console Selection */}
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <FormControl fullWidth required>
+                <InputLabel>{t('games_console')}</InputLabel>
+                <Select
+                  value={formData.consoleId}
+                  label={t('games_console')}
+                  onChange={(e) => {
+                    setFormData(prev => ({ ...prev, consoleId: e.target.value }));
+                  }}
+                >
+                  {userConsoles.map((userConsole) => (
+                    <MenuItem key={userConsole.id} value={String(userConsole.console.id)}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, width: "100%" }}>
+                        <span>{userConsole.console.name}</span>
+                        <Chip 
+                          size="small" 
+                          label={userConsole.status === "OWNED" ? t('games_owned') : t('games_wishlist')}
+                          color={userConsole.status === "OWNED" ? "success" : "primary"}
+                          sx={{ ml: "auto" }}
+                        />
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl fullWidth>
+                <InputLabel>{t("games_condition")}</InputLabel>
+                <Select
+                  value={formData.condition}
+                  label={t("games_condition")}
+                  onChange={(e) => setFormData(prev => ({ ...prev, condition: e.target.value }))}
+                >
+                  {CONDITIONS.map((condition) => (
+                    <MenuItem key={condition} value={condition}>
+                      {(t as any)(`games_condition_${condition.toLowerCase()}`) || condition}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <TextField
+                fullWidth
+                label={t("games_price")}
+                type="number"
+                value={formData.price}
+                onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
+                InputProps={{
+                  startAdornment: <Typography variant="body2" sx={{ mr: 1 }}>$</Typography>,
                 }}
-              >
-                {userConsoles.map((userConsole) => (
-                  <MenuItem key={userConsole.id} value={String(userConsole.console.id)}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, width: "100%" }}>
-                      <span>{userConsole.console.name}</span>
-                      <Chip 
-                        size="small" 
-                        label={userConsole.status === "OWNED" ? "Owned" : "Wishlist"}
-                        color={userConsole.status === "OWNED" ? "success" : "primary"}
-                        sx={{ ml: "auto" }}
-                      />
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+              />
 
-            <FormControl fullWidth>
-              <InputLabel>{t("games_condition")}</InputLabel>
-              <Select
-                value={formData.condition}
-                label={t("games_condition")}
-                onChange={(e) => setFormData(prev => ({ ...prev, condition: e.target.value }))}
-              >
-                {CONDITIONS.map((condition) => (
-                  <MenuItem key={condition} value={condition}>
-                    {condition.charAt(0) + condition.slice(1).toLowerCase()}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
-
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <TextField
-              fullWidth
-              label={t("games_price")}
-              type="number"
-              value={formData.price}
-              onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
-              InputProps={{
-                startAdornment: <Typography variant="body2" sx={{ mr: 1 }}>$</Typography>,
-              }}
-            />
+              <TextField
+                fullWidth
+                label={t('games_purchaseDate')}
+                type="date"
+                value={formData.purchaseDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, purchaseDate: e.target.value }))}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+            </Box>
 
             <TextField
               fullWidth
-              label="Purchase Date"
-              type="date"
-              value={formData.purchaseDate}
-              onChange={(e) => setFormData(prev => ({ ...prev, purchaseDate: e.target.value }))}
-              InputLabelProps={{
-                shrink: true,
-              }}
+              label={t("games_notes")}
+              multiline
+              rows={3}
+              value={formData.notes}
+              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+              placeholder={t('games_notes_placeholder')}
             />
-          </Box>
 
-          <TextField
-            fullWidth
-            label={t("games_notes")}
-            multiline
-            rows={3}
-            value={formData.notes}
-            onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-            placeholder="Any additional notes about this game in your collection..."
-          />
-        </Box>
+            {/* Advanced Edit Block (edit mode only) */}
+            {mode === 'edit' && (
+              <>
+              <AdvancedGameFieldsAccordion
+                value={advancedFields}
+                onChange={setAdvancedFields}
+                genreOptions={genreOptions}
+                platformOptions={platformOptions}
+                loadingGenres={loadingGenres}
+                loadingPlatforms={loadingPlatforms}
+              />
+              </>
+            )}
+          </Box>
       </DialogContent>
 
       <DialogActions sx={{ px: { xs: 1, sm: 3 }, py: 2, borderTop: 1, borderColor: 'divider', flexWrap: 'wrap', gap: 1 }}>
@@ -541,9 +646,16 @@ export default function AddToCollectionModal({
           disabled={loading || !formData.consoleId}
           startIcon={loading ? <CircularProgress size={16} /> : <AddCircleIcon />}
         >
-          {loading ? (game && game.id ? t('common_saving') : t('common_adding')) : (game && game.id ? t('common_save') : t("games_addToCollection"))}
+          {mode === 'edit'
+            ? (loading ? t('common_saving') : t('common_save'))
+            : (loading ? t('common_adding') : t('games_addToCollection'))}
         </Button>
       </DialogActions>
-    </Dialog>
+      </Dialog>
+      <Backdrop open={uploading} sx={{ zIndex: (theme) => theme.zIndex.modal + 1, color: '#fff' }}>
+        <CircularProgress color="inherit" />
+        <Typography sx={{ ml: 2 }}>{(t as any)('games_uploading') || 'Uploading images...'}</Typography>
+      </Backdrop>
+    </>
   );
 }

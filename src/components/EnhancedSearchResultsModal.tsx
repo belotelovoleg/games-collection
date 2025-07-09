@@ -11,7 +11,6 @@ import {
   Chip,
   Button,
   Rating,
-  useTheme
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";

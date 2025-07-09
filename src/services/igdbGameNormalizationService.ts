@@ -607,7 +607,6 @@ export class IGDBGameNormalizationService {
             remakes: igdbGameData.remakes || [],
             remasters: igdbGameData.remasters || [],
             createdAt: igdbGameData.created_at !== undefined ? BigInt(igdbGameData.created_at) : undefined,
-            igdbData: JSON.stringify(igdbGameData),
           },
           create: {
             id: igdbGameData.id,
@@ -634,7 +633,6 @@ export class IGDBGameNormalizationService {
             remakes: igdbGameData.remakes || [],
             remasters: igdbGameData.remasters || [],
             createdAt: igdbGameData.created_at !== undefined ? BigInt(igdbGameData.created_at) : undefined,
-            igdbData: JSON.stringify(igdbGameData),
           },
         });
       });
@@ -1022,7 +1020,7 @@ export class IGDBGameNormalizationService {
           releaseYear: igdbGameData.first_release_date 
             ? new Date(igdbGameData.first_release_date * 1000).getFullYear() 
             : null,
-          photo: additionalData?.photo || undefined,
+          photos: additionalData?.photo ? [additionalData.photo] : [],
           developer: developers,
           publisher: publishers,
         },

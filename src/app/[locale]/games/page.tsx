@@ -62,6 +62,7 @@ export default function GamesPage() {
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [editGame, setEditGame] = useState<any>(null);
+  const [addToCollectionMode, setAddToCollectionMode] = useState<'create' | 'edit' | 'igdb'>('create');
   const [snackbar, setSnackbar] = useState<{open: boolean, message: string, severity: 'success'|'error'}>({open: false, message: '', severity: 'success'});
   const [deletingGameId, setDeletingGameId] = useState<string | null>(null);
   // State management for consoles and search
@@ -112,6 +113,7 @@ export default function GamesPage() {
   // Edit game handler
   const handleEditGame = (game: any) => {
     setEditGame(game);
+    setAddToCollectionMode('edit');
     setAddToCollectionOpen(true);
   };
 
@@ -170,6 +172,7 @@ export default function GamesPage() {
   const handleAddGame = () => {
     setEditGame(null);
     setGameToAdd(null);
+    setAddToCollectionMode('create');
     setAddToCollectionOpen(true);
     // Debug: log to verify click
     console.log('Add New Game button clicked, opening modal');
@@ -253,6 +256,7 @@ export default function GamesPage() {
 
   const handleAddGameToCollection = (game: any) => {
     setGameToAdd(game);
+    setAddToCollectionMode('igdb');
     setAddToCollectionOpen(true);
     setGameDetailsOpen(false); // Close the details modal
   };
@@ -561,6 +565,7 @@ export default function GamesPage() {
             setAddToCollectionOpen(false);
             setGameToAdd(null);
             setEditGame(null);
+            setAddToCollectionMode('create');
             // Always refresh games list on close
             fetchUserGames();
           }}
@@ -572,6 +577,7 @@ export default function GamesPage() {
           }
           userConsoles={userConsoles}
           onSuccess={handleAddToCollectionSuccess}
+          mode={addToCollectionMode}
         />
       </Container>
     </MainLayout>
