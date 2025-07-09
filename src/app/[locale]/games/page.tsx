@@ -1,21 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useTranslations } from "@/hooks/useTranslations";
-import { MainLayout } from "@/components/MainLayout";
-import { GameDetailsModal } from "@/components/GameDetailsModal";
-import AddToCollectionModal from "@/components/AddToCollectionModal";
-import { 
-  Box, 
-  Container, 
-  Typography, 
+import React, { useState, useEffect } from "react";
+import {
+  Box,
+  Container,
+  Typography,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
   TextField,
   Button,
-  Grid,
+  // @ts-ignore
+  Grid as MuiGrid,
   CircularProgress,
   Card,
   CardContent,
@@ -33,8 +30,12 @@ import {
   IconButton,
   Badge,
   Skeleton,
-  Paper
+  Paper,
+  ImageList,
+  ImageListItem
 } from "@mui/material";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
 import SearchIcon from "@mui/icons-material/Search";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import AddIcon from "@mui/icons-material/Add";
@@ -47,15 +48,31 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useTheme } from '@mui/material/styles';
 import { useMediaQuery } from '@mui/material';
+import { useTranslations } from "@/hooks/useTranslations";
+import { MainLayout } from "@/components/MainLayout";
+import { GameDetailsModal } from "@/components/GameDetailsModal";
+import AddToCollectionModal from "@/components/AddToCollectionModal";
+// --- COMPONENT ---
 
-export default function GamesPage({ params }: { params: { locale: string } }) {
+export default function GamesPage() {
   const { t, locale } = useTranslations();
   const { data: session, status } = useSession();
   const router = useRouter();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  
-  // State management
+
+  // State for addToCollectionOpen must be above its first use
+  const [addToCollectionOpen, setAddToCollectionOpen] = useState(false);
+  // User games state (now inside component)
+  const [userGames, setUserGames] = useState<any[]>([]);
+  const [gamesLoading, setGamesLoading] = useState(true);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  const [editGame, setEditGame] = useState<any>(null);
+  const [snackbar, setSnackbar] = useState<{open: boolean, message: string, severity: 'success'|'error'}>({open: false, message: '', severity: 'success'});
+  const [deletingGameId, setDeletingGameId] = useState<string | null>(null);
+  // State management for consoles and search
   const [userConsoles, setUserConsoles] = useState<any[]>([]);
   const [selectedConsole, setSelectedConsole] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -66,8 +83,64 @@ export default function GamesPage({ params }: { params: { locale: string } }) {
   const [resultsDialogOpen, setResultsDialogOpen] = useState(false);
   const [selectedGame, setSelectedGame] = useState<any>(null);
   const [gameDetailsOpen, setGameDetailsOpen] = useState(false);
-  const [addToCollectionOpen, setAddToCollectionOpen] = useState(false);
   const [gameToAdd, setGameToAdd] = useState<any>(null);
+
+  // Fetch user's games (only on mount and auth change)
+  useEffect(() => {
+    if (status === "authenticated") {
+      fetchUserGames();
+    }
+  }, [status]);
+
+  const fetchUserGames = async () => {
+    try {
+      setGamesLoading(true);
+      const response = await fetch('/api/user/games');
+      if (!response.ok) throw new Error('Failed to fetch user games');
+      const data = await response.json();
+      setUserGames(data.games || data); // support both {games:[]} and []
+    } catch (e) {
+      setUserGames([]);
+    } finally {
+      setGamesLoading(false);
+    }
+  };
+
+  // Gallery handlers
+  const openPhotoGallery = (photos: string[], idx = 0) => {
+    setGalleryImages(photos);
+    setGalleryIndex(idx);
+    setGalleryOpen(true);
+  };
+  const closeGallery = () => setGalleryOpen(false);
+  const nextGalleryImage = () => setGalleryIndex((i) => (i + 1) % galleryImages.length);
+  const prevGalleryImage = () => setGalleryIndex((i) => (i - 1 + galleryImages.length) % galleryImages.length);
+
+
+  // Edit game handler
+  const handleEditGame = (game: any) => {
+    setEditGame(game);
+    setAddToCollectionOpen(true);
+  };
+
+  // Delete game handler
+  const handleDeleteGame = async (game: any) => {
+    if (!window.confirm(t('games_confirmDelete') || 'Delete this game?')) return;
+    setDeletingGameId(game.id);
+    try {
+      const res = await fetch(`/api/games/${game.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Delete failed');
+      setSnackbar({open: true, message: t('games_deleted') || 'Game deleted', severity: 'success'});
+      fetchUserGames();
+    } catch (e) {
+      setSnackbar({open: true, message: t('games_deleteError') || 'Failed to delete game', severity: 'error'});
+    } finally {
+      setDeletingGameId(null);
+    }
+  };
+
+
+
 
   // Authentication check
   useEffect(() => {
@@ -102,10 +175,13 @@ export default function GamesPage({ params }: { params: { locale: string } }) {
     }
   };
 
-  // Handle add game manually
+  // Handle add game manually (open AddToCollectionModal with blank data)
   const handleAddGame = () => {
-    // TODO: Implement manual game addition (open modal/navigate to form)
-    console.log('Add game manually');
+    setEditGame(null);
+    setGameToAdd(null);
+    setAddToCollectionOpen(true);
+    // Debug: log to verify click
+    console.log('Add New Game button clicked, opening modal');
   };
 
   // Handle search
@@ -191,10 +267,11 @@ export default function GamesPage({ params }: { params: { locale: string } }) {
   };
 
   const handleAddToCollectionSuccess = (addedGame: any) => {
-    console.log("✅ Game successfully added to collection:", addedGame);
     setAddToCollectionOpen(false);
     setGameToAdd(null);
-    // Optionally, you could show a success message or refresh the user's collection
+    setEditGame(null);
+    setSnackbar({open: true, message: t('games_addEditSuccess') || 'Game saved', severity: 'success'});
+    fetchUserGames();
   };
 
   // Show loading while checking authentication
@@ -297,6 +374,7 @@ export default function GamesPage({ params }: { params: { locale: string } }) {
                   {searching ? t("common_searching") : t("common_search")}
                 </Button>
                 <Button
+                  type="button"
                   variant="outlined"
                   size="small"
                   startIcon={<AddIcon />}
@@ -311,34 +389,118 @@ export default function GamesPage({ params }: { params: { locale: string } }) {
           </CardContent>
         </Card>
 
-        {/* Games Results Area */}
-        <Card>
-          <CardContent sx={{ py: 2 }}>
-            {searchError && (
-              <Box sx={{ mb: 2 }}>
-                <Typography color="error" variant="body2">
-                  ❌ {searchError}
-                </Typography>
+        {/* User Games Table/Grid */}
+        <Card sx={{ mt: 3 }}>
+          <CardContent>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              {t("games_yourCollection") || 'Your Collection'}
+            </Typography>
+            {gamesLoading ? (
+              <Box sx={{ py: 4, textAlign: 'center' }}>
+                <CircularProgress />
               </Box>
+            ) : userGames.length === 0 ? (
+              <Typography color="text.secondary">{t("games_noGamesInCollection") || 'No games in your collection'}</Typography>
+            ) : (
+              <MuiGrid container spacing={2}>
+                {userGames.map((game) => {
+                  // Platform display: support array of objects or strings
+                  let platformStr = '';
+                  if (Array.isArray(game.platforms)) {
+                    if (typeof game.platforms[0] === 'object') {
+                      platformStr = game.platforms.map((p: any) => p.name).join(', ');
+                    } else {
+                      platformStr = game.platforms.join(', ');
+                    }
+                  }
+                  return (
+                    <MuiGrid key={game.id} xs={12} md={6} lg={4} item={true as any}>
+                      <Card variant="outlined" sx={{ p: 2, display: 'flex', gap: 2 }}>
+                        <Box sx={{ cursor: game.photos?.length ? 'pointer' : 'default', minWidth: 80 }} onClick={() => game.photos?.length && openPhotoGallery(game.photos, 0)}>
+                          <Avatar
+                            src={game.photos?.[0] || undefined}
+                            variant="rounded"
+                            sx={{ width: 80, height: 80, bgcolor: 'grey.200' }}
+                          >
+                            {!game.photos?.[0] && <SportsEsportsIcon />}
+                          </Avatar>
+                          {game.photos?.length > 1 && (
+                            <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', width: '100%' }}>
+                              +{game.photos.length - 1} more
+                            </Typography>
+                          )}
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="subtitle1" fontWeight="bold">{game.title || game.name}</Typography>
+                          <Typography variant="body2" color="text.secondary">{platformStr}</Typography>
+                          {game.condition && <Typography variant="body2" color="text.secondary">{t('games_condition') || 'Condition'}: {game.condition}</Typography>}
+                          {game.notes && <Typography variant="body2" color="text.secondary">{t('games_notes') || 'Notes'}: {game.notes}</Typography>}
+                          {game.purchaseDate && <Typography variant="body2" color="text.secondary">{t('games_purchaseDate') || 'Purchase Date'}: {game.purchaseDate}</Typography>}
+                          <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
+                            <Button size="small" onClick={() => handleEditGame(game)}>{t("common_edit")}</Button>
+                            <Button size="small" color="error" onClick={() => handleDeleteGame(game)} disabled={deletingGameId === game.id}>
+                              {deletingGameId === game.id ? <CircularProgress size={16} color="inherit" /> : t("common_delete")}
+                            </Button>
+                          </Box>
+                        </Box>
+                      </Card>
+                    </MuiGrid>
+                  );
+                })}
+              </MuiGrid>
             )}
-            
-            <Box 
-              sx={{ 
-                py: 4, 
-                textAlign: "center",
-                color: "text.secondary"
-              }}
-            >
-              <SportsEsportsIcon sx={{ fontSize: "3rem", mb: 1, opacity: 0.3 }} />
-              <Typography variant="h6" sx={{ mb: 0.5 }}>
-                {t("games_noResults")}
-              </Typography>
-              <Typography variant="body2">
-                {t("games_searchInstructions")}
-              </Typography>
-            </Box>
           </CardContent>
         </Card>
+
+        {/* Photo Gallery Modal */}
+        <Dialog open={galleryOpen} onClose={closeGallery} maxWidth="md" fullWidth>
+          <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            {t('games_photos') || 'Photos'}
+            <Box>
+              <IconButton onClick={closeGallery}><CloseIcon /></IconButton>
+            </Box>
+          </DialogTitle>
+          <DialogContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', p: 3 }}>
+            {galleryImages.length > 0 ? (
+              <>
+                <Box sx={{ mb: 2, position: 'relative' }}>
+                  <img
+                    src={galleryImages[galleryIndex]}
+                    alt={`Game photo ${galleryIndex + 1}`}
+                    style={{ maxWidth: 400, maxHeight: 400, borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}
+                  />
+                  {galleryImages.length > 1 && (
+                    <>
+                      <IconButton onClick={prevGalleryImage} sx={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)' }}>
+                        {'<'}
+                      </IconButton>
+                      <IconButton onClick={nextGalleryImage} sx={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)' }}>
+                        {'>'}
+                      </IconButton>
+                    </>
+                  )}
+                </Box>
+                <Typography variant="caption">{galleryIndex + 1} / {galleryImages.length}</Typography>
+              </>
+            ) : (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <SportsEsportsIcon sx={{ fontSize: 60, color: 'text.disabled', mb: 2 }} />
+                <Typography variant="body2" color="text.secondary">{t('games_noPhotos') || 'No photos'}</Typography>
+              </Box>
+            )}
+          </DialogContent>
+        </Dialog>
+        {/* Snackbar for feedback */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={3500}
+          onClose={() => setSnackbar({...snackbar, open: false})}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Alert onClose={() => setSnackbar({...snackbar, open: false})} severity={snackbar.severity} sx={{ width: '100%' }}>
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
 
         {/* Enhanced Search Results Modal */}
         <Dialog 
@@ -366,12 +528,12 @@ export default function GamesPage({ params }: { params: { locale: string } }) {
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                 <SportsEsportsIcon color="primary" />
-                {t("games_searchResults")}
+                {t("games_searchResults") || 'Search Results'}
               </Box>
               {searchResults && (
                 <Typography variant="body2" color="text.secondary">
-                  {searchResults.games.length} {t("games_foundFor")} "{searchResults.searchQuery}" 
-                  {" "}{t("games_on")} {searchResults.console.name}
+                  {searchResults.games.length} {t("games_foundFor") || 'found for'} "{searchResults.searchQuery}" 
+                  {" "}{t("games_on") || 'on'} {searchResults.console.name}
                 </Typography>
               )}
             </Box>
@@ -513,10 +675,10 @@ export default function GamesPage({ params }: { params: { locale: string } }) {
               <Box sx={{ textAlign: 'center', py: 6 }}>
                 <SportsEsportsIcon sx={{ fontSize: '4rem', color: 'text.disabled', mb: 2 }} />
                 <Typography variant="h6" color="text.secondary" gutterBottom>
-                  {t("games_noGamesFound")}
+                  {t("games_noGamesFound") || 'No games found'}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {t("games_tryDifferentSearch")}
+                  {t("games_tryDifferentSearch") || 'Try a different search'}
                 </Typography>
               </Box>
             ) : null}
@@ -537,8 +699,11 @@ export default function GamesPage({ params }: { params: { locale: string } }) {
           onClose={() => {
             setAddToCollectionOpen(false);
             setGameToAdd(null);
+            setEditGame(null);
+            // Always refresh games list on close
+            fetchUserGames();
           }}
-          game={gameToAdd}
+          game={editGame || gameToAdd || null}
           selectedConsole={
             selectedConsole !== ""
               ? userConsoles.find(uc => String(uc.console.id) === selectedConsole)

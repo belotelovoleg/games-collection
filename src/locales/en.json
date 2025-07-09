@@ -186,4 +186,14 @@
   "games_photoUploadError": "Error uploading photo",
   "games_photoCropError": "Error cropping photo",
   "games_photoRemoveError": "Error removing photo"
+  ,
+  "games_yourCollection": "Your Collection",
+  "games_noGamesInCollection": "No games in your collection",
+  "games_confirmDelete": "Are you sure you want to delete this game?",
+  "games_deleted": "Game deleted",
+  "games_deleteError": "Failed to delete game",
+  "games_addEditSuccess": "Game saved",
+  "games_purchaseDate": "Purchase Date",
+  "games_photos": "Photos",
+  "games_noPhotos": "No photos"
 }

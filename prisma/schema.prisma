@@ -82,7 +82,7 @@ model Game {
   title           String      @map("name") // Game name
   alternativeNames String[]   @map("alternative_names") // Array of alternative names
   cover           String?     // Cover image URL (from IGDB or uploaded by user)
-  photo           String?     // User's personal photo of their copy
+  photos          String[]    // User's personal photos of their copy (up to 5)
   screenshot      String?     // One screenshot URL (from IGDB or uploaded by user)
   summary         String?     @db.Text
   
