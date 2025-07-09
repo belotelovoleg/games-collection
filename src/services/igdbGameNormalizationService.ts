@@ -45,6 +45,7 @@ export interface IGDBGameData {
     animated?: boolean;
     checksum?: string;
   }>;
+  franchise?: number; // Main franchise ID
   franchises?: Array<{
     id: number;
     name: string;
@@ -113,40 +114,6 @@ export interface IGDBGameData {
     created_at?: number;
     updated_at?: number;
   }>;
-  keywords?: Array<{
-    id: number;
-    name: string;
-    slug?: string;
-    url?: string;
-    checksum?: string;
-    created_at?: number;
-    updated_at?: number;
-  }>;
-  involved_companies?: Array<{
-    id: number;
-    checksum?: string;
-    company: number;
-    created_at?: number;
-    updated_at?: number;
-    developer?: boolean;
-    porting?: boolean;
-    publisher?: boolean;
-    supporting?: boolean;
-  }>;
-  release_dates?: Array<{
-    id: number;
-    checksum?: string;
-    created_at?: number;
-    updated_at?: number;
-    category?: number;
-    date?: number;
-    human?: string;
-    m?: number;
-    platform?: number;
-    region?: number;
-    y?: number;
-    status?: number;
-  }>;
   age_ratings?: Array<{
     id: number;
     checksum?: string;
@@ -166,20 +133,6 @@ export interface IGDBGameData {
     updated_at?: number;
     trusted?: boolean;
     url?: string;
-  }>;
-  external_games?: Array<{
-    id: number;
-    checksum?: string;
-    category?: number;
-    created_at?: number;
-    updated_at?: number;
-    name?: string;
-    uid?: string;
-    url?: string;
-    year?: number;
-    media?: number;
-    platform?: number;
-    countries?: number[];
   }>;
   videos?: Array<{
     id: number;
@@ -216,14 +169,28 @@ export interface IGDBGameData {
   slug?: string;
   url?: string;
   checksum?: string;
+  game_type?: number; 
+  remakes?: number[];
+  remasters?: number[];
+  created_at?: number; // IGDB UNIX timestamp (seconds since epoch)
+  parent_game?: number; // IGDB parent_game reference (DLC/expansion/bundle main game)
+  version_parent?: number; // IGDB version_parent reference (main game for versions)
 }
 
 export class IGDBGameNormalizationService {
   static async normalizeAndStoreGame(igdbGameData: IGDBGameData): Promise<void> {
     console.log(`🎮 Normalizing IGDB game: ${igdbGameData.name} (ID: ${igdbGameData.id})`);
 
+    // Helper to batch upserts
+    const batchUpsert = async <T>(items: T[], batchSize: number, upsertFn: (item: T) => Promise<any>) => {
+      for (let i = 0; i < items.length; i += batchSize) {
+        const batch = items.slice(i, i + batchSize);
+        await Promise.all(batch.map(upsertFn));
+      }
+    };
+
     try {
-      // Start transaction for atomic operation
+      // 1. Upsert all main entities in a transaction (single-record upserts only)
       await prisma.$transaction(async (tx) => {
         // 1. Store cover if exists
         if (igdbGameData.cover) {
@@ -253,58 +220,62 @@ export class IGDBGameNormalizationService {
 
         // 2. Store screenshots
         if (igdbGameData.screenshots && igdbGameData.screenshots.length > 0) {
-          for (const screenshot of igdbGameData.screenshots) {
-            await tx.igdbScreenshot.upsert({
-              where: { id: screenshot.id },
-              update: {
-                alphaChannel: screenshot.alpha_channel,
-                animated: screenshot.animated,
-                checksum: screenshot.checksum,
-                height: screenshot.height,
-                imageId: screenshot.image_id,
-                url: screenshot.url,
-                width: screenshot.width,
-              },
-              create: {
-                id: screenshot.id,
-                alphaChannel: screenshot.alpha_channel,
-                animated: screenshot.animated,
-                checksum: screenshot.checksum,
-                height: screenshot.height,
-                imageId: screenshot.image_id,
-                url: screenshot.url,
-                width: screenshot.width,
-              },
-            });
-          }
+          await Promise.all(
+            igdbGameData.screenshots.map(screenshot =>
+              tx.igdbScreenshot.upsert({
+                where: { id: screenshot.id },
+                update: {
+                  alphaChannel: screenshot.alpha_channel,
+                  animated: screenshot.animated,
+                  checksum: screenshot.checksum,
+                  height: screenshot.height,
+                  imageId: screenshot.image_id,
+                  url: screenshot.url,
+                  width: screenshot.width,
+                },
+                create: {
+                  id: screenshot.id,
+                  alphaChannel: screenshot.alpha_channel,
+                  animated: screenshot.animated,
+                  checksum: screenshot.checksum,
+                  height: screenshot.height,
+                  imageId: screenshot.image_id,
+                  url: screenshot.url,
+                  width: screenshot.width,
+                },
+              })
+            )
+          );
         }
 
         // 3. Store artworks
         if (igdbGameData.artworks && igdbGameData.artworks.length > 0) {
-          for (const artwork of igdbGameData.artworks) {
-            await tx.igdbArtwork.upsert({
-              where: { id: artwork.id },
-              update: {
-                alphaChannel: artwork.alpha_channel,
-                animated: artwork.animated,
-                checksum: artwork.checksum,
-                height: artwork.height,
-                imageId: artwork.image_id,
-                url: artwork.url,
-                width: artwork.width,
-              },
-              create: {
-                id: artwork.id,
-                alphaChannel: artwork.alpha_channel,
-                animated: artwork.animated,
-                checksum: artwork.checksum,
-                height: artwork.height,
-                imageId: artwork.image_id,
-                url: artwork.url,
-                width: artwork.width,
-              },
-            });
-          }
+          await Promise.all(
+            igdbGameData.artworks.map(artwork =>
+              tx.igdbArtwork.upsert({
+                where: { id: artwork.id },
+                update: {
+                  alphaChannel: artwork.alpha_channel,
+                  animated: artwork.animated,
+                  checksum: artwork.checksum,
+                  height: artwork.height,
+                  imageId: artwork.image_id,
+                  url: artwork.url,
+                  width: artwork.width,
+                },
+                create: {
+                  id: artwork.id,
+                  alphaChannel: artwork.alpha_channel,
+                  animated: artwork.animated,
+                  checksum: artwork.checksum,
+                  height: artwork.height,
+                  imageId: artwork.image_id,
+                  url: artwork.url,
+                  width: artwork.width,
+                },
+              })
+            )
+          );
         }
 
         // 4. Store genres
@@ -438,7 +409,6 @@ export class IGDBGameNormalizationService {
                 createdAt: engine.created_at ? BigInt(engine.created_at) : null,
                 updatedAt: engine.updated_at ? BigInt(engine.updated_at) : null,
                 description: engine.description,
-                // logo: engine.logo, // removed, not in schema
                 platforms: engine.platforms || [],
                 companies: engine.companies || [],
               },
@@ -451,7 +421,6 @@ export class IGDBGameNormalizationService {
                 createdAt: engine.created_at ? BigInt(engine.created_at) : null,
                 updatedAt: engine.updated_at ? BigInt(engine.updated_at) : null,
                 description: engine.description,
-                // logo: engine.logo, // removed, not in schema
                 platforms: engine.platforms || [],
                 companies: engine.companies || [],
               },
@@ -485,91 +454,8 @@ export class IGDBGameNormalizationService {
           }
         }
 
-        // 11. Store keywords
-        if (igdbGameData.keywords && igdbGameData.keywords.length > 0) {
-          for (const keyword of igdbGameData.keywords) {
-            await tx.igdbKeyword.upsert({
-              where: { id: keyword.id },
-              update: {
-                name: keyword.name,
-                slug: keyword.slug,
-                url: keyword.url,
-                checksum: keyword.checksum,
-                createdAt: keyword.created_at ? BigInt(keyword.created_at) : null,
-                updatedAt: keyword.updated_at ? BigInt(keyword.updated_at) : null,
-              },
-              create: {
-                id: keyword.id,
-                name: keyword.name,
-                slug: keyword.slug,
-                url: keyword.url,
-                checksum: keyword.checksum,
-                createdAt: keyword.created_at ? BigInt(keyword.created_at) : null,
-                updatedAt: keyword.updated_at ? BigInt(keyword.updated_at) : null,
-              },
-            });
-          }
-        }
 
-        // 12. Store involved companies
-        if (igdbGameData.involved_companies && igdbGameData.involved_companies.length > 0) {
-          for (const involvedCompany of igdbGameData.involved_companies) {
-            await tx.igdbInvolvedCompany.upsert({
-              where: { id: involvedCompany.id },
-              update: {
-                checksum: involvedCompany.checksum,
-                companyId: involvedCompany.company,
-                createdAt: involvedCompany.created_at ? BigInt(involvedCompany.created_at) : null,
-                updatedAt: involvedCompany.updated_at ? BigInt(involvedCompany.updated_at) : null,
-                developer: involvedCompany.developer,
-                porting: involvedCompany.porting,
-                publisher: involvedCompany.publisher,
-                supporting: involvedCompany.supporting,
-              },
-              create: {
-                id: involvedCompany.id,
-                checksum: involvedCompany.checksum,
-                companyId: involvedCompany.company,
-                createdAt: involvedCompany.created_at ? BigInt(involvedCompany.created_at) : null,
-                updatedAt: involvedCompany.updated_at ? BigInt(involvedCompany.updated_at) : null,
-                developer: involvedCompany.developer,
-                porting: involvedCompany.porting,
-                publisher: involvedCompany.publisher,
-                supporting: involvedCompany.supporting,
-              },
-            });
-          }
-        }
 
-        // 13. Store release dates
-        if (igdbGameData.release_dates && igdbGameData.release_dates.length > 0) {
-          for (const releaseDate of igdbGameData.release_dates) {
-            await tx.igdbReleaseDate.upsert({
-              where: { id: releaseDate.id },
-              update: {
-                checksum: releaseDate.checksum,
-                date: releaseDate.date ? BigInt(releaseDate.date) : null,
-                human: releaseDate.human,
-                m: releaseDate.m,
-                platformId: releaseDate.platform,
-                regionId: releaseDate.region,
-                y: releaseDate.y,
-                statusId: releaseDate.status,
-              },
-              create: {
-                id: releaseDate.id,
-                checksum: releaseDate.checksum,
-                date: releaseDate.date ? BigInt(releaseDate.date) : null,
-                human: releaseDate.human,
-                m: releaseDate.m,
-                platformId: releaseDate.platform,
-                regionId: releaseDate.region,
-                y: releaseDate.y,
-                statusId: releaseDate.status,
-              },
-            });
-          }
-        }
 
         // 14. Store age ratings
         if (igdbGameData.age_ratings && igdbGameData.age_ratings.length > 0) {
@@ -615,33 +501,6 @@ export class IGDBGameNormalizationService {
           }
         }
 
-        // 16. Store external games
-        if (igdbGameData.external_games && igdbGameData.external_games.length > 0) {
-          for (const externalGame of igdbGameData.external_games) {
-            await tx.igdbExternalGame.upsert({
-              where: { id: externalGame.id },
-              update: {
-                checksum: externalGame.checksum,
-                name: externalGame.name,
-                uid: externalGame.uid,
-                url: externalGame.url,
-                year: externalGame.year,
-                platformId: externalGame.platform,
-                countries: externalGame.countries || [],
-              },
-              create: {
-                id: externalGame.id,
-                checksum: externalGame.checksum,
-                name: externalGame.name,
-                uid: externalGame.uid,
-                url: externalGame.url,
-                year: externalGame.year,
-                platformId: externalGame.platform,
-                countries: externalGame.countries || [],
-              },
-            });
-          }
-        }
 
         // 17. Store videos
         if (igdbGameData.videos && igdbGameData.videos.length > 0) {
@@ -652,16 +511,12 @@ export class IGDBGameNormalizationService {
                 checksum: video.checksum,
                 name: video.name,
                 videoId: video.video_id,
-                // createdAt: video.created_at ? BigInt(video.created_at) : null, // not in schema
-                // updatedAt: video.updated_at ? BigInt(video.updated_at) : null, // not in schema
               },
               create: {
                 id: video.id,
                 checksum: video.checksum,
                 name: video.name,
                 videoId: video.video_id,
-                // createdAt: video.created_at ? BigInt(video.created_at) : null, // not in schema
-                // updatedAt: video.updated_at ? BigInt(video.updated_at) : null, // not in schema
               },
             });
           }
@@ -687,27 +542,6 @@ export class IGDBGameNormalizationService {
           }
         }
 
-        // 19. Store game localizations
-        if (igdbGameData.game_localizations && igdbGameData.game_localizations.length > 0) {
-          for (const gameLocalization of igdbGameData.game_localizations) {
-            await tx.igdbGameLocalization.upsert({
-              where: { id: gameLocalization.id },
-              update: {
-                checksum: gameLocalization.checksum,
-                name: gameLocalization.name,
-                regionId: gameLocalization.region,
-                coverId: gameLocalization.cover,
-              },
-              create: {
-                id: gameLocalization.id,
-                checksum: gameLocalization.checksum,
-                name: gameLocalization.name,
-                regionId: gameLocalization.region,
-                coverId: gameLocalization.cover,
-              },
-            });
-          }
-        }
 
         // 20. Store multiplayer modes
         if (igdbGameData.multiplayer_modes && igdbGameData.multiplayer_modes.length > 0) {
@@ -747,8 +581,7 @@ export class IGDBGameNormalizationService {
           }
         }
 
-        // 21. Store the main game record
-        const igdbGame = await tx.igdbGame.upsert({
+        await tx.igdbGame.upsert({
           where: { id: igdbGameData.id },
           update: {
             checksum: igdbGameData.checksum,
@@ -767,6 +600,13 @@ export class IGDBGameNormalizationService {
             firstReleaseDate: igdbGameData.first_release_date ? BigInt(igdbGameData.first_release_date) : null,
             alternativeNames: igdbGameData.alternative_names?.map(an => an.id) || [],
             platforms: igdbGameData.platforms || [],
+            franchiseId: igdbGameData.franchise ?? null,
+            parentGameId: igdbGameData.parent_game ?? null,
+            versionParentId: igdbGameData.version_parent ?? null,
+            gameType: igdbGameData.game_type !== undefined ? igdbGameData.game_type : null,
+            remakes: igdbGameData.remakes || [],
+            remasters: igdbGameData.remasters || [],
+            createdAt: igdbGameData.created_at !== undefined ? BigInt(igdbGameData.created_at) : undefined,
             igdbData: JSON.stringify(igdbGameData),
           },
           create: {
@@ -787,372 +627,312 @@ export class IGDBGameNormalizationService {
             firstReleaseDate: igdbGameData.first_release_date ? BigInt(igdbGameData.first_release_date) : null,
             alternativeNames: igdbGameData.alternative_names?.map(an => an.id) || [],
             platforms: igdbGameData.platforms || [],
+            franchiseId: igdbGameData.franchise ?? null,
+            parentGameId: igdbGameData.parent_game ?? null,
+            versionParentId: igdbGameData.version_parent ?? null,
+            gameType: igdbGameData.game_type !== undefined ? igdbGameData.game_type : null,
+            remakes: igdbGameData.remakes || [],
+            remasters: igdbGameData.remasters || [],
+            createdAt: igdbGameData.created_at !== undefined ? BigInt(igdbGameData.created_at) : undefined,
             igdbData: JSON.stringify(igdbGameData),
           },
         });
-
-        // 8. Create relationships
-        // Screenshots
-        if (igdbGameData.screenshots && igdbGameData.screenshots.length > 0) {
-          for (const screenshot of igdbGameData.screenshots) {
-            await tx.igdbGameScreenshotRelation.upsert({
-              where: { 
-                gameId_screenshotId: {
-                  gameId: igdbGameData.id,
-                  screenshotId: screenshot.id
-                }
-              },
-              update: {},
-              create: {
-                gameId: igdbGameData.id,
-                screenshotId: screenshot.id,
-              },
-            });
-          }
-        }
-
-        // Artworks
-        if (igdbGameData.artworks && igdbGameData.artworks.length > 0) {
-          for (const artwork of igdbGameData.artworks) {
-            await tx.igdbGameArtworkRelation.upsert({
-              where: { 
-                gameId_artworkId: {
-                  gameId: igdbGameData.id,
-                  artworkId: artwork.id
-                }
-              },
-              update: {},
-              create: {
-                gameId: igdbGameData.id,
-                artworkId: artwork.id,
-              },
-            });
-          }
-        }
-
-        // Genres
-        if (igdbGameData.genres && igdbGameData.genres.length > 0) {
-          for (const genre of igdbGameData.genres) {
-            await tx.igdbGameGenreRelation.upsert({
-              where: { 
-                gameId_genreId: {
-                  gameId: igdbGameData.id,
-                  genreId: genre.id
-                }
-              },
-              update: {},
-              create: {
-                gameId: igdbGameData.id,
-                genreId: genre.id,
-              },
-            });
-          }
-        }
-
-        // Franchises
-        if (igdbGameData.franchises && igdbGameData.franchises.length > 0) {
-          for (const franchise of igdbGameData.franchises) {
-            await tx.igdbGameFranchiseRelation.upsert({
-              where: { 
-                gameId_franchiseId: {
-                  gameId: igdbGameData.id,
-                  franchiseId: franchise.id
-                }
-              },
-              update: {},
-              create: {
-                gameId: igdbGameData.id,
-                franchiseId: franchise.id,
-              },
-            });
-          }
-        }
-
-        // Multiplayer modes
-        if (igdbGameData.multiplayer_modes && igdbGameData.multiplayer_modes.length > 0) {
-          for (const mode of igdbGameData.multiplayer_modes) {
-            await tx.igdbGameMultiplayerRelation.upsert({
-              where: { 
-                gameId_multiplayerModeId: {
-                  gameId: igdbGameData.id,
-                  multiplayerModeId: mode.id
-                }
-              },
-              update: {},
-              create: {
-                gameId: igdbGameData.id,
-                multiplayerModeId: mode.id,
-              },
-            });
-          }
-        }
-
-        // Alternative names
-        if (igdbGameData.alternative_names && igdbGameData.alternative_names.length > 0) {
-          for (const altName of igdbGameData.alternative_names) {
-            await tx.igdbGameAlternativeNameRelation.upsert({
-              where: { 
-                gameId_alternativeNameId: {
-                  gameId: igdbGameData.id,
-                  alternativeNameId: altName.id
-                }
-              },
-              update: {},
-              create: {
-                gameId: igdbGameData.id,
-                alternativeNameId: altName.id,
-              },
-            });
-          }
-        }
-
-        // Game modes
-        if (igdbGameData.game_modes && igdbGameData.game_modes.length > 0) {
-          for (const gameMode of igdbGameData.game_modes) {
-            await tx.igdbGameModeRelation.upsert({
-              where: { 
-                gameId_gameModeId: {
-                  gameId: igdbGameData.id,
-                  gameModeId: gameMode.id
-                }
-              },
-              update: {},
-              create: {
-                gameId: igdbGameData.id,
-                gameModeId: gameMode.id,
-              },
-            });
-          }
-        }
-
-        // Player perspectives
-        if (igdbGameData.player_perspectives && igdbGameData.player_perspectives.length > 0) {
-          for (const perspective of igdbGameData.player_perspectives) {
-            await tx.igdbGamePlayerPerspectiveRelation.upsert({
-              where: { 
-                gameId_playerPerspectiveId: {
-                  gameId: igdbGameData.id,
-                  playerPerspectiveId: perspective.id
-                }
-              },
-              update: {},
-              create: {
-                gameId: igdbGameData.id,
-                playerPerspectiveId: perspective.id,
-              },
-            });
-          }
-        }
-
-        // Game engines
-        if (igdbGameData.game_engines && igdbGameData.game_engines.length > 0) {
-          for (const engine of igdbGameData.game_engines) {
-            await tx.igdbGameEngineRelation.upsert({
-              where: { 
-                gameId_gameEngineId: {
-                  gameId: igdbGameData.id,
-                  gameEngineId: engine.id
-                }
-              },
-              update: {},
-              create: {
-                gameId: igdbGameData.id,
-                gameEngineId: engine.id,
-              },
-            });
-          }
-        }
-
-        // Themes
-        if (igdbGameData.themes && igdbGameData.themes.length > 0) {
-          for (const theme of igdbGameData.themes) {
-            await tx.igdbGameThemeRelation.upsert({
-              where: { 
-                gameId_themeId: {
-                  gameId: igdbGameData.id,
-                  themeId: theme.id
-                }
-              },
-              update: {},
-              create: {
-                gameId: igdbGameData.id,
-                themeId: theme.id,
-              },
-            });
-          }
-        }
-
-        // Keywords
-        if (igdbGameData.keywords && igdbGameData.keywords.length > 0) {
-          for (const keyword of igdbGameData.keywords) {
-            await tx.igdbGameKeywordRelation.upsert({
-              where: { 
-                gameId_keywordId: {
-                  gameId: igdbGameData.id,
-                  keywordId: keyword.id
-                }
-              },
-              update: {},
-              create: {
-                gameId: igdbGameData.id,
-                keywordId: keyword.id,
-              },
-            });
-          }
-        }
-
-        // Involved companies
-        if (igdbGameData.involved_companies && igdbGameData.involved_companies.length > 0) {
-          for (const involvedCompany of igdbGameData.involved_companies) {
-            await tx.igdbGameInvolvedCompanyRelation.upsert({
-              where: { 
-                gameId_involvedCompanyId: {
-                  gameId: igdbGameData.id,
-                  involvedCompanyId: involvedCompany.id
-                }
-              },
-              update: {},
-              create: {
-                gameId: igdbGameData.id,
-                involvedCompanyId: involvedCompany.id,
-              },
-            });
-          }
-        }
-
-        // Release dates
-        if (igdbGameData.release_dates && igdbGameData.release_dates.length > 0) {
-          for (const releaseDate of igdbGameData.release_dates) {
-            await tx.igdbGameReleaseDateRelation.upsert({
-              where: { 
-                gameId_releaseDateId: {
-                  gameId: igdbGameData.id,
-                  releaseDateId: releaseDate.id
-                }
-              },
-              update: {},
-              create: {
-                gameId: igdbGameData.id,
-                releaseDateId: releaseDate.id,
-              },
-            });
-          }
-        }
-
-        // Age ratings
-        if (igdbGameData.age_ratings && igdbGameData.age_ratings.length > 0) {
-          for (const ageRating of igdbGameData.age_ratings) {
-            await tx.igdbGameAgeRatingRelation.upsert({
-              where: { 
-                gameId_ageRatingId: {
-                  gameId: igdbGameData.id,
-                  ageRatingId: ageRating.id
-                }
-              },
-              update: {},
-              create: {
-                gameId: igdbGameData.id,
-                ageRatingId: ageRating.id,
-              },
-            });
-          }
-        }
-
-        // Websites
-        if (igdbGameData.websites && igdbGameData.websites.length > 0) {
-          for (const website of igdbGameData.websites) {
-            await tx.igdbGameWebsiteRelation.upsert({
-              where: { 
-                gameId_websiteId: {
-                  gameId: igdbGameData.id,
-                  websiteId: website.id
-                }
-              },
-              update: {},
-              create: {
-                gameId: igdbGameData.id,
-                websiteId: website.id,
-              },
-            });
-          }
-        }
-
-        // External games
-        if (igdbGameData.external_games && igdbGameData.external_games.length > 0) {
-          for (const externalGame of igdbGameData.external_games) {
-            await tx.igdbGameExternalGameRelation.upsert({
-              where: { 
-                gameId_externalGameId: {
-                  gameId: igdbGameData.id,
-                  externalGameId: externalGame.id
-                }
-              },
-              update: {},
-              create: {
-                gameId: igdbGameData.id,
-                externalGameId: externalGame.id,
-              },
-            });
-          }
-        }
-
-        // Videos
-        if (igdbGameData.videos && igdbGameData.videos.length > 0) {
-          for (const video of igdbGameData.videos) {
-            await tx.igdbGameVideoRelation.upsert({
-              where: { 
-                gameId_videoId: {
-                  gameId: igdbGameData.id,
-                  videoId: video.id
-                }
-              },
-              update: {},
-              create: {
-                gameId: igdbGameData.id,
-                videoId: video.id,
-              },
-            });
-          }
-        }
-
-        // Language supports
-        if (igdbGameData.language_supports && igdbGameData.language_supports.length > 0) {
-          for (const languageSupport of igdbGameData.language_supports) {
-            await tx.igdbGameLanguageSupportRelation.upsert({
-              where: { 
-                gameId_languageSupportId: {
-                  gameId: igdbGameData.id,
-                  languageSupportId: languageSupport.id
-                }
-              },
-              update: {},
-              create: {
-                gameId: igdbGameData.id,
-                languageSupportId: languageSupport.id,
-              },
-            });
-          }
-        }
-
-        // Game localizations
-        if (igdbGameData.game_localizations && igdbGameData.game_localizations.length > 0) {
-          for (const gameLocalization of igdbGameData.game_localizations) {
-            await tx.igdbGameLocalizationRelation.upsert({
-              where: { 
-                gameId_gameLocalizationId: {
-                  gameId: igdbGameData.id,
-                  gameLocalizationId: gameLocalization.id
-                }
-              },
-              update: {},
-              create: {
-                gameId: igdbGameData.id,
-                gameLocalizationId: gameLocalization.id,
-              },
-            });
-          }
-        }
       });
+
+      // 2. Upsert all many-to-many relations OUTSIDE the transaction (to avoid transaction timeouts)
+      // Screenshots
+      if (igdbGameData.screenshots && igdbGameData.screenshots.length > 0) {
+        await batchUpsert(
+          igdbGameData.screenshots,
+          20,
+          (screenshot: { id: number }) => prisma.igdbGameScreenshotRelation.upsert({
+            where: {
+              gameId_screenshotId: {
+                gameId: igdbGameData.id,
+                screenshotId: screenshot.id
+              }
+            },
+            update: {},
+            create: {
+              gameId: igdbGameData.id,
+              screenshotId: screenshot.id,
+            },
+          })
+        );
+      }
+
+      // Artworks
+      if (igdbGameData.artworks && igdbGameData.artworks.length > 0) {
+        await batchUpsert(
+          igdbGameData.artworks,
+          20,
+          (artwork: { id: number }) => prisma.igdbGameArtworkRelation.upsert({
+            where: {
+              gameId_artworkId: {
+                gameId: igdbGameData.id,
+                artworkId: artwork.id
+              }
+            },
+            update: {},
+            create: {
+              gameId: igdbGameData.id,
+              artworkId: artwork.id,
+            },
+          })
+        );
+      }
+
+      // Genres
+      if (igdbGameData.genres && igdbGameData.genres.length > 0) {
+        await batchUpsert(
+          igdbGameData.genres,
+          20,
+          (genre: { id: number }) => prisma.igdbGameGenreRelation.upsert({
+            where: {
+              gameId_genreId: {
+                gameId: igdbGameData.id,
+                genreId: genre.id
+              }
+            },
+            update: {},
+            create: {
+              gameId: igdbGameData.id,
+              genreId: genre.id,
+            },
+          })
+        );
+      }
+
+      // Franchises
+      if (igdbGameData.franchises && igdbGameData.franchises.length > 0) {
+        await batchUpsert(
+          igdbGameData.franchises,
+          20,
+          (franchise: { id: number }) => prisma.igdbGameFranchiseRelation.upsert({
+            where: {
+              gameId_franchiseId: {
+                gameId: igdbGameData.id,
+                franchiseId: franchise.id
+              }
+            },
+            update: {},
+            create: {
+              gameId: igdbGameData.id,
+              franchiseId: franchise.id,
+            },
+          })
+        );
+      }
+
+      // Multiplayer modes
+      if (igdbGameData.multiplayer_modes && igdbGameData.multiplayer_modes.length > 0) {
+        await batchUpsert(
+          igdbGameData.multiplayer_modes,
+          20,
+          (mode: { id: number }) => prisma.igdbGameMultiplayerRelation.upsert({
+            where: {
+              gameId_multiplayerModeId: {
+                gameId: igdbGameData.id,
+                multiplayerModeId: mode.id
+              }
+            },
+            update: {},
+            create: {
+              gameId: igdbGameData.id,
+              multiplayerModeId: mode.id,
+            },
+          })
+        );
+      }
+
+      // Alternative names
+      if (igdbGameData.alternative_names && igdbGameData.alternative_names.length > 0) {
+        await batchUpsert(
+          igdbGameData.alternative_names,
+          20,
+          (altName: { id: number }) => prisma.igdbGameAlternativeNameRelation.upsert({
+            where: {
+              gameId_alternativeNameId: {
+                gameId: igdbGameData.id,
+                alternativeNameId: altName.id
+              }
+            },
+            update: {},
+            create: {
+              gameId: igdbGameData.id,
+              alternativeNameId: altName.id,
+            },
+          })
+        );
+      }
+
+      // Game modes
+      if (igdbGameData.game_modes && igdbGameData.game_modes.length > 0) {
+        await batchUpsert(
+          igdbGameData.game_modes,
+          20,
+          (gameMode: { id: number }) => prisma.igdbGameModeRelation.upsert({
+            where: {
+              gameId_gameModeId: {
+                gameId: igdbGameData.id,
+                gameModeId: gameMode.id
+              }
+            },
+            update: {},
+            create: {
+              gameId: igdbGameData.id,
+              gameModeId: gameMode.id,
+            },
+          })
+        );
+      }
+
+      // Player perspectives
+      if (igdbGameData.player_perspectives && igdbGameData.player_perspectives.length > 0) {
+        await batchUpsert(
+          igdbGameData.player_perspectives,
+          20,
+          (perspective: { id: number }) => prisma.igdbGamePlayerPerspectiveRelation.upsert({
+            where: {
+              gameId_playerPerspectiveId: {
+                gameId: igdbGameData.id,
+                playerPerspectiveId: perspective.id
+              }
+            },
+            update: {},
+            create: {
+              gameId: igdbGameData.id,
+              playerPerspectiveId: perspective.id,
+            },
+          })
+        );
+      }
+
+      // Game engines
+      if (igdbGameData.game_engines && igdbGameData.game_engines.length > 0) {
+        await batchUpsert(
+          igdbGameData.game_engines,
+          20,
+          (engine: { id: number }) => prisma.igdbGameEngineRelation.upsert({
+            where: {
+              gameId_gameEngineId: {
+                gameId: igdbGameData.id,
+                gameEngineId: engine.id
+              }
+            },
+            update: {},
+            create: {
+              gameId: igdbGameData.id,
+              gameEngineId: engine.id,
+            },
+          })
+        );
+      }
+
+      // Themes
+      if (igdbGameData.themes && igdbGameData.themes.length > 0) {
+        await batchUpsert(
+          igdbGameData.themes,
+          20,
+          (theme: { id: number }) => prisma.igdbGameThemeRelation.upsert({
+            where: {
+              gameId_themeId: {
+                gameId: igdbGameData.id,
+                themeId: theme.id
+              }
+            },
+            update: {},
+            create: {
+              gameId: igdbGameData.id,
+              themeId: theme.id,
+            },
+          })
+        );
+      }
+
+      // Age ratings
+      if (igdbGameData.age_ratings && igdbGameData.age_ratings.length > 0) {
+        await batchUpsert(
+          igdbGameData.age_ratings,
+          20,
+          (ageRating: { id: number }) => prisma.igdbGameAgeRatingRelation.upsert({
+            where: {
+              gameId_ageRatingId: {
+                gameId: igdbGameData.id,
+                ageRatingId: ageRating.id
+              }
+            },
+            update: {},
+            create: {
+              gameId: igdbGameData.id,
+              ageRatingId: ageRating.id,
+            },
+          })
+        );
+      }
+
+      // Websites
+      if (igdbGameData.websites && igdbGameData.websites.length > 0) {
+        await batchUpsert(
+          igdbGameData.websites,
+          20,
+          (website: { id: number }) => prisma.igdbGameWebsiteRelation.upsert({
+            where: {
+              gameId_websiteId: {
+                gameId: igdbGameData.id,
+                websiteId: website.id
+              }
+            },
+            update: {},
+            create: {
+              gameId: igdbGameData.id,
+              websiteId: website.id,
+            },
+          })
+        );
+      }
+
+      // Videos
+      if (igdbGameData.videos && igdbGameData.videos.length > 0) {
+        await batchUpsert(
+          igdbGameData.videos,
+          20,
+          (video: { id: number }) => prisma.igdbGameVideoRelation.upsert({
+            where: {
+              gameId_videoId: {
+                gameId: igdbGameData.id,
+                videoId: video.id
+              }
+            },
+            update: {},
+            create: {
+              gameId: igdbGameData.id,
+              videoId: video.id,
+            },
+          })
+        );
+      }
+
+      // Language supports
+      if (igdbGameData.language_supports && igdbGameData.language_supports.length > 0) {
+        await batchUpsert(
+          igdbGameData.language_supports,
+          20,
+          (languageSupport: { id: number }) => prisma.igdbGameLanguageSupportRelation.upsert({
+            where: {
+              gameId_languageSupportId: {
+                gameId: igdbGameData.id,
+                languageSupportId: languageSupport.id
+              }
+            },
+            update: {},
+            create: {
+              gameId: igdbGameData.id,
+              languageSupportId: languageSupport.id,
+            },
+          })
+        );
+      }
 
       console.log(`✅ Successfully normalized and stored IGDB game: ${igdbGameData.name}`);
     } catch (error) {
@@ -1191,6 +971,28 @@ export class IGDBGameNormalizationService {
         return `https://images.igdb.com/igdb/image/upload/t_screenshot_med/${screenshots[0].image_id}.jpg`;
       };
 
+
+      // Correct extraction of developer and publisher arrays from involved_companies (using developed/published arrays)
+      let developers: string[] = [];
+      let publishers: string[] = [];
+      if (Array.isArray((igdbGameData as any).involved_companies)) {
+        const gameId = igdbGameData.id;
+        for (const ic of (igdbGameData as any).involved_companies) {
+          const company = ic?.company;
+          const companyName = company?.name;
+          if (!companyName) continue;
+          if (Array.isArray(company.developed) && company.developed.includes(gameId)) {
+            developers.push(companyName);
+          }
+          if (Array.isArray(company.published) && company.published.includes(gameId)) {
+            publishers.push(companyName);
+          }
+        }
+        // Remove duplicates and filter out empty strings
+        developers = Array.from(new Set(developers)).filter(Boolean);
+        publishers = Array.from(new Set(publishers)).filter(Boolean);
+      }
+
       // Create the user's game record
       const userGame = await prisma.game.create({
         data: {
@@ -1201,8 +1003,7 @@ export class IGDBGameNormalizationService {
           cover: getCoverUrl(igdbGameData.cover),
           screenshot: getFirstScreenshotUrl(igdbGameData.screenshots || []),
           summary: igdbGameData.summary,
-          genres: igdbGameData.genres?.map(g => g.name) || [],
-          franchises: igdbGameData.franchises?.map(f => f.name) || [],
+          // genres and franchises are now normalized, not stored as arrays
           platforms: igdbGameData.platforms || [], // Array of IGDB platform IDs
           rating: igdbGameData.total_rating || igdbGameData.aggregated_rating || igdbGameData.rating,
           multiplayerModes: igdbGameData.multiplayer_modes?.map(mm => {
@@ -1222,6 +1023,8 @@ export class IGDBGameNormalizationService {
             ? new Date(igdbGameData.first_release_date * 1000).getFullYear() 
             : null,
           photo: additionalData?.photo || undefined,
+          developer: developers,
+          publisher: publishers,
         },
       });
 

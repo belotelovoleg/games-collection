@@ -96,8 +96,8 @@ model Game {
   // User-specific collection data
   consoleIds      Int[]       // Which consoles this game works on (array of console IDs)
   condition       Condition   @default(GOOD)
-  developer       String?
-  publisher       String?
+  developer       String[]
+  publisher       String[]
   releaseYear     Int?
   price           Float?      // What user paid for it
   purchaseDate    DateTime?
@@ -507,48 +507,26 @@ model IgdbGame {
   updatedAt             BigInt?  @map("updated_at")
   
   // Game metadata
-  category              Int?     // Game category
   gameType              Int?     @map("game_type") // Reference to Game Type
   gameStatus            Int?     @map("game_status") // Reference to Game Status
   parentGameId          Int?     @map("parent_game_id") // If DLC/expansion
   versionParentId       Int?     @map("version_parent_id") // If version
   versionTitle          String?  @map("version_title")
   franchiseId           Int?     @map("franchise_id") // Main franchise
-  collectionId          Int?     @map("collection_id") // Main collection
   
   // Arrays - stored as IGDB IDs
   alternativeNames      Int[]    @map("alternative_names") // Array of Alternative Name IDs
   platforms             Int[]    // Array of Platform IDs
-  genres                Int[]    // Array of Genre IDs
-  themes                Int[]    // Array of Theme IDs
-  gameModes             Int[]    @map("game_modes") // Array of Game Mode IDs
-  playerPerspectives    Int[]    @map("player_perspectives") // Array of Player Perspective IDs
-  gameEngines           Int[]    @map("game_engines") // Array of Game Engine IDs
-  keywords              Int[]    // Array of Keyword IDs
-  involvedCompanies     Int[]    @map("involved_companies") // Array of Involved Company IDs
-  releaseDates          Int[]    @map("release_dates") // Array of Release Date IDs
-  ageRatings            Int[]    @map("age_ratings") // Array of Age Rating IDs
-  websites              Int[]    // Array of Website IDs
-  externalGames         Int[]    @map("external_games") // Array of External Game IDs
-  videos                Int[]    // Array of Game Video IDs
-  languageSupports      Int[]    @map("language_supports") // Array of Language Support IDs
-  gameLocalizations     Int[]    @map("game_localizations") // Array of Game Localization IDs
   
   // Related games
   dlcs                  Int[]    // Array of DLC Game IDs
   expansions            Int[]    // Array of Expansion Game IDs
-  expandedGames         Int[]    @map("expanded_games") // Array of Expanded Game IDs
   standaloneExpansions  Int[]    @map("standalone_expansions") // Array of Standalone Expansion IDs
-  bundles               Int[]    // Array of Bundle Game IDs
   forks                 Int[]    // Array of Fork Game IDs
-  ports                 Int[]    // Array of Port Game IDs
   remakes               Int[]    // Array of Remake Game IDs
   remasters             Int[]    // Array of Remaster Game IDs
-  similarGames          Int[]    @map("similar_games") // Array of Similar Game IDs
   
   // Stats
-  follows               Int?     // Number of follows (deprecated but might still be present)
-  hypes                 Int?     // Number of follows before release
   
   // Full IGDB data JSON backup
   igdbData              String?  @db.Text @map("igdb_data")
@@ -572,16 +550,11 @@ model IgdbGame {
   gamePlayerPerspectiveRelations IgdbGamePlayerPerspectiveRelation[]  @relation("IgdbGamePlayerPerspectives")
   gameEngineRelations            IgdbGameEngineRelation[]              @relation("IgdbGameEngines")
   gameThemeRelations             IgdbGameThemeRelation[]               @relation("IgdbGameThemes")
-  gameKeywordRelations           IgdbGameKeywordRelation[]             @relation("IgdbGameKeywords")
-  gameInvolvedCompanyRelations   IgdbGameInvolvedCompanyRelation[]     @relation("IgdbGameInvolvedCompanies")
-  gameReleaseDateRelations       IgdbGameReleaseDateRelation[]         @relation("IgdbGameReleaseDates")
   gameAgeRatingRelations         IgdbGameAgeRatingRelation[]           @relation("IgdbGameAgeRatings")
   gameWebsiteRelations           IgdbGameWebsiteRelation[]             @relation("IgdbGameWebsites")
-  gameExternalGameRelations      IgdbGameExternalGameRelation[]        @relation("IgdbGameExternalGames")
   gameVideoRelations             IgdbGameVideoRelation[]               @relation("IgdbGameVideos")
   gameLanguageSupportRelations   IgdbGameLanguageSupportRelation[]     @relation("IgdbGameLanguageSupports")
-  gameLocalizationRelations      IgdbGameLocalizationRelation[]        @relation("IgdbGameLocalizations")
-
+  
   @@map("igdb_games")
 }
 
@@ -738,63 +711,6 @@ model IgdbTheme {
   @@map("igdb_themes")
 }
 
-// IGDB Keyword normalization
-model IgdbKeyword {
-  id        Int      @id // IGDB ID directly
-  checksum  String?  @map("checksum")
-  createdAt BigInt?  @map("created_at")
-  name      String?  @map("name")
-  slug      String?  @map("slug")
-  updatedAt BigInt?  @map("updated_at")
-  url       String?  @map("url")
-
-  // Relations
-  games IgdbGameKeywordRelation[]
-
-  @@map("igdb_keywords")
-}
-
-// IGDB Involved Company normalization
-model IgdbInvolvedCompany {
-  id         Int      @id // IGDB ID directly
-  checksum   String?  @map("checksum")
-  companyId  Int?     @map("company_id") // Reference to Company
-  createdAt  BigInt?  @map("created_at")
-  developer  Boolean? @map("developer")
-  gameId     Int?     @map("game_id") // Reference to Game
-  porting    Boolean? @map("porting")
-  publisher  Boolean? @map("publisher")
-  supporting Boolean? @map("supporting")
-  updatedAt  BigInt?  @map("updated_at")
-
-  // Relations
-  games IgdbGameInvolvedCompanyRelation[]
-
-  @@map("igdb_involved_companies")
-}
-
-// IGDB Release Date normalization
-model IgdbReleaseDate {
-  id           Int      @id // IGDB ID directly
-  checksum     String?  @map("checksum")
-  createdAt    BigInt?  @map("created_at")
-  date         BigInt?  @map("date") // Unix timestamp
-  dateFormatId Int?     @map("date_format_id") // Reference to Date Format
-  gameId       Int?     @map("game_id") // Reference to Game
-  human        String?  @map("human") // Human readable date
-  m            Int?     @map("m") // Month
-  platformId   Int?     @map("platform_id") // Reference to Platform
-  regionId     Int?     @map("release_region_id") // Reference to Release Date Region
-  statusId     Int?     @map("status_id") // Reference to Release Date Status
-  updatedAt    BigInt?  @map("updated_at")
-  y            Int?     @map("y") // Year
-
-  // Relations
-  games IgdbGameReleaseDateRelation[]
-
-  @@map("igdb_release_dates")
-}
-
 // IGDB Age Rating normalization
 model IgdbAgeRating {
   id                        Int     @id // IGDB ID directly
@@ -827,28 +743,6 @@ model IgdbWebsite {
   @@map("igdb_websites")
 }
 
-// IGDB External Game normalization
-model IgdbExternalGame {
-  id                  Int     @id // IGDB ID directly
-  checksum            String? @map("checksum")
-  countries           Int[]   @map("countries") // Array of country codes
-  createdAt           BigInt? @map("created_at")
-  externalGameSourceId Int?   @map("external_game_source_id") // Reference to External Game Source
-  gameId              Int?    @map("game_id") // Reference to Game
-  gameReleaseFormatId Int?    @map("game_release_format_id") // Reference to Game Release Format
-  name                String? @map("name")
-  platformId          Int?    @map("platform_id") // Reference to Platform
-  uid                 String? @map("uid") // External ID
-  updatedAt           BigInt? @map("updated_at")
-  url                 String? @map("url")
-  year                Int?    @map("year")
-
-  // Relations
-  games IgdbGameExternalGameRelation[]
-
-  @@map("igdb_external_games")
-}
-
 // IGDB Video normalization
 model IgdbVideo {
   id       Int     @id // IGDB ID directly
@@ -877,23 +771,6 @@ model IgdbLanguageSupport {
   games IgdbGameLanguageSupportRelation[]
 
   @@map("igdb_language_supports")
-}
-
-// IGDB Game Localization normalization
-model IgdbGameLocalization {
-  id        Int     @id // IGDB ID directly
-  checksum  String? @map("checksum")
-  coverId   Int?    @map("cover_id") // Reference to Cover
-  createdAt BigInt? @map("created_at")
-  gameId    Int?    @map("game_id") // Reference to Game
-  name      String? @map("name")
-  regionId  Int?    @map("region_id") // Reference to Region
-  updatedAt BigInt? @map("updated_at")
-
-  // Relations
-  games IgdbGameLocalizationRelation[]
-
-  @@map("igdb_game_localizations")
 }
 
 // Junction tables for many-to-many relationships
@@ -942,39 +819,6 @@ model IgdbGameThemeRelation {
   @@map("igdb_game_theme_relations")
 }
 
-model IgdbGameKeywordRelation {
-  gameId    Int @map("game_id")
-  keywordId Int @map("keyword_id")
-
-  game    IgdbGame    @relation("IgdbGameKeywords", fields: [gameId], references: [id], onDelete: Cascade)
-  keyword IgdbKeyword @relation(fields: [keywordId], references: [id], onDelete: Cascade)
-
-  @@id([gameId, keywordId])
-  @@map("igdb_game_keyword_relations")
-}
-
-model IgdbGameInvolvedCompanyRelation {
-  gameId             Int @map("game_id")
-  involvedCompanyId  Int @map("involved_company_id")
-
-  game             IgdbGame             @relation("IgdbGameInvolvedCompanies", fields: [gameId], references: [id], onDelete: Cascade)
-  involvedCompany  IgdbInvolvedCompany  @relation(fields: [involvedCompanyId], references: [id], onDelete: Cascade)
-
-  @@id([gameId, involvedCompanyId])
-  @@map("igdb_game_involved_company_relations")
-}
-
-model IgdbGameReleaseDateRelation {
-  gameId        Int @map("game_id")
-  releaseDateId Int @map("release_date_id")
-
-  game        IgdbGame        @relation("IgdbGameReleaseDates", fields: [gameId], references: [id], onDelete: Cascade)
-  releaseDate IgdbReleaseDate @relation(fields: [releaseDateId], references: [id], onDelete: Cascade)
-
-  @@id([gameId, releaseDateId])
-  @@map("igdb_game_release_date_relations")
-}
-
 model IgdbGameAgeRatingRelation {
   gameId      Int @map("game_id")
   ageRatingId Int @map("age_rating_id")
@@ -997,17 +841,6 @@ model IgdbGameWebsiteRelation {
   @@map("igdb_game_website_relations")
 }
 
-model IgdbGameExternalGameRelation {
-  gameId         Int @map("game_id")
-  externalGameId Int @map("external_game_id")
-
-  game         IgdbGame         @relation("IgdbGameExternalGames", fields: [gameId], references: [id], onDelete: Cascade)
-  externalGame IgdbExternalGame @relation(fields: [externalGameId], references: [id], onDelete: Cascade)
-
-  @@id([gameId, externalGameId])
-  @@map("igdb_game_external_game_relations")
-}
-
 model IgdbGameVideoRelation {
   gameId  Int @map("game_id")
   videoId Int @map("video_id")
@@ -1028,17 +861,6 @@ model IgdbGameLanguageSupportRelation {
 
   @@id([gameId, languageSupportId])
   @@map("igdb_game_language_support_relations")
-}
-
-model IgdbGameLocalizationRelation {
-  gameId             Int @map("game_id")
-  gameLocalizationId Int @map("game_localization_id")
-
-  game             IgdbGame             @relation("IgdbGameLocalizations", fields: [gameId], references: [id], onDelete: Cascade)
-  gameLocalization IgdbGameLocalization @relation(fields: [gameLocalizationId], references: [id], onDelete: Cascade)
-
-  @@id([gameId, gameLocalizationId])
-  @@map("igdb_game_localization_relations")
 }
 
 // Enums

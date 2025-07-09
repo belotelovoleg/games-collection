@@ -254,7 +254,7 @@ export default function GamesPage({ params }: { params: { locale: string } }) {
                     disabled={loading}
                   >
                     {userConsoles.map((userConsole) => (
-                      <MenuItem key={userConsole.id} value={userConsole.console.id}>
+                      <MenuItem key={userConsole.id} value={String(userConsole.console.id)}>
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1, width: "100%" }}>
                           <span>{userConsole.console.name}</span>
                           <Chip 
@@ -539,7 +539,11 @@ export default function GamesPage({ params }: { params: { locale: string } }) {
             setGameToAdd(null);
           }}
           game={gameToAdd}
-          selectedConsole={selectedConsole ? userConsoles.find(uc => uc.console.id.toString() === selectedConsole) : null}
+          selectedConsole={
+            selectedConsole !== ""
+              ? userConsoles.find(uc => String(uc.console.id) === selectedConsole)
+              : null
+          }
           userConsoles={userConsoles}
           onSuccess={handleAddToCollectionSuccess}
         />

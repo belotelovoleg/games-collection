@@ -53,11 +53,19 @@ export default function AddToCollectionModal({
 }: AddToCollectionModalProps) {
   const { t } = useTranslations();
   
+  // Helper to get today's date in yyyy-mm-dd format
+  const getToday = () => {
+    const d = new Date();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${d.getFullYear()}-${month}-${day}`;
+  };
+
   const [formData, setFormData] = useState({
-    consoleId: selectedConsole?.console?.id || '',
+    consoleId: selectedConsole?.console?.id ? String(selectedConsole.console.id) : '',
     condition: 'GOOD',
     price: '',
-    purchaseDate: '',
+    purchaseDate: getToday(),
     notes: '',
     photo: ''
   });
@@ -77,7 +85,7 @@ export default function AddToCollectionModal({
   // Update consoleId when selectedConsole changes
   useEffect(() => {
     if (selectedConsole) {
-      setFormData(prev => ({ ...prev, consoleId: selectedConsole.console?.id }));
+      setFormData(prev => ({ ...prev, consoleId: selectedConsole.console?.id ? String(selectedConsole.console.id) : '' }));
     }
   }, [selectedConsole]);
 
@@ -108,7 +116,7 @@ export default function AddToCollectionModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           igdbGameId: game.id,
-          consoleId: formData.consoleId,
+          consoleId: Number(formData.consoleId),
           condition: formData.condition,
           price: formData.price || null,
           purchaseDate: formData.purchaseDate || null,
@@ -123,10 +131,10 @@ export default function AddToCollectionModal({
       const result = await response.json();
       if (onSuccess) onSuccess(result.game);
       setFormData({
-        consoleId: selectedConsole?.console?.id || '',
+        consoleId: selectedConsole?.console?.id ? String(selectedConsole.console.id) : '',
         condition: 'GOOD',
         price: '',
-        purchaseDate: '',
+        purchaseDate: getToday(),
         notes: '',
         photo: ''
       });
@@ -182,6 +190,15 @@ export default function AddToCollectionModal({
     if (!cover?.image_id) return null;
     return `https://images.igdb.com/igdb/image/upload/t_cover_big/${cover.image_id}.jpg`;
   };
+
+
+  // Debug: Log the game data when the modal opens
+  useEffect(() => {
+    if (open && game) {
+      // Log the full game object for inspection
+      console.log('[AddToCollectionModal] Game data:', game);
+    }
+  }, [open, game]);
 
   if (!game) return null;
 
@@ -331,10 +348,12 @@ export default function AddToCollectionModal({
               <Select
                 value={formData.consoleId}
                 label="Console"
-                onChange={(e) => setFormData(prev => ({ ...prev, consoleId: e.target.value }))}
+                onChange={(e) => {
+                  setFormData(prev => ({ ...prev, consoleId: e.target.value }));
+                }}
               >
                 {userConsoles.map((userConsole) => (
-                  <MenuItem key={userConsole.id} value={userConsole.console.id}>
+                  <MenuItem key={userConsole.id} value={String(userConsole.console.id)}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1, width: "100%" }}>
                       <span>{userConsole.console.name}</span>
                       <Chip 
