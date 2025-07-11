@@ -315,7 +315,7 @@ export default function GamesPage() {
 
   return (
     <MainLayout locale={locale}>
-      <Container maxWidth="lg" sx={{ py: 1 }}>
+      <Container maxWidth="xl" sx={{ py: 1 }}>
         {/* Compact Header */}
         <Box sx={{ mb: 2 }}>
           <Typography 
@@ -475,7 +475,7 @@ export default function GamesPage() {
               <Typography color="text.secondary">{t("games_noGamesInCollection") || 'No games in your collection'}</Typography>
             ) : (
               isMobile ? (
-                <Grid container spacing={2}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {userGames.map((game) => {
                     let platformStr = '';
                     if (Array.isArray(game.platforms)) {
@@ -486,7 +486,7 @@ export default function GamesPage() {
                       }
                     }
                     return (
-                      <Grid item xs={12} key={game.id}>
+                      <div key={game.id} style={{ width: '100%' }}>
                         <Card variant="outlined" sx={{ p: 2, display: 'flex', gap: 2 }}>
                           <Box sx={{ cursor: game.photos?.length ? 'pointer' : 'default', minWidth: 80 }} onClick={() => game.photos?.length && openPhotoGallery(game.photos, 0)}>
                             <Avatar
@@ -561,10 +561,10 @@ export default function GamesPage() {
                             </Box>
                           </Box>
                         </Card>
-                      </Grid>
+                      </div>
                     );
                   })}
-                </Grid>
+                </div>
               ) : (
                 <Paper sx={{ width: '100%', overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
