@@ -16,7 +16,9 @@ import {
   Card,
   Tabs,
   Tab,
-  Badge
+  Badge,
+  CircularProgress,
+  Backdrop
 } from "@mui/material";
 import { GameMediaGallery } from "./GameMediaGallery";
 import CloseIcon from "@mui/icons-material/Close";
@@ -55,13 +57,18 @@ export function GameDetailsModal({ open,
   // Modal states
   const [detailsTabValue, setDetailsTabValue] = useState(0);
   const [fetchedIgdbGame, setFetchedIgdbGame] = useState(null);
+  const [loadingIgdb, setLoadingIgdb] = useState(false);
 
   // When you need to fetch IGDB data:
   useEffect(() => {
     if (gameType === "local" && game && !game.igdbGame && (game.igdbId || game.igdbGameId)) {
+      setLoadingIgdb(true);
       fetch(`/api/igdb/game/${game.igdbId || game.igdbGameId}`)
         .then(res => res.json())
-        .then(data => setFetchedIgdbGame(data));
+        .then(data => setFetchedIgdbGame(data))
+        .finally(() => setLoadingIgdb(false));
+    } else {
+      setLoadingIgdb(false);
     }
   }, [game, gameType]);
 
@@ -176,6 +183,18 @@ export function GameDetailsModal({ open,
           }
         }}
       >
+        {/* Loading overlay for IGDB fetch */}
+        <Backdrop
+          open={loadingIgdb}
+          sx={{
+            position: 'absolute',
+            zIndex: (theme) => theme.zIndex.drawer + 2,
+            color: '#fff',
+            backgroundColor: 'rgba(0,0,0,0.2)'
+          }}
+        >
+          <CircularProgress color="inherit" />
+        </Backdrop>
         <DialogTitle sx={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
@@ -215,7 +234,6 @@ export function GameDetailsModal({ open,
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-        
         <DialogContent sx={{ px: { xs: 2, sm: 3 }, py: 0 }}>
           <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: 3, pt: 3 }}>
             {/* Left Sidebar - Cover and Actions */}
@@ -244,7 +262,6 @@ export function GameDetailsModal({ open,
                   >
                     <SportsEsportsIcon sx={{ fontSize: '4rem' }} />
                   </Avatar>
-                  
                   {gameType != "local" && <Button
                     fullWidth
                     variant="contained"
@@ -256,14 +273,12 @@ export function GameDetailsModal({ open,
                     {t("games_addToCollection")}
                   </Button>}
                 </Box>
-
                 {/* Quick Info Card */}
                 <Card variant="outlined" sx={{ p: 2 }}>
                   <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <InfoIcon color="primary" />
                     {t("games_gameInfo")}
                   </Typography>
-                  
                   {mergedGame.genres && mergedGame.genres.length > 0 && (
                     <Box sx={{ mb: 2 }}>
                       <Typography variant="subtitle2" color="text.secondary" gutterBottom>
@@ -282,7 +297,6 @@ export function GameDetailsModal({ open,
                       </Box>
                     </Box>
                   )}
-                  
                   {mergedGame.involved_companies && mergedGame.involved_companies.length > 0 && (
                     <Box sx={{ mb: 2 }}>
                       <Typography variant="subtitle2" color="text.secondary" gutterBottom>
@@ -293,7 +307,6 @@ export function GameDetailsModal({ open,
                       </Typography>
                     </Box>
                   )}
-
                   {mergedGame.platforms && mergedGame.platforms.length > 0 && (
                     <Box sx={{ mb: 2 }}>
                       <Typography variant="subtitle2" color="text.secondary" gutterBottom>
@@ -307,7 +320,6 @@ export function GameDetailsModal({ open,
                 </Card>
               </Box>
             </Box>
-            
             {/* Main Content Area */}
             <Box sx={{ flex: 1, minWidth: 0 }}>
               {/* Tabs for different content sections */}
@@ -365,7 +377,6 @@ export function GameDetailsModal({ open,
                   />
                 </Tabs>
               </Box>
-
               {/* Tab Content */}
               {/* Summary Tab */}
               {detailsTabValue === 0 && (
@@ -386,7 +397,6 @@ export function GameDetailsModal({ open,
                       </Typography>
                     </Box>
                   )}
-
                   {mergedGame.storyline && (
                     <Box sx={{ mb: 3 }}>
                       <Typography variant="h6" gutterBottom>
@@ -397,7 +407,6 @@ export function GameDetailsModal({ open,
                       </Typography>
                     </Box>
                   )}
-
                   {mergedGame.notes && (
                     <Box sx={{ mb: 3 }}>
                       <Typography variant="h6" gutterBottom>
@@ -410,7 +419,6 @@ export function GameDetailsModal({ open,
                   )}
                 </Box>
               )}
-
               {/* Cover Tab */}
               {detailsTabValue === 1 && (
                 <GameMediaGallery
@@ -425,7 +433,6 @@ export function GameDetailsModal({ open,
                   imageAltPrefix="Cover"
                 />
               )}
-
               {/* Screenshots Tab */}
               {detailsTabValue === 2 && (
                 <GameMediaGallery
@@ -439,7 +446,6 @@ export function GameDetailsModal({ open,
                   imageAltPrefix="Screenshot"
                 />
               )}
-
               {/* Artworks Tab */}
               {detailsTabValue === 3 && (
                 <GameMediaGallery
@@ -453,7 +459,6 @@ export function GameDetailsModal({ open,
                   imageAltPrefix="Artwork"
                 />
               )}
-
               {/* Photos Tab */}
               {detailsTabValue === 4 && (
                 <GameMediaGallery
@@ -471,7 +476,6 @@ export function GameDetailsModal({ open,
           </Box>
         </DialogContent>
       </Dialog>
-
     </>
   );
 }
