@@ -63,6 +63,8 @@ export default function LoginPage({ params }: { params: Promise<{ locale: string
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            id="new-email"
+            autoComplete="new-email"
           />
           <TextField
             fullWidth
@@ -73,6 +75,8 @@ export default function LoginPage({ params }: { params: Promise<{ locale: string
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            id="new-password"
+            autoComplete="new-password"
           />
           <Button
             type="submit"

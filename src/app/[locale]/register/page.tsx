@@ -64,6 +64,8 @@ export default function RegisterPage({ params }: { params: Promise<{ locale: str
             variant="outlined"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            id="new-name"
+            autoComplete="new-name"
           />
           <TextField
             fullWidth
@@ -74,6 +76,8 @@ export default function RegisterPage({ params }: { params: Promise<{ locale: str
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            id="new-email"
+            autoComplete="new-email"
           />
           <TextField
             fullWidth
@@ -84,6 +88,8 @@ export default function RegisterPage({ params }: { params: Promise<{ locale: str
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            id="new-password"
+            autoComplete="new-password"
           />
           <Button
             type="submit"
