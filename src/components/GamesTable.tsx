@@ -118,15 +118,25 @@ export function GamesTable({
               <td style={{ padding: '8px' }}>{game.title || game.name}</td>
               <td style={{ padding: '8px' }}>
                 {game.alternativeNames && game.alternativeNames.length > 0 && (
-                  <Button size="small" variant="outlined" onClick={(e) => handleAltNamesClick(e, game.id)}>
+                    <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={e => {
+                        e.stopPropagation();
+                        handleAltNamesClick(e, game.id);
+                    }}
+                    >
                     {t('games_alternativeNames') || 'Alternative Names'}
-                  </Button>
+                    </Button>
                 )}
                 {altNamesGameId === game.id && (
                   <Popover
                     open={Boolean(altNamesAnchorEl)}
                     anchorEl={altNamesAnchorEl}
-                    onClose={handleAltNamesClose}
+                    onClose={e => {
+                        e.stopPropagation();
+                        handleAltNamesClose();
+                    }}
                     anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
                   >
                     <Box sx={{ p: 2, minWidth: 180 }}>
