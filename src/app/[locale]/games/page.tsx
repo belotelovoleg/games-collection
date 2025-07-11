@@ -45,6 +45,10 @@ import EnhancedSearchResultsModal from "@/components/EnhancedSearchResultsModal"
 
 
 export default function GamesPage() {
+  // --- Platforms state ---
+  const [allPlatforms, setAllPlatforms] = useState<any[]>([]);
+  // --- ConsoleSystem state ---
+  const [allConsoleSystems, setAllConsoleSystems] = useState<any[]>([]);
   // --- Alternative Names Popover State (top-level, not inside map) ---
   const [altNamesAnchorEl, setAltNamesAnchorEl] = useState<null | HTMLElement>(null);
   const [altNamesGameId, setAltNamesGameId] = useState<string | null>(null);
@@ -101,6 +105,38 @@ export default function GamesPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, page, pageSize, selectedConsole, searchQuery, sortBy, sortOrder]);
+
+  
+  // Fetch all platforms once when authenticated
+  useEffect(() => {
+    if (status === "authenticated") {
+      fetchAllPlatforms();
+      fetchAllConsoleSystems();
+    }
+  }, [status]);
+
+  const fetchAllPlatforms = async () => {
+    try {
+      const response = await fetch('/api/platforms');
+      if (!response.ok) throw new Error('Failed to fetch platforms');
+      const data = await response.json();
+      setAllPlatforms(data.platforms || data || []);
+    } catch (e) {
+      setAllPlatforms([]);
+    }
+  };
+
+  // Fetch all console systems
+  const fetchAllConsoleSystems = async () => {
+    try {
+      const response = await fetch('/api/consoles');
+      if (!response.ok) throw new Error('Failed to fetch console systems');
+      const data = await response.json();
+      setAllConsoleSystems(data.consoles || data || []);
+    } catch (e) {
+      setAllConsoleSystems([]);
+    }
+  };
 
   const fetchUserGames = async () => {
     try {
@@ -477,13 +513,33 @@ export default function GamesPage() {
               isMobile ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {userGames.map((game) => {
+                    // Map platform IDs to names using allPlatforms
                     let platformStr = '';
                     if (Array.isArray(game.platforms)) {
+                      // If platforms are objects (legacy), use their names
                       if (typeof game.platforms[0] === 'object') {
                         platformStr = game.platforms.map((p: any) => p.name).join(', ');
                       } else {
-                        platformStr = game.platforms.join(', ');
+                        // platforms are IDs, map to names using allPlatforms
+                        platformStr = game.platforms
+                          .map((pid: number) => {
+                            const found = allPlatforms?.find((p: any) => String(p.id) === String(pid));
+                            return found ? found.name : null;
+                          })
+                          .filter(Boolean)
+                          .join(', ');
                       }
+                    }
+                    // Map consoleIds to ConsoleSystem names
+                    let consoleSystemStr = '';
+                    if (Array.isArray(game.consoleIds)) {
+                      consoleSystemStr = game.consoleIds
+                        .map((cid: number) => {
+                          const found = allConsoleSystems?.find((c: any) => String(c.id) === String(cid));
+                          return found ? found.name : null;
+                        })
+                        .filter(Boolean)
+                        .join(', ');
                     }
                     return (
                       <div key={game.id} style={{ width: '100%' }}>
@@ -536,7 +592,7 @@ export default function GamesPage() {
                               </Popover>
                             )}
                             {game.genres && <Typography variant="body2" color="text.secondary">{game.genres.join(', ')}</Typography>}
-                            {game.consoleName && <Typography variant="body2" color="text.secondary">{game.consoleName}</Typography>}
+                            {consoleSystemStr && <Typography variant="body2" color="text.secondary">{consoleSystemStr}</Typography>}
                             {getGameRating(game) > 0 && (
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
                                 <Rating value={getGameRating(game)} precision={0.1} size="small" readOnly />
@@ -584,13 +640,31 @@ export default function GamesPage() {
                     </thead>
                     <tbody>
                       {userGames.map((game) => {
+                        // Map platform IDs to names using allPlatforms
                         let platformStr = '';
                         if (Array.isArray(game.platforms)) {
                           if (typeof game.platforms[0] === 'object') {
                             platformStr = game.platforms.map((p: any) => p.name).join(', ');
                           } else {
-                            platformStr = game.platforms.join(', ');
+                            platformStr = game.platforms
+                              .map((pid: number) => {
+                                const found = allPlatforms?.find((p: any) => String(p.id) === String(pid));
+                                return found ? found.name : null;
+                              })
+                              .filter(Boolean)
+                              .join(', ');
                           }
+                        }
+                        // Map consoleIds to ConsoleSystem names
+                        let consoleSystemStr = '';
+                        if (Array.isArray(game.consoleIds)) {
+                          consoleSystemStr = game.consoleIds
+                            .map((cid: number) => {
+                              const found = allConsoleSystems?.find((c: any) => String(c.id) === String(cid));
+                              return found ? found.name : null;
+                            })
+                            .filter(Boolean)
+                            .join(', ');
                         }
                         return (
                           <tr key={game.id} style={{ borderBottom: `1px solid ${theme.palette.divider}` }}>
@@ -645,8 +719,7 @@ export default function GamesPage() {
                                 </Box>
                               )}
                             </td>
-                            <td style={{ padding: '8px' }}>{game.consoleName}</td>
-                            <td style={{ padding: '8px' }}>{game.completed ? '✓' : ''}</td>
+                            <td style={{ padding: '8px' }}>{consoleSystemStr}</td>
                             <td style={{ padding: '8px' }}>
                               <span title={game.completed ? 'Completed' : 'Not Completed'} style={{ fontSize: 22, lineHeight: 1 }}>
                                 {game.completed ? '🏅' : '–'}
