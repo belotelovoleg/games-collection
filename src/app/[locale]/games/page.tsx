@@ -417,7 +417,7 @@ const handleToggleFavorite = async (game: any) => {
 
   return (
     <MainLayout locale={locale}>
-      <Container maxWidth="xl" sx={{ py: 1 }}>
+      <Container maxWidth="xl" sx={{ py: 1, minWidth: 320, overflowX: 'auto' }}>
         {/* Compact Header */}
         <Box sx={{ mb: 2 }}>
           <Typography 
