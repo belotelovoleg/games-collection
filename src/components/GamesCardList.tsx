@@ -112,7 +112,7 @@ export function GamesCardList({
                     </Box>
                   </Popover>
                 )}
-                {game.genres && <Typography variant="body2" color="text.secondary">{game.genres.join(', ')}</Typography>}
+                {/* Genres removed as requested */}
                 {consoleSystemStr && <Typography variant="body2" color="text.secondary">{consoleSystemStr}</Typography>}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
                   <span

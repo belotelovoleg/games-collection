@@ -28,7 +28,7 @@ export function GamesTable({
           <th style={{ padding: '8px', textAlign: 'left' }}>{'Image'}</th>
           <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_title') || 'Title'}</th>
           <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_alternativeNames') || 'Alternative Names'}</th>
-          <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_genres') || 'Genres'}</th>
+          {/* Genres column removed as requested */}
           <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_platforms') || 'Platforms'}</th>
           <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_rating') || 'Rating'}</th>
           <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_console') || 'Console'}</th>
@@ -122,7 +122,7 @@ export function GamesTable({
                   </Popover>
                 )}
               </td>
-              <td style={{ padding: '8px' }}>{game.genres?.join(', ')}</td>
+              {/* Genres cell removed as requested */}
               <td style={{ padding: '8px' }}>{platformStr}</td>
               <td style={{ padding: '8px' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>

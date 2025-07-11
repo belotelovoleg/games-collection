@@ -15,19 +15,15 @@ import {
   Card,
   CardContent,
   Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  IconButton,
   Paper,
 } from "@mui/material";
+import { PhotoGalleryModal } from "@/components/PhotoGalleryModal";
 import { RatingPopup } from "@/components/RatingPopup";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 import SearchIcon from "@mui/icons-material/Search";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import AddIcon from "@mui/icons-material/Add";
-import CloseIcon from "@mui/icons-material/Close";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useTheme } from '@mui/material/styles';
@@ -39,6 +35,8 @@ import AddToCollectionModal from "@/components/AddToCollectionModal";
 import EnhancedSearchResultsModal from "@/components/EnhancedSearchResultsModal";
 import { GamesTable } from "@/components/GamesTable";
 import { GamesCardList } from "@/components/GamesCardList";
+
+import "react-image-gallery/styles/css/image-gallery.css";
 
 
 export default function GamesPage() {
@@ -664,44 +662,14 @@ const handleToggleFavorite = async (game: any) => {
           </CardContent>
         </Card>
 
-        {/* Photo Gallery Modal */}
-        <Dialog open={galleryOpen} onClose={closeGallery} maxWidth="md" fullWidth>
-          <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            {t('games_photos') || 'Photos'}
-            <Box>
-              <IconButton onClick={closeGallery}><CloseIcon /></IconButton>
-            </Box>
-          </DialogTitle>
-          <DialogContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', p: 3 }}>
-            {galleryImages.length > 0 ? (
-              <>
-                <Box sx={{ mb: 2, position: 'relative' }}>
-                  <img
-                    src={galleryImages[galleryIndex]}
-                    alt={`Game photo ${galleryIndex + 1}`}
-                    style={{ maxWidth: 400, maxHeight: 400, borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}
-                  />
-                  {galleryImages.length > 1 && (
-                    <>
-                      <IconButton onClick={prevGalleryImage} sx={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)' }}>
-                        {'<'}
-                      </IconButton>
-                      <IconButton onClick={nextGalleryImage} sx={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)' }}>
-                        {'>'}
-                      </IconButton>
-                    </>
-                  )}
-                </Box>
-                <Typography variant="caption">{galleryIndex + 1} / {galleryImages.length}</Typography>
-              </>
-            ) : (
-              <Box sx={{ textAlign: 'center', py: 4 }}>
-                <SportsEsportsIcon sx={{ fontSize: 60, color: 'text.disabled', mb: 2 }} />
-                <Typography variant="body2" color="text.secondary">{t('games_noPhotos') || 'No photos'}</Typography>
-              </Box>
-            )}
-          </DialogContent>
-        </Dialog>
+        {/* Photo Gallery Modal (react-image-gallery) */}
+        <PhotoGalleryModal
+          open={galleryOpen}
+          images={galleryImages}
+          startIndex={galleryIndex}
+          onClose={closeGallery}
+          title={t('games_photos') || 'Photos'}
+        />
         {/* Snackbar for feedback */}
         <Snackbar
           open={snackbar.open}
@@ -714,7 +682,7 @@ const handleToggleFavorite = async (game: any) => {
           </Alert>
         </Snackbar>
 
-        {/* Enhanced Search Results Modal (extracted) */}
+        {/* Enhanced Search Results Modal */}
         <EnhancedSearchResultsModal
           open={resultsDialogOpen}
           onClose={() => setResultsDialogOpen(false)}
