@@ -16,10 +16,9 @@ import {
   Card,
   Tabs,
   Tab,
-  Badge,
-  ImageList,
-  ImageListItem
+  Badge
 } from "@mui/material";
+import { GameMediaGallery } from "./GameMediaGallery";
 import CloseIcon from "@mui/icons-material/Close";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import InfoIcon from "@mui/icons-material/Info";
@@ -414,241 +413,59 @@ export function GameDetailsModal({ open,
 
               {/* Cover Tab */}
               {detailsTabValue === 1 && (
-                <Box>
-                  {mergedGame.cover ? (
-                    <Box>
-                      <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <ImageIcon />
-                        {t("games_cover")}
-                      </Typography>
-                      <Box sx={{ textAlign: 'center' }}>
-                        <img
-                          src={getGameCoverUrl(mergedGame.cover) || "undefined"}
-                          alt={t("games_cover")}
-                          onClick={() => openImageGallery([mergedGame.cover])}
-                          style={{
-                            maxWidth: '100%',
-                            maxHeight: '60vh',
-                            objectFit: 'contain',
-                            borderRadius: 8,
-                            cursor: 'pointer',
-                            boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-                            transition: 'transform 0.2s ease-in-out'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'scale(1.02)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'scale(1)';
-                          }}
-                        />
-                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                          {t("games_clickToView")}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  ) : (
-                    <Box sx={{ textAlign: 'center', py: 6 }}>
-                      <ImageIcon sx={{ fontSize: '4rem', color: 'text.disabled', mb: 2 }} />
-                      <Typography variant="h6" color="text.secondary">
-                        {t("games_noCover")}
-                      </Typography>
-                    </Box>
-                  )}
-                </Box>
+                <GameMediaGallery
+                  images={mergedGame.cover ? [mergedGame.cover] : []}
+                  title={t("games_cover")}
+                  icon={<ImageIcon />}
+                  emptyText={t("games_noCover")}
+                  getImageUrl={getGameCoverUrl}
+                  onOpenGallery={openImageGallery}
+                  seeAllLabel={t("games_clickToView")}
+                  badgeCount={1}
+                  imageAltPrefix="Cover"
+                />
               )}
 
               {/* Screenshots Tab */}
               {detailsTabValue === 2 && (
-                <Box>
-                  {mergedGame.screenshots && mergedGame.screenshots.length > 0 ? (
-                    <Box>
-                      <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <PhotoLibraryIcon />
-                        {t("games_screenshots")} ({mergedGame.screenshots.length})
-                      </Typography>
-                      <ImageList 
-                        variant="standard"
-                        cols={mergedGame.screenshots.length}
-                        sx={{ display: 'flex', flexDirection: 'row', overflowX: 'auto', gap: 8 }}
-                      >
-                        {mergedGame.screenshots.slice(0, 6).map((screenshot: any, index: number) => {
-                          const screenshotUrl = getScreenshotUrl(screenshot);
-                          return screenshotUrl ? (
-                            <ImageListItem 
-                              key={index}
-                              sx={{ 
-                                cursor: 'pointer',
-                                borderRadius: 2,
-                                overflow: 'hidden'
-                              }}
-                              onClick={() => openImageGallery(
-                                mergedGame.screenshots
-                              )}
-                            >
-                              <img
-                                src={screenshotUrl}
-                                alt={`Screenshot ${index + 1}`}
-                                loading="lazy"
-                                style={{ borderRadius: 8 }}
-                              />
-                            </ImageListItem>
-                          ) : null;
-                        })}
-                      </ImageList>
-                      
-                      {mergedGame.screenshots.length > 6 && (
-                        <Box sx={{ textAlign: 'center', mt: 2 }}>
-                          <Button
-                            variant="outlined"
-                            onClick={() => openImageGallery(
-                              mergedGame.screenshots
-                            )}
-                            startIcon={<FullscreenIcon />}
-                          >
-                            {t("games_seeAll")} ({mergedGame.screenshots.length} {t("games_screenshots").toLowerCase()})
-                          </Button>
-                        </Box>
-                      )}
-                    </Box>
-                  ) : (
-                    <Box sx={{ textAlign: 'center', py: 6 }}>
-                      <PhotoLibraryIcon sx={{ fontSize: '4rem', color: 'text.disabled', mb: 2 }} />
-                      <Typography variant="h6" color="text.secondary">
-                        {t("games_noScreenshots")}
-                      </Typography>
-                    </Box>
-                  )}
-                </Box>
+                <GameMediaGallery
+                  images={mergedGame.screenshots || []}
+                  title={t("games_screenshots")}
+                  icon={<PhotoLibraryIcon />}
+                  emptyText={t("games_noScreenshots")}
+                  getImageUrl={getScreenshotUrl}
+                  onOpenGallery={openImageGallery}
+                  seeAllLabel={t("games_seeAll")}
+                  imageAltPrefix="Screenshot"
+                />
               )}
 
               {/* Artworks Tab */}
               {detailsTabValue === 3 && (
-                <Box>
-                  {mergedGame.artworks && mergedGame.artworks.length > 0 ? (
-                    <Box>
-                      <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <ImageIcon />
-                        {t("games_artworks")} ({mergedGame.artworks.length})
-                      </Typography>
-                      <ImageList 
-                        variant="standard"
-                        cols={mergedGame.artworks.length}
-                        sx={{ display: 'flex', flexDirection: 'row', overflowX: 'auto', gap: 8 }}
-                      >
-                        {mergedGame.artworks.slice(0, 6).map((artwork: any, index: number) => {
-                          const artworkUrl = getArtworkUrl(artwork);
-                          return artworkUrl ? (
-                            <ImageListItem 
-                              key={index}
-                              sx={{ 
-                                 maxWidth: 120, // or any desired pixel value
-                                cursor: 'pointer',
-                                borderRadius: 2,
-                                overflow: 'hidden',
-                              }}
-                              onClick={() => openImageGallery(
-                                mergedGame.artworks
-                              )}
-                            >
-                              <img
-                                src={artworkUrl}
-                                alt={`Artwork ${index + 1}`}
-                                loading="lazy"
-                                style={{ borderRadius: 8 }}
-                              />
-                            </ImageListItem>
-                          ) : null;
-                        })}
-                      </ImageList>
-                      
-                      {mergedGame.artworks.length > 6 && (
-                        <Box sx={{ textAlign: 'center', mt: 2 }}>
-                          <Button
-                            variant="outlined"
-                            onClick={() => openImageGallery(
-                              game.artworks
-                            )}
-                            startIcon={<FullscreenIcon />}
-                          >
-                            {t("games_seeAll")} ({mergedGame.artworks.length} {t("games_artworks").toLowerCase()})
-                          </Button>
-                        </Box>
-                      )}
-                    </Box>
-                  ) : (
-                    <Box sx={{ textAlign: 'center', py: 6 }}>
-                      <ImageIcon sx={{ fontSize: '4rem', color: 'text.disabled', mb: 2 }} />
-                      <Typography variant="h6" color="text.secondary">
-                        {t("games_noArtworks")}
-                      </Typography>
-                    </Box>
-                  )}
-                </Box>
-    )}
-                {/* Photos Tab */}
-              {detailsTabValue === 4 && (
-                <Box>
-                  {mergedGame.photos && mergedGame.photos.length > 0 ? (
-                    <Box>
-                      <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <ImageIcon />
-                        {t("games_photos")} ({mergedGame.photos.length})
-                      </Typography>
-                      <ImageList 
-                        variant="standard"
-                        cols={mergedGame.photos.length}
-                        sx={{ display: 'flex', flexDirection: 'row', overflowX: 'auto', gap: 8 }}
-                      >
-                        {mergedGame.photos.slice(0, 6).map((photo: any, index: number) => {
-                          return photo ? (
-                            <ImageListItem 
-                              key={index}
-                              sx={{ 
-                                 maxWidth: 120, // or any desired pixel value
-                                cursor: 'pointer',
-                                borderRadius: 2,
-                                overflow: 'hidden',
-                              }}
-                              onClick={() => openImageGallery(
-                                mergedGame.photos
-                              )}
-                            >
-                              <img
-                                src={photo}
-                                alt={`Photo ${index + 1}`}
-                                loading="lazy"
-                                style={{ borderRadius: 8 }}
-                              />
-                            </ImageListItem>
-                          ) : null;
-                        })}
-                      </ImageList>
-                      
-                      {mergedGame.artworks.length > 6 && (
-                        <Box sx={{ textAlign: 'center', mt: 2 }}>
-                          <Button
-                            variant="outlined"
-                            onClick={() => openImageGallery(
-                              game.photos
-                            )}
-                            startIcon={<FullscreenIcon />}
-                          >
-                            {t("games_seeAll")} ({mergedGame.photos.length} {t("games_photos").toLowerCase()})
-                          </Button>
-                        </Box>
-                      )}
-                    </Box>
-                  ) : (
-                    <Box sx={{ textAlign: 'center', py: 6 }}>
-                      <ImageIcon sx={{ fontSize: '4rem', color: 'text.disabled', mb: 2 }} />
-                      <Typography variant="h6" color="text.secondary">
-                        {t("games_noArtworks")}
-                      </Typography>
-                    </Box>
-                  )}
-                </Box>
+                <GameMediaGallery
+                  images={mergedGame.artworks || []}
+                  title={t("games_artworks")}
+                  icon={<ImageIcon />}
+                  emptyText={t("games_noArtworks")}
+                  getImageUrl={getArtworkUrl}
+                  onOpenGallery={openImageGallery}
+                  seeAllLabel={t("games_seeAll")}
+                  imageAltPrefix="Artwork"
+                />
+              )}
 
+              {/* Photos Tab */}
+              {detailsTabValue === 4 && (
+                <GameMediaGallery
+                  images={mergedGame.photos || []}
+                  title={t("games_photos")}
+                  icon={<ImageIcon />}
+                  emptyText={t("games_noArtworks")}
+                  getImageUrl={img => typeof img === 'string' ? img : ''}
+                  onOpenGallery={openImageGallery}
+                  seeAllLabel={t("games_seeAll")}
+                  imageAltPrefix="Photo"
+                />
               )}
             </Box>
           </Box>
