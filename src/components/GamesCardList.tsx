@@ -18,7 +18,8 @@ export function GamesCardList({
   onToggleFavorite,
   onToggleCompleted,
   onRatingClick,
-  t
+  t,
+  handleViewGameDetails
 }: any) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -48,7 +49,20 @@ export function GamesCardList({
             .join(', ');
         }
         return (
-          <div key={game.id} style={{ width: '100%' }}>
+          <div
+            key={game.id}
+            style={{ width: '100%', cursor: 'pointer' }}
+            onClick={e => {
+              // Only trigger if not clicking on a button or interactive element
+              if (
+                e.target instanceof HTMLElement &&
+                ['BUTTON', 'SPAN', 'INPUT', 'TEXTAREA', 'A'].includes(e.target.tagName)
+              ) return;
+              if (typeof handleViewGameDetails === 'function') {
+                handleViewGameDetails(game);
+              }
+            }}
+          >
             <Card variant="outlined" sx={{ p: 2 }}>
               {/* Game name centered on its own line */}
               <Typography variant="subtitle1" fontWeight="bold" sx={{ textAlign: 'center', mb: 1 }}>{game.title || game.name}</Typography>

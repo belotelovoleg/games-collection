@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslations } from "@/hooks/useTranslations";
 import {
   Box,
@@ -37,10 +37,11 @@ interface GameDetailsModalProps {
   open: boolean;
   onClose: () => void;
   game: any;
+  gameType: "igdb" | "local";
   onAddToCollection: (game: any) => void;
 }
 
-export function GameDetailsModal({ open, onClose, game, onAddToCollection }: GameDetailsModalProps) {
+export function GameDetailsModal({ open, onClose, game, gameType, onAddToCollection }: GameDetailsModalProps) {
   const { t } = useTranslations();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -51,6 +52,16 @@ export function GameDetailsModal({ open, onClose, game, onAddToCollection }: Gam
   const [galleryImages, setGalleryImages] = useState<any[]>([]);
   const [galleryTitle, setGalleryTitle] = useState("");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [fetchedIgdbGame, setFetchedIgdbGame] = useState(null);
+
+  // When you need to fetch IGDB data:
+  useEffect(() => {
+    if (gameType === "local" && game && !game.igdbGame && (game.igdbId || game.igdbGameId)) {
+      fetch(`/api/igdb/game/${game.igdbId || game.igdbGameId}`)
+        .then(res => res.json())
+        .then(data => setFetchedIgdbGame(data));
+    }
+  }, [game, gameType]);
 
   // Helper functions
   const formatReleaseDate = (timestamp: number) => {
@@ -110,7 +121,34 @@ export function GameDetailsModal({ open, onClose, game, onAddToCollection }: Gam
     onClose();
   };
 
-  if (!game) return null;
+  // Merge local game with igdbGame if gameType is "local"
+  let mergedGame = game;
+  if (gameType === "local" && game) {
+    const igdbGame = game.igdbGame || fetchedIgdbGame || {};
+    mergedGame = {
+      // Prefer local game fields, fallback to igdbGame fields
+      name: game.name || igdbGame.name,
+      summary: game.summary || igdbGame.summary,
+      storyline: igdbGame.storyline, // Only in IGDB
+      cover: game.cover ? { image_id: game.cover } : igdbGame.cover,
+      screenshots: igdbGame.screenshots,
+      artworks: igdbGame.artworks,
+      genres: (game.genres && game.genres.length > 0) ? game.genres.map((name: string, i: number) => ({ id: i, name })) : igdbGame.genres,
+      involved_companies: igdbGame.involved_companies,
+      platforms: igdbGame.platforms,
+      total_rating: igdbGame.total_rating,
+      rating: game.rating || igdbGame.rating,
+      aggregated_rating: igdbGame.aggregated_rating,
+      first_release_date: igdbGame.first_release_date,
+      // Add all other fields from local game
+      ...igdbGame,
+      ...game,
+    };
+    // Ensure mergedGame.name is always present
+    if (!mergedGame.name) mergedGame.name = igdbGame.name;
+  }
+
+  if (!mergedGame) return null;
 
   return (
     <>
@@ -139,25 +177,25 @@ export function GameDetailsModal({ open, onClose, game, onAddToCollection }: Gam
         }}>
           <Box sx={{ flex: 1 }}>
             <Typography variant="h5" fontWeight="bold" gutterBottom>
-              {game.name}
+              {mergedGame.name}
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-              {getGameRating(game) > 0 && (
+              {getGameRating(mergedGame) > 0 && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Rating 
-                    value={getGameRating(game)} 
+                    value={getGameRating(mergedGame)} 
                     precision={0.1} 
                     readOnly 
                   />
                   <Typography variant="body2" color="text.secondary">
-                    ({getGameRating(game).toFixed(1)}/5)
+                    ({getGameRating(mergedGame).toFixed(1)}/5)
                   </Typography>
                 </Box>
               )}
-              {game.first_release_date && (
+              {mergedGame.first_release_date && (
                 <Chip 
                   icon={<CalendarTodayIcon />}
-                  label={formatReleaseDate(game.first_release_date)} 
+                  label={formatReleaseDate(mergedGame.first_release_date)} 
                   variant="outlined"
                   color="secondary"
                 />
@@ -177,7 +215,7 @@ export function GameDetailsModal({ open, onClose, game, onAddToCollection }: Gam
                 {/* Game Cover */}
                 <Box sx={{ textAlign: 'center', mb: 3 }}>
                   <Avatar
-                    src={getGameCoverUrl(game.cover) || undefined}
+                    src={getGameCoverUrl(mergedGame.cover) || undefined}
                     variant="rounded"
                     sx={{ 
                       width: '100%', 
@@ -187,10 +225,10 @@ export function GameDetailsModal({ open, onClose, game, onAddToCollection }: Gam
                       mx: 'auto',
                       mb: 2,
                       bgcolor: theme.palette.mode === 'dark' ? 'grey.800' : 'grey.200',
-                      cursor: game.cover ? 'pointer' : 'default'
+                      cursor: mergedGame.cover ? 'pointer' : 'default'
                     }}
                     onClick={() => {
-                      if (game.cover) {
+                      if (mergedGame.cover) {
                         setDetailsTabValue(1); // Switch to Cover tab
                       }
                     }}
@@ -203,7 +241,7 @@ export function GameDetailsModal({ open, onClose, game, onAddToCollection }: Gam
                     variant="contained"
                     size="large"
                     startIcon={<AddCircleIcon />}
-                    onClick={() => onAddToCollection(game)}
+                    onClick={() => onAddToCollection(mergedGame)}
                     sx={{ mb: 2 }}
                   >
                     {t("games_addToCollection")}
@@ -217,13 +255,13 @@ export function GameDetailsModal({ open, onClose, game, onAddToCollection }: Gam
                     {t("games_gameInfo")}
                   </Typography>
                   
-                  {game.genres && game.genres.length > 0 && (
+                  {mergedGame.genres && mergedGame.genres.length > 0 && (
                     <Box sx={{ mb: 2 }}>
                       <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                         {t("games_genre")}
                       </Typography>
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                        {game.genres.map((genre: any) => (
+                        {mergedGame.genres.map((genre: any) => (
                           <Chip 
                             key={genre.id} 
                             label={genre.name} 
@@ -236,24 +274,24 @@ export function GameDetailsModal({ open, onClose, game, onAddToCollection }: Gam
                     </Box>
                   )}
                   
-                  {game.involved_companies && game.involved_companies.length > 0 && (
+                  {mergedGame.involved_companies && mergedGame.involved_companies.length > 0 && (
                     <Box sx={{ mb: 2 }}>
                       <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                         {t("games_companies")}
                       </Typography>
                       <Typography variant="body2">
-                        {formatCompanies(game.involved_companies)}
+                        {formatCompanies(mergedGame.involved_companies)}
                       </Typography>
                     </Box>
                   )}
 
-                  {game.platforms && game.platforms.length > 0 && (
+                  {mergedGame.platforms && mergedGame.platforms.length > 0 && (
                     <Box sx={{ mb: 2 }}>
                       <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                         {t("games_platforms")}
                       </Typography>
                       <Typography variant="body2">
-                        {game.platforms.length} {game.platforms.length === 1 ? 'platform' : 'platforms'}
+                        {mergedGame.platforms.length} {mergedGame.platforms.length === 1 ? 'platform' : 'platforms'}
                       </Typography>
                     </Box>
                   )}
@@ -277,7 +315,7 @@ export function GameDetailsModal({ open, onClose, game, onAddToCollection }: Gam
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <ImageIcon fontSize="small" />
                         {t("games_cover")}
-                        {game.cover && (
+                        {mergedGame.cover && (
                           <Badge badgeContent={1} color="primary" />
                         )}
                       </Box>
@@ -288,8 +326,8 @@ export function GameDetailsModal({ open, onClose, game, onAddToCollection }: Gam
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <PhotoLibraryIcon fontSize="small" />
                         {t("games_screenshots")}
-                        {game.screenshots && game.screenshots.length > 0 && (
-                          <Badge badgeContent={game.screenshots.length} color="primary" />
+                        {mergedGame.screenshots && mergedGame.screenshots.length > 0 && (
+                          <Badge badgeContent={mergedGame.screenshots.length} color="primary" />
                         )}
                       </Box>
                     } 
@@ -299,8 +337,8 @@ export function GameDetailsModal({ open, onClose, game, onAddToCollection }: Gam
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <ImageIcon fontSize="small" />
                         {t("games_artworks")}
-                        {game.artworks && game.artworks.length > 0 && (
-                          <Badge badgeContent={game.artworks.length} color="primary" />
+                        {mergedGame.artworks && mergedGame.artworks.length > 0 && (
+                          <Badge badgeContent={mergedGame.artworks.length} color="primary" />
                         )}
                       </Box>
                     } 
@@ -312,13 +350,13 @@ export function GameDetailsModal({ open, onClose, game, onAddToCollection }: Gam
               {/* Summary Tab */}
               {detailsTabValue === 0 && (
                 <Box>
-                  {game.summary ? (
+                  {mergedGame.summary ? (
                     <Box sx={{ mb: 3 }}>
                       <Typography variant="h6" gutterBottom>
                         {t("games_summary")}
                       </Typography>
                       <Typography variant="body1" paragraph sx={{ lineHeight: 1.7 }}>
-                        {game.summary}
+                        {mergedGame.summary}
                       </Typography>
                     </Box>
                   ) : (
@@ -329,13 +367,13 @@ export function GameDetailsModal({ open, onClose, game, onAddToCollection }: Gam
                     </Box>
                   )}
 
-                  {game.storyline && (
+                  {mergedGame.storyline && (
                     <Box sx={{ mb: 3 }}>
                       <Typography variant="h6" gutterBottom>
                         {t("games_storyline")}
                       </Typography>
                       <Typography variant="body1" paragraph sx={{ lineHeight: 1.7 }}>
-                        {game.storyline}
+                        {mergedGame.storyline}
                       </Typography>
                     </Box>
                   )}
@@ -345,7 +383,7 @@ export function GameDetailsModal({ open, onClose, game, onAddToCollection }: Gam
               {/* Cover Tab */}
               {detailsTabValue === 1 && (
                 <Box>
-                  {game.cover ? (
+                  {mergedGame.cover ? (
                     <Box>
                       <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <ImageIcon />
@@ -353,9 +391,9 @@ export function GameDetailsModal({ open, onClose, game, onAddToCollection }: Gam
                       </Typography>
                       <Box sx={{ textAlign: 'center' }}>
                         <img
-                          src={getGameCoverUrl(game.cover) || undefined}
+                          src={getGameCoverUrl(mergedGame.cover) || undefined}
                           alt={t("games_cover")}
-                          onClick={() => openImageGallery([game.cover], t("games_cover"), 0)}
+                          onClick={() => openImageGallery([mergedGame.cover], t("games_cover"), 0)}
                           style={{
                             maxWidth: '100%',
                             maxHeight: '60vh',
@@ -391,18 +429,18 @@ export function GameDetailsModal({ open, onClose, game, onAddToCollection }: Gam
               {/* Screenshots Tab */}
               {detailsTabValue === 2 && (
                 <Box>
-                  {game.screenshots && game.screenshots.length > 0 ? (
+                  {mergedGame.screenshots && mergedGame.screenshots.length > 0 ? (
                     <Box>
                       <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <PhotoLibraryIcon />
-                        {t("games_screenshots")} ({game.screenshots.length})
+                        {t("games_screenshots")} ({mergedGame.screenshots.length})
                       </Typography>
                       <ImageList 
                         variant="masonry" 
                         cols={isMobile ? 2 : 3} 
                         gap={8}
                       >
-                        {game.screenshots.slice(0, 6).map((screenshot: any, index: number) => {
+                        {mergedGame.screenshots.slice(0, 6).map((screenshot: any, index: number) => {
                           const screenshotUrl = getScreenshotUrl(screenshot);
                           return screenshotUrl ? (
                             <ImageListItem 
@@ -417,7 +455,7 @@ export function GameDetailsModal({ open, onClose, game, onAddToCollection }: Gam
                                 }
                               }}
                               onClick={() => openImageGallery(
-                                game.screenshots, 
+                                mergedGame.screenshots, 
                                 t("games_screenshots"), 
                                 index
                               )}
@@ -433,18 +471,18 @@ export function GameDetailsModal({ open, onClose, game, onAddToCollection }: Gam
                         })}
                       </ImageList>
                       
-                      {game.screenshots.length > 6 && (
+                      {mergedGame.screenshots.length > 6 && (
                         <Box sx={{ textAlign: 'center', mt: 2 }}>
                           <Button
                             variant="outlined"
                             onClick={() => openImageGallery(
-                              game.screenshots, 
+                              mergedGame.screenshots, 
                               t("games_screenshots"), 
                               0
                             )}
                             startIcon={<FullscreenIcon />}
                           >
-                            {t("games_seeAll")} ({game.screenshots.length} {t("games_screenshots").toLowerCase()})
+                            {t("games_seeAll")} ({mergedGame.screenshots.length} {t("games_screenshots").toLowerCase()})
                           </Button>
                         </Box>
                       )}
@@ -463,18 +501,18 @@ export function GameDetailsModal({ open, onClose, game, onAddToCollection }: Gam
               {/* Artworks Tab */}
               {detailsTabValue === 3 && (
                 <Box>
-                  {game.artworks && game.artworks.length > 0 ? (
+                  {mergedGame.artworks && mergedGame.artworks.length > 0 ? (
                     <Box>
                       <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <ImageIcon />
-                        {t("games_artworks")} ({game.artworks.length})
+                        {t("games_artworks")} ({mergedGame.artworks.length})
                       </Typography>
                       <ImageList 
                         variant="masonry" 
                         cols={isMobile ? 2 : 3} 
                         gap={8}
                       >
-                        {game.artworks.slice(0, 6).map((artwork: any, index: number) => {
+                        {mergedGame.artworks.slice(0, 6).map((artwork: any, index: number) => {
                           const artworkUrl = getArtworkUrl(artwork);
                           return artworkUrl ? (
                             <ImageListItem 
@@ -489,7 +527,7 @@ export function GameDetailsModal({ open, onClose, game, onAddToCollection }: Gam
                                 }
                               }}
                               onClick={() => openImageGallery(
-                                game.artworks, 
+                                mergedGame.artworks, 
                                 t("games_artworks"), 
                                 index
                               )}
@@ -505,7 +543,7 @@ export function GameDetailsModal({ open, onClose, game, onAddToCollection }: Gam
                         })}
                       </ImageList>
                       
-                      {game.artworks.length > 6 && (
+                      {mergedGame.artworks.length > 6 && (
                         <Box sx={{ textAlign: 'center', mt: 2 }}>
                           <Button
                             variant="outlined"
@@ -516,7 +554,7 @@ export function GameDetailsModal({ open, onClose, game, onAddToCollection }: Gam
                             )}
                             startIcon={<FullscreenIcon />}
                           >
-                            {t("games_seeAll")} ({game.artworks.length} {t("games_artworks").toLowerCase()})
+                            {t("games_seeAll")} ({mergedGame.artworks.length} {t("games_artworks").toLowerCase()})
                           </Button>
                         </Box>
                       )}

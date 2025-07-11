@@ -84,6 +84,7 @@ export default function GamesPage() {
   const [sortBy, setSortBy] = useState('title');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [totalGames, setTotalGames] = useState(0);
+  const [gameDetailsType, setGameDetailsType] = useState<'igdb' | 'local'>('igdb');
 
 
 // Rating popup state (optimized: slider value in useRef)
@@ -379,8 +380,9 @@ const handleToggleFavorite = async (game: any) => {
       .join(", ");
   };
 
-  const handleViewGameDetails = (game: any) => {
+  const handleViewGameDetails = (game: any, type: 'igdb' | 'local' = 'local') => {
     setSelectedGame(game);
+    setGameDetailsType(type);
     setGameDetailsOpen(true);
   };
 
@@ -577,24 +579,25 @@ const handleToggleFavorite = async (game: any) => {
               <Typography color="text.secondary">{t("games_noGamesInCollection") || 'No games in your collection'}</Typography>
             ) : (
               isMobile ? (
-                <GamesCardList
-                  userGames={userGames}
-                  allPlatforms={allPlatforms}
-                  allConsoleSystems={allConsoleSystems}
-                  altNamesGameId={altNamesGameId}
-                  altNamesAnchorEl={altNamesAnchorEl}
-                  handleAltNamesClick={handleAltNamesClick}
-                  handleAltNamesClose={handleAltNamesClose}
-                  getGameRating={getGameRating}
-                  deletingGameId={deletingGameId}
-                  handleEditGame={handleEditGame}
-                  handleDeleteGame={handleDeleteGame}
-                  openPhotoGallery={openPhotoGallery}
-                  onToggleFavorite={handleToggleFavorite}
-                  onToggleCompleted={handleToggleCompleted}
-                  onRatingClick={handleRatingClick}
-                  t={t}
-                />
+              <GamesCardList
+                userGames={userGames}
+                allPlatforms={allPlatforms}
+                allConsoleSystems={allConsoleSystems}
+                altNamesGameId={altNamesGameId}
+                altNamesAnchorEl={altNamesAnchorEl}
+                handleAltNamesClick={handleAltNamesClick}
+                handleAltNamesClose={handleAltNamesClose}
+                getGameRating={getGameRating}
+                deletingGameId={deletingGameId}
+                handleEditGame={handleEditGame}
+                handleDeleteGame={handleDeleteGame}
+                openPhotoGallery={openPhotoGallery}
+                onToggleFavorite={handleToggleFavorite}
+                onToggleCompleted={handleToggleCompleted}
+                onRatingClick={handleRatingClick}
+                t={t}
+                handleViewGameDetails={(game: any) => handleViewGameDetails(game, 'local')}
+              />
               ) : (
                 <Paper sx={{ width: '100%', overflowX: 'auto' }}>
                   <GamesTable
@@ -615,6 +618,7 @@ const handleToggleFavorite = async (game: any) => {
                     onToggleCompleted={handleToggleCompleted}
                     onRatingClick={handleRatingClick}
                     t={t}
+                    handleViewGameDetails={(game: any) => handleViewGameDetails(game, 'local')}
                   />
                 </Paper>
               )
@@ -694,7 +698,7 @@ const handleToggleFavorite = async (game: any) => {
           getGameRating={getGameRating}
           formatReleaseDate={formatReleaseDate}
           formatCompanies={formatCompanies}
-          handleViewGameDetails={handleViewGameDetails}
+          handleViewGameDetails={(game: any) => handleViewGameDetails(game, 'igdb')}
           handleAddGameToCollection={handleAddGameToCollection}
         />
 
@@ -704,6 +708,7 @@ const handleToggleFavorite = async (game: any) => {
           onClose={() => setGameDetailsOpen(false)}
           game={selectedGame}
           onAddToCollection={handleAddGameToCollection}
+          gameType={gameDetailsType}
         />
 
         {/* Add to Collection Modal */}

@@ -19,7 +19,8 @@ export function GamesTable({
   onToggleCompleted,
   onRatingClick,
   openPhotoGallery,
-  t
+  t,
+  handleViewGameDetails
 }: any) {
   return (
     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -64,12 +65,26 @@ export function GamesTable({
               .join(', ');
           }
           return (
-            <tr key={game.id} style={{ borderBottom: `1px solid ${theme.palette.divider}` }}>
+            <tr
+              key={game.id}
+              style={{ borderBottom: `1px solid ${theme.palette.divider}`, cursor: 'pointer' }}
+              onClick={e => {
+                // Only trigger if not clicking on a button or interactive element
+                if (
+                  e.target instanceof HTMLElement &&
+                  ['BUTTON', 'SPAN', 'INPUT', 'TEXTAREA', 'A'].includes(e.target.tagName)
+                ) return;
+                if (typeof handleViewGameDetails === 'function') {
+                  handleViewGameDetails(game);
+                }
+              }}
+            >
               <td style={{ padding: '8px' }}>
                 <span
                   style={{ cursor: 'pointer', display: 'inline-block' }}
                   title={t('games_photos') || 'Photos'}
-                  onClick={() => {
+                  onClick={e => {
+                    e.stopPropagation();
                     // Collect all available images: photos, cover, screenshot
                     const images: string[] = [];
                     if (Array.isArray(game.photos)) images.push(...game.photos.filter(Boolean));
