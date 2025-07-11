@@ -70,18 +70,18 @@ export function GameDetailsModal({ open, onClose, game, gameType, onAddToCollect
   };
 
   const getGameCoverUrl = (cover: any, size = 'cover_big') => {
-    if (!cover?.image_id) return null;
-    return `https://images.igdb.com/igdb/image/upload/t_${size}/${cover.image_id}.jpg`;
+    if (!cover?.image_id && !cover.includes('//') ) return null;
+    return cover.includes('//')  ? cover : `https://images.igdb.com/igdb/image/upload/t_${size}/${cover.image_id}.jpg`;
   };
 
   const getScreenshotUrl = (screenshot: any, size = 'screenshot_med') => {
-    if (!screenshot?.image_id) return null;
-    return `https://images.igdb.com/igdb/image/upload/t_${size}/${screenshot.image_id}.jpg`;
+    if (!screenshot?.image_id && !screenshot.includes('//') ) return null;
+    return screenshot.includes('//') ? screenshot : `https://images.igdb.com/igdb/image/upload/t_${size}/${screenshot.image_id}.jpg`;
   };
 
   const getArtworkUrl = (artwork: any, size = 'screenshot_med') => {
-    if (!artwork?.image_id) return null;
-    return `https://images.igdb.com/igdb/image/upload/t_${size}/${artwork.image_id}.jpg`;
+    if (!artwork?.image_id && !artwork.includes('//') ) return null;
+    return artwork.includes('//') ? artwork : `https://images.igdb.com/igdb/image/upload/t_${size}/${artwork.image_id}.jpg`;
   };
 
   const getGameRating = (game: any) => {
@@ -131,8 +131,8 @@ export function GameDetailsModal({ open, onClose, game, gameType, onAddToCollect
       summary: game.summary || igdbGame.summary,
       storyline: igdbGame.storyline, // Only in IGDB
       cover: game.cover ? { image_id: game.cover } : igdbGame.cover,
-      screenshots: igdbGame.screenshots,
-      artworks: igdbGame.artworks,
+      screenshots: (igdbGame.gameScreenshotRelations && igdbGame.gameScreenshotRelations.length > 0) ? igdbGame.gameScreenshotRelations.map((shot: any) => shot.screenshot.url) : [],
+      artworks: (igdbGame.gameArtworkRelations && igdbGame.gameArtworkRelations.length > 0) ? igdbGame.gameArtworkRelations.map((shot: any) => shot.artwork.url) : [],
       genres: (game.genres && game.genres.length > 0) ? game.genres.map((name: string, i: number) => ({ id: i, name })) : igdbGame.genres,
       involved_companies: igdbGame.involved_companies,
       platforms: igdbGame.platforms,
@@ -236,7 +236,7 @@ export function GameDetailsModal({ open, onClose, game, gameType, onAddToCollect
                     <SportsEsportsIcon sx={{ fontSize: '4rem' }} />
                   </Avatar>
                   
-                  <Button
+                  {gameType != "local" && <Button
                     fullWidth
                     variant="contained"
                     size="large"
@@ -245,7 +245,7 @@ export function GameDetailsModal({ open, onClose, game, gameType, onAddToCollect
                     sx={{ mb: 2 }}
                   >
                     {t("games_addToCollection")}
-                  </Button>
+                  </Button>}
                 </Box>
 
                 {/* Quick Info Card */}
@@ -377,6 +377,17 @@ export function GameDetailsModal({ open, onClose, game, gameType, onAddToCollect
                       </Typography>
                     </Box>
                   )}
+
+                  {mergedGame.notes && (
+                    <Box sx={{ mb: 3 }}>
+                      <Typography variant="h6" gutterBottom>
+                        {t("games_notes")}
+                      </Typography>
+                      <Typography variant="body1" paragraph sx={{ lineHeight: 1.7 }}>
+                        {mergedGame.notes}
+                      </Typography>
+                    </Box>
+                  )}
                 </Box>
               )}
 
@@ -391,7 +402,7 @@ export function GameDetailsModal({ open, onClose, game, gameType, onAddToCollect
                       </Typography>
                       <Box sx={{ textAlign: 'center' }}>
                         <img
-                          src={getGameCoverUrl(mergedGame.cover) || undefined}
+                          src={getGameCoverUrl(mergedGame.cover) || "undefined"}
                           alt={t("games_cover")}
                           onClick={() => openImageGallery([mergedGame.cover], t("games_cover"), 0)}
                           style={{
