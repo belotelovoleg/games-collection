@@ -709,6 +709,8 @@ const handleToggleFavorite = async (game: any) => {
           game={selectedGame}
           onAddToCollection={handleAddGameToCollection}
           gameType={gameDetailsType}
+          setGalleryImages={setGalleryImages}
+          setGalleryOpen={setGalleryOpen}
         />
 
         {/* Add to Collection Modal */}

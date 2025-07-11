@@ -32,3 +32,10 @@ html {
 body, #__next, #root {
   min-width: 320px;
 }
+
+
+ .image-gallery-slide img {
+      width: 100%; /* or a fixed width */
+      height: 300px; /* or auto, or a max-height */
+      object-fit: contain; /* or cover, depending on desired scaling behavior */
+    }

@@ -28,8 +28,6 @@ import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import ImageIcon from "@mui/icons-material/Image";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { useTheme } from '@mui/material/styles';
 import { useMediaQuery } from '@mui/material';
 
@@ -38,20 +36,25 @@ interface GameDetailsModalProps {
   onClose: () => void;
   game: any;
   gameType: "igdb" | "local";
+  setGalleryImages: (images: any[]) => void;
+  setGalleryOpen: (open: boolean) => void;
   onAddToCollection: (game: any) => void;
 }
 
-export function GameDetailsModal({ open, onClose, game, gameType, onAddToCollection }: GameDetailsModalProps) {
+export function GameDetailsModal({ open, 
+  onClose, 
+  game, 
+  gameType, 
+  onAddToCollection, 
+  setGalleryImages, 
+  setGalleryOpen }: GameDetailsModalProps) {
+
   const { t } = useTranslations();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
   // Modal states
   const [detailsTabValue, setDetailsTabValue] = useState(0);
-  const [galleryOpen, setGalleryOpen] = useState(false);
-  const [galleryImages, setGalleryImages] = useState<any[]>([]);
-  const [galleryTitle, setGalleryTitle] = useState("");
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [fetchedIgdbGame, setFetchedIgdbGame] = useState(null);
 
   // When you need to fetch IGDB data:
@@ -69,19 +72,25 @@ export function GameDetailsModal({ open, onClose, game, gameType, onAddToCollect
     return new Date(timestamp * 1000).getFullYear().toString();
   };
 
-  const getGameCoverUrl = (cover: any, size = 'cover_big') => {
-    if (!cover?.image_id && !cover.includes('//') ) return null;
-    return cover.includes('//')  ? cover : `https://images.igdb.com/igdb/image/upload/t_${size}/${cover.image_id}.jpg`;
+  const getGameCoverUrl = (cover: any, size = 't_cover_big') => {
+    if (typeof cover === 'object' && cover !== null) {
+      if (cover.imageId) {cover.image_id = cover.imageId;}
+      return `https://images.igdb.com/igdb/image/upload/${size}/${cover.image_id}.jpg`;
+    } else return cover;
   };
 
-  const getScreenshotUrl = (screenshot: any, size = 'screenshot_med') => {
-    if (!screenshot?.image_id && !screenshot.includes('//') ) return null;
-    return screenshot.includes('//') ? screenshot : `https://images.igdb.com/igdb/image/upload/t_${size}/${screenshot.image_id}.jpg`;
+  const getScreenshotUrl = (screenshot: any, size = 't_720p') => {
+    if (typeof screenshot === 'object' && screenshot !== null) {
+      if (screenshot.imageId) {screenshot.image_id = screenshot.imageId;}
+      return `https://images.igdb.com/igdb/image/upload/${size}/${screenshot.image_id}.jpg`;
+    } else return screenshot;
   };
 
-  const getArtworkUrl = (artwork: any, size = 'screenshot_med') => {
-    if (!artwork?.image_id && !artwork.includes('//') ) return null;
-    return artwork.includes('//') ? artwork : `https://images.igdb.com/igdb/image/upload/t_${size}/${artwork.image_id}.jpg`;
+  const getArtworkUrl = (artwork: any, size = 't_720p') => {
+    if (typeof artwork === 'object' && artwork !== null) {
+      if (artwork.imageId) {artwork.image_id = artwork.imageId;}
+      return `https://images.igdb.com/igdb/image/upload/${size}/${artwork.image_id}.jpg`;
+    } else return artwork;
   };
 
   const getGameRating = (game: any) => {
@@ -101,20 +110,19 @@ export function GameDetailsModal({ open, onClose, game, gameType, onAddToCollect
       .join(", ");
   };
 
-  const openImageGallery = (images: any[], title: string, startIndex = 0) => {
-    setGalleryImages(images);
-    setGalleryTitle(title);
-    setCurrentImageIndex(startIndex);
+  const openImageGallery = (images: any[]) => {
+    console.log(images)
+    const mappedGalleryImages = images.map(img =>
+    typeof img === 'string' && img.includes('//')
+      ? img
+      : img?.image_id
+        ? `https://images.igdb.com/igdb/image/upload/t_720p/${img.image_id}.jpg`
+        : undefined
+  );
+    setGalleryImages(mappedGalleryImages);
     setGalleryOpen(true);
   };
 
-  const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length);
-  };
-
-  const previousImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
-  };
 
   const handleClose = () => {
     setDetailsTabValue(0); // Reset tab when closing
@@ -125,14 +133,15 @@ export function GameDetailsModal({ open, onClose, game, gameType, onAddToCollect
   let mergedGame = game;
   if (gameType === "local" && game) {
     const igdbGame = game.igdbGame || fetchedIgdbGame || {};
+    console.log('Merging local game with IGDB data:', igdbGame);
     mergedGame = {
       // Prefer local game fields, fallback to igdbGame fields
       name: game.name || igdbGame.name,
       summary: game.summary || igdbGame.summary,
       storyline: igdbGame.storyline, // Only in IGDB
       cover: game.cover ? { image_id: game.cover } : igdbGame.cover,
-      screenshots: (igdbGame.gameScreenshotRelations && igdbGame.gameScreenshotRelations.length > 0) ? igdbGame.gameScreenshotRelations.map((shot: any) => shot.screenshot.url) : [],
-      artworks: (igdbGame.gameArtworkRelations && igdbGame.gameArtworkRelations.length > 0) ? igdbGame.gameArtworkRelations.map((shot: any) => shot.artwork.url) : [],
+      screenshots: (igdbGame.gameScreenshotRelations && igdbGame.gameScreenshotRelations.length > 0) ? igdbGame.gameScreenshotRelations.map((shot: any) => shot.screenshot) : [],
+      artworks: (igdbGame.gameArtworkRelations && igdbGame.gameArtworkRelations.length > 0) ? igdbGame.gameArtworkRelations.map((shot: any) => shot.artwork) : [],
       genres: (game.genres && game.genres.length > 0) ? game.genres.map((name: string, i: number) => ({ id: i, name })) : igdbGame.genres,
       involved_companies: igdbGame.involved_companies,
       platforms: igdbGame.platforms,
@@ -144,6 +153,7 @@ export function GameDetailsModal({ open, onClose, game, gameType, onAddToCollect
       ...igdbGame,
       ...game,
     };
+    console.log('Merged game:', mergedGame);
     // Ensure mergedGame.name is always present
     if (!mergedGame.name) mergedGame.name = igdbGame.name;
   }
@@ -192,10 +202,10 @@ export function GameDetailsModal({ open, onClose, game, gameType, onAddToCollect
                   </Typography>
                 </Box>
               )}
-              {mergedGame.first_release_date && (
+              {(mergedGame.releaseYear || mergedGame.first_release_date) && (
                 <Chip 
                   icon={<CalendarTodayIcon />}
-                  label={formatReleaseDate(mergedGame.first_release_date)} 
+                  label={gameType === "igdb" ? formatReleaseDate(mergedGame.first_release_date) : mergedGame.releaseYear} 
                   variant="outlined"
                   color="secondary"
                 />
@@ -343,6 +353,17 @@ export function GameDetailsModal({ open, onClose, game, gameType, onAddToCollect
                       </Box>
                     } 
                   />
+                   <Tab 
+                    label={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <ImageIcon fontSize="small" />
+                        {t("games_photos")}
+                        {mergedGame.photos && mergedGame.photos.length > 0 && (
+                          <Badge badgeContent={mergedGame.photos.length} color="primary" />
+                        )}
+                      </Box>
+                    } 
+                  />
                 </Tabs>
               </Box>
 
@@ -404,7 +425,7 @@ export function GameDetailsModal({ open, onClose, game, gameType, onAddToCollect
                         <img
                           src={getGameCoverUrl(mergedGame.cover) || "undefined"}
                           alt={t("games_cover")}
-                          onClick={() => openImageGallery([mergedGame.cover], t("games_cover"), 0)}
+                          onClick={() => openImageGallery([mergedGame.cover])}
                           style={{
                             maxWidth: '100%',
                             maxHeight: '60vh',
@@ -447,9 +468,9 @@ export function GameDetailsModal({ open, onClose, game, gameType, onAddToCollect
                         {t("games_screenshots")} ({mergedGame.screenshots.length})
                       </Typography>
                       <ImageList 
-                        variant="masonry" 
-                        cols={isMobile ? 2 : 3} 
-                        gap={8}
+                        variant="standard"
+                        cols={mergedGame.screenshots.length}
+                        sx={{ display: 'flex', flexDirection: 'row', overflowX: 'auto', gap: 8 }}
                       >
                         {mergedGame.screenshots.slice(0, 6).map((screenshot: any, index: number) => {
                           const screenshotUrl = getScreenshotUrl(screenshot);
@@ -459,16 +480,10 @@ export function GameDetailsModal({ open, onClose, game, gameType, onAddToCollect
                               sx={{ 
                                 cursor: 'pointer',
                                 borderRadius: 2,
-                                overflow: 'hidden',
-                                '&:hover': { 
-                                  transform: 'scale(1.02)',
-                                  transition: 'transform 0.2s ease-in-out'
-                                }
+                                overflow: 'hidden'
                               }}
                               onClick={() => openImageGallery(
-                                mergedGame.screenshots, 
-                                t("games_screenshots"), 
-                                index
+                                mergedGame.screenshots
                               )}
                             >
                               <img
@@ -487,9 +502,7 @@ export function GameDetailsModal({ open, onClose, game, gameType, onAddToCollect
                           <Button
                             variant="outlined"
                             onClick={() => openImageGallery(
-                              mergedGame.screenshots, 
-                              t("games_screenshots"), 
-                              0
+                              mergedGame.screenshots
                             )}
                             startIcon={<FullscreenIcon />}
                           >
@@ -519,9 +532,9 @@ export function GameDetailsModal({ open, onClose, game, gameType, onAddToCollect
                         {t("games_artworks")} ({mergedGame.artworks.length})
                       </Typography>
                       <ImageList 
-                        variant="masonry" 
-                        cols={isMobile ? 2 : 3} 
-                        gap={8}
+                        variant="standard"
+                        cols={mergedGame.artworks.length}
+                        sx={{ display: 'flex', flexDirection: 'row', overflowX: 'auto', gap: 8 }}
                       >
                         {mergedGame.artworks.slice(0, 6).map((artwork: any, index: number) => {
                           const artworkUrl = getArtworkUrl(artwork);
@@ -529,18 +542,13 @@ export function GameDetailsModal({ open, onClose, game, gameType, onAddToCollect
                             <ImageListItem 
                               key={index}
                               sx={{ 
+                                 maxWidth: 120, // or any desired pixel value
                                 cursor: 'pointer',
                                 borderRadius: 2,
                                 overflow: 'hidden',
-                                '&:hover': { 
-                                  transform: 'scale(1.02)',
-                                  transition: 'transform 0.2s ease-in-out'
-                                }
                               }}
                               onClick={() => openImageGallery(
-                                mergedGame.artworks, 
-                                t("games_artworks"), 
-                                index
+                                mergedGame.artworks
                               )}
                             >
                               <img
@@ -559,9 +567,7 @@ export function GameDetailsModal({ open, onClose, game, gameType, onAddToCollect
                           <Button
                             variant="outlined"
                             onClick={() => openImageGallery(
-                              game.artworks, 
-                              t("games_artworks"), 
-                              0
+                              game.artworks
                             )}
                             startIcon={<FullscreenIcon />}
                           >
@@ -579,108 +585,76 @@ export function GameDetailsModal({ open, onClose, game, gameType, onAddToCollect
                     </Box>
                   )}
                 </Box>
+    )}
+                {/* Photos Tab */}
+              {detailsTabValue === 4 && (
+                <Box>
+                  {mergedGame.photos && mergedGame.photos.length > 0 ? (
+                    <Box>
+                      <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <ImageIcon />
+                        {t("games_photos")} ({mergedGame.photos.length})
+                      </Typography>
+                      <ImageList 
+                        variant="standard"
+                        cols={mergedGame.photos.length}
+                        sx={{ display: 'flex', flexDirection: 'row', overflowX: 'auto', gap: 8 }}
+                      >
+                        {mergedGame.photos.slice(0, 6).map((photo: any, index: number) => {
+                          return photo ? (
+                            <ImageListItem 
+                              key={index}
+                              sx={{ 
+                                 maxWidth: 120, // or any desired pixel value
+                                cursor: 'pointer',
+                                borderRadius: 2,
+                                overflow: 'hidden',
+                              }}
+                              onClick={() => openImageGallery(
+                                mergedGame.photos
+                              )}
+                            >
+                              <img
+                                src={photo}
+                                alt={`Photo ${index + 1}`}
+                                loading="lazy"
+                                style={{ borderRadius: 8 }}
+                              />
+                            </ImageListItem>
+                          ) : null;
+                        })}
+                      </ImageList>
+                      
+                      {mergedGame.artworks.length > 6 && (
+                        <Box sx={{ textAlign: 'center', mt: 2 }}>
+                          <Button
+                            variant="outlined"
+                            onClick={() => openImageGallery(
+                              game.photos
+                            )}
+                            startIcon={<FullscreenIcon />}
+                          >
+                            {t("games_seeAll")} ({mergedGame.photos.length} {t("games_photos").toLowerCase()})
+                          </Button>
+                        </Box>
+                      )}
+                    </Box>
+                  ) : (
+                    <Box sx={{ textAlign: 'center', py: 6 }}>
+                      <ImageIcon sx={{ fontSize: '4rem', color: 'text.disabled', mb: 2 }} />
+                      <Typography variant="h6" color="text.secondary">
+                        {t("games_noArtworks")}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+
               )}
             </Box>
           </Box>
         </DialogContent>
       </Dialog>
 
-      {/* Image Gallery Modal */}
-      <Dialog
-        open={galleryOpen}
-        onClose={() => setGalleryOpen(false)}
-        maxWidth="xl"
-        fullWidth
-        fullScreen
-        PaperProps={{
-          sx: {
-            bgcolor: 'rgba(0, 0, 0, 0.9)',
-            color: 'white'
-          }
-        }}
-      >
-        <DialogTitle sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          color: 'white'
-        }}>
-          <Box>
-            {galleryTitle} {galleryImages.length > 1 && `(${currentImageIndex + 1}/${galleryImages.length})`}
-          </Box>
-          <IconButton onClick={() => setGalleryOpen(false)} sx={{ color: 'white' }}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        
-        <DialogContent sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          p: 0,
-          position: 'relative'
-        }}>
-          {galleryImages.length > 0 && (
-            <>
-              <Box
-                component="img"
-                src={galleryImages[currentImageIndex]?.image_id 
-                  ? `https://images.igdb.com/igdb/image/upload/t_1080p/${galleryImages[currentImageIndex].image_id}.jpg`
-                  : undefined
-                }
-                alt={`${galleryTitle} ${currentImageIndex + 1}`}
-                sx={{
-                  maxWidth: '100%',
-                  maxHeight: '100%',
-                  objectFit: 'contain'
-                }}
-                onError={(e) => {
-                  // Fallback to smaller size if 1080p fails
-                  const target = e.target as HTMLImageElement;
-                  if (target.src.includes('t_1080p')) {
-                    target.src = target.src.replace('t_1080p', 't_720p');
-                  } else if (target.src.includes('t_720p')) {
-                    target.src = target.src.replace('t_720p', 't_screenshot_huge');
-                  }
-                }}
-              />
-              
-              {galleryImages.length > 1 && (
-                <>
-                  <IconButton
-                    onClick={previousImage}
-                    sx={{
-                      position: 'absolute',
-                      left: 16,
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      bgcolor: 'rgba(0, 0, 0, 0.5)',
-                      color: 'white',
-                      '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.7)' }
-                    }}
-                  >
-                    <ArrowBackIcon />
-                  </IconButton>
-                  <IconButton
-                    onClick={nextImage}
-                    sx={{
-                      position: 'absolute',
-                      right: 16,
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      bgcolor: 'rgba(0, 0, 0, 0.5)',
-                      color: 'white',
-                      '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.7)' }
-                    }}
-                  >
-                    <ArrowForwardIcon />
-                  </IconButton>
-                </>
-              )}
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
