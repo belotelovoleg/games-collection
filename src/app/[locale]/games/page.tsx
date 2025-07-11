@@ -70,6 +70,7 @@ export default function GamesPage() {
   const [userConsoles, setUserConsoles] = useState<any[]>([]);
   const [selectedConsole, setSelectedConsole] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchNameFilterQuery, setSearchNameFilterQuery] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<any>(null);
@@ -169,7 +170,7 @@ const handleToggleFavorite = async (game: any) => {
       fetchUserGames();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, page, pageSize, selectedConsole, searchQuery, sortBy, sortOrder]);
+  }, [status, page, pageSize, selectedConsole, searchNameFilterQuery, sortBy, sortOrder]);
 
   
   // Fetch all platforms once when authenticated
@@ -213,7 +214,7 @@ const handleToggleFavorite = async (game: any) => {
         sortBy,
         sortOrder,
       });
-      if (searchQuery.trim()) params.append('name', searchQuery.trim());
+      if (searchNameFilterQuery.trim()) params.append('name', searchNameFilterQuery.trim());
       if (selectedConsole) params.append('consoleId', selectedConsole);
       const response = await fetch(`/api/games?${params.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch user games');
@@ -531,8 +532,8 @@ const handleToggleFavorite = async (game: any) => {
             <Box sx={{ mb: 2, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
               <TextField
                 label={'Filter by name'}
-                value={searchQuery}
-                onChange={e => { setSearchQuery(e.target.value); setPage(1); }}
+                value={searchNameFilterQuery}
+                onChange={e => { setSearchNameFilterQuery(e.target.value); setPage(1); }}
                 size="small"
                 sx={{ minWidth: 180 }}
               />
