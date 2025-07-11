@@ -18,6 +18,7 @@ import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import BusinessIcon from "@mui/icons-material/Business";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
+import { useTranslations } from "@/hooks/useTranslations";
 
 interface EnhancedSearchResultsModalProps {
   open: boolean;
@@ -25,7 +26,6 @@ interface EnhancedSearchResultsModalProps {
   searchResults: any;
   isMobile: boolean;
   theme: any;
-  t: (key: string) => string;
   getGameCoverUrl: (cover: any, size?: string) => string | null;
   getGameRating: (game: any) => number;
   formatReleaseDate: (timestamp: number) => string;
@@ -40,7 +40,6 @@ const EnhancedSearchResultsModal: React.FC<EnhancedSearchResultsModalProps> = ({
   searchResults,
   isMobile,
   theme,
-  t,
   getGameCoverUrl,
   getGameRating,
   formatReleaseDate,
@@ -48,6 +47,7 @@ const EnhancedSearchResultsModal: React.FC<EnhancedSearchResultsModalProps> = ({
   handleViewGameDetails,
   handleAddGameToCollection,
 }) => {
+  const { t } = useTranslations();
   return (
     <Dialog 
       open={open} 

@@ -11,7 +11,7 @@ import {
   MenuItem,
   TextField,
   Button,
-  Grid as MuiGrid,
+  Grid,
   CircularProgress,
   Card,
   CardContent,
@@ -23,17 +23,15 @@ import {
   Rating,
   IconButton,
   Paper,
+  Popover,
 } from "@mui/material";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 import SearchIcon from "@mui/icons-material/Search";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import AddIcon from "@mui/icons-material/Add";
-import AddCircleIcon from "@mui/icons-material/AddCircle";
 import CloseIcon from "@mui/icons-material/Close";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
-import BusinessIcon from "@mui/icons-material/Business";
-import VisibilityIcon from "@mui/icons-material/Visibility";
+
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useTheme } from '@mui/material/styles';
@@ -47,6 +45,17 @@ import EnhancedSearchResultsModal from "@/components/EnhancedSearchResultsModal"
 
 
 export default function GamesPage() {
+  // --- Alternative Names Popover State (top-level, not inside map) ---
+  const [altNamesAnchorEl, setAltNamesAnchorEl] = useState<null | HTMLElement>(null);
+  const [altNamesGameId, setAltNamesGameId] = useState<string | null>(null);
+  const handleAltNamesClick = (event: React.MouseEvent<HTMLElement>, gameId: string) => {
+    setAltNamesAnchorEl(event.currentTarget);
+    setAltNamesGameId(gameId);
+  };
+  const handleAltNamesClose = () => {
+    setAltNamesAnchorEl(null);
+    setAltNamesGameId(null);
+  };
   const { t, locale } = useTranslations();
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -78,22 +87,41 @@ export default function GamesPage() {
   const [gameDetailsOpen, setGameDetailsOpen] = useState(false);
   const [gameToAdd, setGameToAdd] = useState<any>(null);
 
-  // Fetch user's games (only on mount and auth change)
+  // Pagination, sorting, and filtering state
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(12);
+  const [sortBy, setSortBy] = useState('title');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [totalGames, setTotalGames] = useState(0);
+
+  // Fetch user's games (with pagination/filtering)
   useEffect(() => {
     if (status === "authenticated") {
       fetchUserGames();
     }
-  }, [status]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, page, pageSize, selectedConsole, searchQuery, sortBy, sortOrder]);
 
   const fetchUserGames = async () => {
     try {
       setGamesLoading(true);
-      const response = await fetch('/api/user/games');
+      // Build query params
+      const params = new URLSearchParams({
+        page: String(page),
+        pageSize: String(pageSize),
+        sortBy,
+        sortOrder,
+      });
+      if (searchQuery.trim()) params.append('name', searchQuery.trim());
+      if (selectedConsole) params.append('consoleId', selectedConsole);
+      const response = await fetch(`/api/games?${params.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch user games');
       const data = await response.json();
-      setUserGames(data.games || data); // support both {games:[]} and []
+      setUserGames(data.games || []);
+      setTotalGames(data.total || 0);
     } catch (e) {
       setUserGames([]);
+      setTotalGames(0);
     } finally {
       setGamesLoading(false);
     }
@@ -392,12 +420,53 @@ export default function GamesPage() {
           </CardContent>
         </Card>
 
-        {/* User Games Table/Grid */}
+        {/* User Games Table/Grid with Pagination, Sorting, Filtering */}
         <Card sx={{ mt: 3 }}>
           <CardContent>
             <Typography variant="h6" sx={{ mb: 2 }}>
               {t("games_yourCollection") || 'Your Collection'}
             </Typography>
+            {/* Filtering and sorting controls */}
+            <Box sx={{ mb: 2, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+              <TextField
+                label={'Filter by name'}
+                value={searchQuery}
+                onChange={e => { setSearchQuery(e.target.value); setPage(1); }}
+                size="small"
+                sx={{ minWidth: 180 }}
+              />
+              <FormControl size="small" sx={{ minWidth: 120 }}>
+                <InputLabel>{'Sort by'}</InputLabel>
+                <Select
+                  value={sortBy}
+                  label={'Sort by'}
+                  onChange={e => { setSortBy(e.target.value); setPage(1); }}
+                >
+                  <MenuItem value="title">{t('games_title') || 'Title'}</MenuItem>
+                  <MenuItem value="title">{'Title'}</MenuItem>
+                  <MenuItem value="consoleName">{t('games_console') || 'Console'}</MenuItem>
+                  <MenuItem value="consoleName">{'Console'}</MenuItem>
+                  <MenuItem value="rating">{t('games_rating') || 'Rating'}</MenuItem>
+                  <MenuItem value="rating">{'Rating'}</MenuItem>
+                  <MenuItem value="completed">{t('games_completed') || 'Completed'}</MenuItem>
+                  <MenuItem value="completed">{'Completed'}</MenuItem>
+                  <MenuItem value="favorite">{t('games_favorite') || 'Favorite'}</MenuItem>
+                  <MenuItem value="favorite">{'Favorite'}</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 100 }}>
+                <InputLabel>{'Order'}</InputLabel>
+                <Select
+                  value={sortOrder}
+                  label={'Order'}
+                  onChange={e => { setSortOrder(e.target.value as 'asc' | 'desc'); setPage(1); }}
+                >
+                  <MenuItem value="asc">{'Ascending'}</MenuItem>
+                  <MenuItem value="desc">{'Descending'}</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+            {/* Table for desktop, cards for mobile */}
             {gamesLoading ? (
               <Box sx={{ py: 4, textAlign: 'center' }}>
                 <CircularProgress />
@@ -405,82 +474,235 @@ export default function GamesPage() {
             ) : userGames.length === 0 ? (
               <Typography color="text.secondary">{t("games_noGamesInCollection") || 'No games in your collection'}</Typography>
             ) : (
-              <MuiGrid container spacing={2}>
-                {userGames.map((game) => {
-                  // Platform display: support array of objects or strings
-                  let platformStr = '';
-                  if (Array.isArray(game.platforms)) {
-                    if (typeof game.platforms[0] === 'object') {
-                      platformStr = game.platforms.map((p: any) => p.name).join(', ');
-                    } else {
-                      platformStr = game.platforms.join(', ');
+              isMobile ? (
+                <Grid container spacing={2}>
+                  {userGames.map((game) => {
+                    let platformStr = '';
+                    if (Array.isArray(game.platforms)) {
+                      if (typeof game.platforms[0] === 'object') {
+                        platformStr = game.platforms.map((p: any) => p.name).join(', ');
+                      } else {
+                        platformStr = game.platforms.join(', ');
+                      }
                     }
-                  }
-                  return (
-                    <MuiGrid key={game.id} xs={12} md={6} lg={4} item={true as any}>
-                      <Card variant="outlined" sx={{ p: 2, display: 'flex', gap: 2 }}>
-                        <Box sx={{ cursor: game.photos?.length ? 'pointer' : 'default', minWidth: 80 }} onClick={() => game.photos?.length && openPhotoGallery(game.photos, 0)}>
-                          <Avatar
-                            src={
-                              game.cover
-                                ? game.cover
-                                : game.photos?.[0]
-                                  ? game.photos[0]
-                                  : game.screenshot
-                                    ? game.screenshot
-                                    : undefined
-                            }
-                            variant="rounded"
-                            sx={{ width: 80, height: 80, bgcolor: 'grey.200' }}
-                          >
-                            {!(game.cover || game.photos?.[0] || game.screenshot) && <SportsEsportsIcon />}
-                          </Avatar>
-                          {game.photos?.length > 1 && (
-                            <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', width: '100%' }}>
-                              +{game.photos.length - 1} more
-                            </Typography>
-                          )}
-                        </Box>
-                        <Box sx={{ flex: 1 }}>
-                          <Typography variant="subtitle1" fontWeight="bold">{game.title || game.name}</Typography>
-                          <Typography variant="body2" color="text.secondary">{platformStr}</Typography>
-                          {game.condition && <Typography variant="body2" color="text.secondary">{t('games_condition') || 'Condition'}: {game.condition}</Typography>}
-                          {game.notes && <Typography variant="body2" color="text.secondary">{t('games_notes') || 'Notes'}: {game.notes}</Typography>}
-                          {/* Show rating as stars if available */}
-                          {getGameRating(game) > 0 && (
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
-                              <Rating value={getGameRating(game)} precision={0.1} size="small" readOnly />
-                              <Typography variant="caption" color="text.secondary">
-                                ({getGameRating(game).toFixed(1)})
+                    return (
+                      <Grid item xs={12} key={game.id}>
+                        <Card variant="outlined" sx={{ p: 2, display: 'flex', gap: 2 }}>
+                          <Box sx={{ cursor: game.photos?.length ? 'pointer' : 'default', minWidth: 80 }} onClick={() => game.photos?.length && openPhotoGallery(game.photos, 0)}>
+                            <Avatar
+                              src={
+                                game.cover
+                                  ? game.cover
+                                  : game.photos?.[0]
+                                    ? game.photos[0]
+                                    : game.screenshot
+                                      ? game.screenshot
+                                      : undefined
+                              }
+                              variant="rounded"
+                              sx={{ width: 80, height: 80, bgcolor: 'grey.200' }}
+                            >
+                              {!(game.cover || game.photos?.[0] || game.screenshot) && <SportsEsportsIcon />}
+                            </Avatar>
+                            {game.photos?.length > 1 && (
+                              <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', width: '100%' }}>
+                                +{game.photos.length - 1} more
                               </Typography>
+                            )}
+                          </Box>
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="subtitle1" fontWeight="bold">{game.title || game.name}</Typography>
+                            <Typography variant="body2" color="text.secondary">{platformStr}</Typography>
+                            {/* Alternative Names Button & Popover */}
+                            {game.alternativeNames && game.alternativeNames.length > 0 && (
+                              <>
+                                <Button size="small" variant="outlined" onClick={(e) => handleAltNamesClick(e, game.id)} sx={{ mb: 1 }}>
+                                  {t('games_alternativeNames') || 'Alternative Names'}
+                                </Button>
+                              </>
+                            )}
+                            {altNamesGameId === game.id && (
+                              <Popover
+                                open={Boolean(altNamesAnchorEl)}
+                                anchorEl={altNamesAnchorEl}
+                                onClose={handleAltNamesClose}
+                                anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                              >
+                                <Box sx={{ p: 2, minWidth: 180 }}>
+                                  {game.alternativeNames.map((name: string, idx: number) => (
+                                    <Typography key={idx} variant="body2" sx={{ mb: 0.5 }}>{name}</Typography>
+                                  ))}
+                                </Box>
+                              </Popover>
+                            )}
+                            {game.genres && <Typography variant="body2" color="text.secondary">{game.genres.join(', ')}</Typography>}
+                            {game.consoleName && <Typography variant="body2" color="text.secondary">{game.consoleName}</Typography>}
+                            {getGameRating(game) > 0 && (
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                                <Rating value={getGameRating(game)} precision={0.1} size="small" readOnly />
+                                <Typography variant="caption" color="text.secondary">
+                                  ({getGameRating(game).toFixed(1)})
+                                </Typography>
+                              </Box>
+                            )}
+                            <Box sx={{ display: 'flex', gap: 1, mb: 0.5, alignItems: 'center' }}>
+                              <span title={game.favorite ? 'Favorite' : 'Not Favorite'} style={{ fontSize: 22, lineHeight: 1 }}>
+                                {game.favorite ? '❤️' : '🤍'}
+                              </span>
+                              <span title={game.completed ? 'Completed' : 'Not Completed'} style={{ fontSize: 22, lineHeight: 1 }}>
+                                {game.completed ? '🏅' : '–'}
+                              </span>
                             </Box>
-                          )}
-                          {/* Favorite and Completed status as icons */}
-                          <Box sx={{ display: 'flex', gap: 1, mb: 0.5, alignItems: 'center' }}>
-                            {game.favorite && (
-                              <span title={t('games_favorite') || 'Favorite'} style={{ color: '#E91E63', fontSize: 22, lineHeight: 1 }}>
-                                ❤
-                              </span>
-                            )}
-                            {game.completed && (
-                              <span title={t('games_completed') || 'Completed'} style={{ color: '#43A047', fontSize: 22, lineHeight: 1 }}>
-                                ✓
-                              </span>
-                            )}
+                            <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
+                              <Button size="small" onClick={() => handleEditGame(game)}>{t("common_edit")}</Button>
+                              <Button size="small" color="error" onClick={() => handleDeleteGame(game)} disabled={deletingGameId === game.id}>
+                                {deletingGameId === game.id ? <CircularProgress size={16} color="inherit" /> : 'Delete'}
+                              </Button>
+                            </Box>
                           </Box>
-                          <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
-                            <Button size="small" onClick={() => handleEditGame(game)}>{t("common_edit")}</Button>
-                            <Button size="small" color="error" onClick={() => handleDeleteGame(game)} disabled={deletingGameId === game.id}>
-                              {deletingGameId === game.id ? <CircularProgress size={16} color="inherit" /> : t("common_delete")}
-                            </Button>
-                          </Box>
-                        </Box>
-                      </Card>
-                    </MuiGrid>
-                  );
-                })}
-              </MuiGrid>
+                        </Card>
+                      </Grid>
+                    );
+                  })}
+                </Grid>
+              ) : (
+                <Paper sx={{ width: '100%', overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ background: theme.palette.background.paper, borderBottom: `2px solid ${theme.palette.divider}` }}>
+                        <th style={{ padding: '8px', textAlign: 'left' }}>{'Image'}</th>
+                        <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_title') || 'Title'}</th>
+                        <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_alternativeNames') || 'Alternative Names'}</th>
+                        <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_genres') || 'Genres'}</th>
+                        <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_platforms') || 'Platforms'}</th>
+                        <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_rating') || 'Rating'}</th>
+                        <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_console') || 'Console'}</th>
+                        <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_completed') || 'Completed'}</th>
+                        <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_favorite') || 'Favorite'}</th>
+                        <th style={{ padding: '8px', textAlign: 'left' }}>{'Actions'}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {userGames.map((game) => {
+                        let platformStr = '';
+                        if (Array.isArray(game.platforms)) {
+                          if (typeof game.platforms[0] === 'object') {
+                            platformStr = game.platforms.map((p: any) => p.name).join(', ');
+                          } else {
+                            platformStr = game.platforms.join(', ');
+                          }
+                        }
+                        return (
+                          <tr key={game.id} style={{ borderBottom: `1px solid ${theme.palette.divider}` }}>
+                            <td style={{ padding: '8px' }}>
+                              <Avatar
+                                src={
+                                  game.cover
+                                    ? game.cover
+                                    : game.photos?.[0]
+                                      ? game.photos[0]
+                                      : game.screenshot
+                                        ? game.screenshot
+                                        : undefined
+                                }
+                                variant="rounded"
+                                sx={{ width: 56, height: 56, bgcolor: 'grey.200', mx: 'auto' }}
+                              >
+                                {!(game.cover || game.photos?.[0] || game.screenshot) && <SportsEsportsIcon />}
+                              </Avatar>
+                            </td>
+                            <td style={{ padding: '8px' }}>{game.title || game.name}</td>
+                            <td style={{ padding: '8px' }}>
+                              {game.alternativeNames && game.alternativeNames.length > 0 && (
+                                <Button size="small" variant="outlined" onClick={(e) => handleAltNamesClick(e, game.id)}>
+                                  {t('games_alternativeNames') || 'Alternative Names'}
+                                </Button>
+                              )}
+                              {altNamesGameId === game.id && (
+                                <Popover
+                                  open={Boolean(altNamesAnchorEl)}
+                                  anchorEl={altNamesAnchorEl}
+                                  onClose={handleAltNamesClose}
+                                  anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                                >
+                                  <Box sx={{ p: 2, minWidth: 180 }}>
+                                    {game.alternativeNames.map((name: string, idx: number) => (
+                                      <Typography key={idx} variant="body2" sx={{ mb: 0.5 }}>{name}</Typography>
+                                    ))}
+                                  </Box>
+                                </Popover>
+                              )}
+                            </td>
+                            <td style={{ padding: '8px' }}>{game.genres?.join(', ')}</td>
+                            <td style={{ padding: '8px' }}>{platformStr}</td>
+                            <td style={{ padding: '8px' }}>
+                              {getGameRating(game) > 0 && (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <Rating value={getGameRating(game)} precision={0.1} size="small" readOnly />
+                                  <Typography variant="caption" color="text.secondary">
+                                    ({getGameRating(game).toFixed(1)})
+                                  </Typography>
+                                </Box>
+                              )}
+                            </td>
+                            <td style={{ padding: '8px' }}>{game.consoleName}</td>
+                            <td style={{ padding: '8px' }}>{game.completed ? '✓' : ''}</td>
+                            <td style={{ padding: '8px' }}>
+                              <span title={game.completed ? 'Completed' : 'Not Completed'} style={{ fontSize: 22, lineHeight: 1 }}>
+                                {game.completed ? '🏅' : '–'}
+                              </span>
+                            </td>
+                            <td style={{ padding: '8px' }}>
+                              <span title={game.favorite ? 'Favorite' : 'Not Favorite'} style={{ fontSize: 22, lineHeight: 1 }}>
+                                {game.favorite ? '❤️' : '🤍'}
+                              </span>
+                            </td>
+                            <td style={{ padding: '8px' }}>
+                              <Button size="small" onClick={() => handleEditGame(game)}>{t("common_edit")}</Button>
+                              <Button size="small" color="error" onClick={() => handleDeleteGame(game)} disabled={deletingGameId === game.id}>
+                                {deletingGameId === game.id ? <CircularProgress size={16} color="inherit" /> : 'Delete'}
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </Paper>
+              )
             )}
+            {/* Pagination controls */}
+            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
+              <Button
+                size="small"
+                disabled={page === 1}
+                onClick={() => setPage(page - 1)}
+              >
+                {'Prev'}
+              </Button>
+              <Typography variant="body2">
+                {'Page'} {page} / {Math.max(1, Math.ceil(totalGames / pageSize))}
+              </Typography>
+              <Button
+                size="small"
+                disabled={page >= Math.ceil(totalGames / pageSize)}
+                onClick={() => setPage(page + 1)}
+              >
+                {'Next'}
+              </Button>
+              <FormControl size="small" sx={{ minWidth: 80 }}>
+                <InputLabel>{'Page Size'}</InputLabel>
+                <Select
+                  value={pageSize}
+                  label={'Page Size'}
+                  onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
+                >
+                  {[6, 12, 24, 48].map(size => (
+                    <MenuItem key={size} value={size}>{size}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
           </CardContent>
         </Card>
 
@@ -541,7 +763,6 @@ export default function GamesPage() {
           searchResults={searchResults}
           isMobile={isMobile}
           theme={theme}
-          t={t}
           getGameCoverUrl={getGameCoverUrl}
           getGameRating={getGameRating}
           formatReleaseDate={formatReleaseDate}
