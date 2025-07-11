@@ -18,6 +18,7 @@ export function GamesTable({
   onToggleFavorite,
   onToggleCompleted,
   onRatingClick,
+  openPhotoGallery,
   t
 }: any) {
   return (
@@ -65,21 +66,39 @@ export function GamesTable({
           return (
             <tr key={game.id} style={{ borderBottom: `1px solid ${theme.palette.divider}` }}>
               <td style={{ padding: '8px' }}>
-                <Avatar
-                  src={
-                    game.cover
-                      ? game.cover
-                      : game.photos?.[0]
-                        ? game.photos[0]
-                        : game.screenshot
-                          ? game.screenshot
-                          : undefined
-                  }
-                  variant="rounded"
-                  sx={{ width: 56, height: 56, bgcolor: 'grey.200', mx: 'auto' }}
+                <span
+                  style={{ cursor: 'pointer', display: 'inline-block' }}
+                  title={t('games_photos') || 'Photos'}
+                  onClick={() => {
+                    // Collect all available images: photos, cover, screenshot
+                    const images: string[] = [];
+                    if (Array.isArray(game.photos)) images.push(...game.photos.filter(Boolean));
+                    if (game.cover) images.push(game.cover);
+                    if (game.screenshot) images.push(game.screenshot);
+                    // Remove duplicates
+                    const uniqueImages = Array.from(new Set(images));
+                    if (uniqueImages.length === 0) return;
+                    if (typeof openPhotoGallery === 'function') {
+                      openPhotoGallery(uniqueImages, 0);
+                    }
+                  }}
                 >
-                  {!(game.cover || game.photos?.[0] || game.screenshot) && <SportsEsportsIcon />}
-                </Avatar>
+                  <Avatar
+                    src={
+                      game.cover
+                        ? game.cover
+                        : game.photos?.[0]
+                          ? game.photos[0]
+                          : game.screenshot
+                            ? game.screenshot
+                            : undefined
+                    }
+                    variant="rounded"
+                    sx={{ width: 56, height: 56, bgcolor: 'grey.200', mx: 'auto' }}
+                  >
+                    {!(game.cover || game.photos?.[0] || game.screenshot) && <SportsEsportsIcon />}
+                  </Avatar>
+                </span>
               </td>
               <td style={{ padding: '8px' }}>{game.title || game.name}</td>
               <td style={{ padding: '8px' }}>

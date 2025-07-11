@@ -50,7 +50,22 @@ export function GamesCardList({
         return (
           <div key={game.id} style={{ width: '100%' }}>
             <Card variant="outlined" sx={{ p: 2, display: 'flex', gap: 2 }}>
-              <Box sx={{ cursor: game.photos?.length ? 'pointer' : 'default', minWidth: 80 }} onClick={() => game.photos?.length && openPhotoGallery(game.photos, 0)}>
+              <Box
+                sx={{ cursor: 'pointer', minWidth: 80 }}
+                onClick={() => {
+                  // Collect all available images: photos, cover, screenshot
+                  const images: string[] = [];
+                  if (Array.isArray(game.photos)) images.push(...game.photos.filter(Boolean));
+                  if (game.cover) images.push(game.cover);
+                  if (game.screenshot) images.push(game.screenshot);
+                  // Remove duplicates
+                  const uniqueImages = Array.from(new Set(images));
+                  if (uniqueImages.length === 0) return;
+                  if (typeof openPhotoGallery === 'function') {
+                    openPhotoGallery(uniqueImages, 0);
+                  }
+                }}
+              >
                 <Avatar
                   src={
                     game.cover
@@ -66,7 +81,7 @@ export function GamesCardList({
                 >
                   {!(game.cover || game.photos?.[0] || game.screenshot) && <SportsEsportsIcon />}
                 </Avatar>
-                {game.photos?.length > 1 && (
+                {Array.isArray(game.photos) && game.photos.length > 1 && (
                   <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', width: '100%' }}>
                     +{game.photos.length - 1} more
                   </Typography>

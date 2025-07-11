@@ -611,6 +611,7 @@ const handleToggleFavorite = async (game: any) => {
                     deletingGameId={deletingGameId}
                     handleEditGame={handleEditGame}
                     handleDeleteGame={handleDeleteGame}
+                    openPhotoGallery={openPhotoGallery}
                     onToggleFavorite={handleToggleFavorite}
                     onToggleCompleted={handleToggleCompleted}
                     onRatingClick={handleRatingClick}
