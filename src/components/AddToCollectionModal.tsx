@@ -346,12 +346,6 @@ export default function AddToCollectionModal({
     }
   };
 
-  // const getGameCoverUrl = (cover: any) => {
-  //   if (!cover?.image_id) return null;
-  //   return `https://images.igdb.com/igdb/image/upload/t_cover_big/${cover.image_id}.jpg`;
-  // };
-
-
   // Debug: Log the game data when the modal opens
   useEffect(() => {
     if (open && game) {

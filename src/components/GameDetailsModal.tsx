@@ -28,7 +28,6 @@ import AddCircleIcon from "@mui/icons-material/AddCircle";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import ImageIcon from "@mui/icons-material/Image";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
-import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import { useTheme } from '@mui/material/styles';
 import { useMediaQuery } from '@mui/material';
 
@@ -117,7 +116,6 @@ export function GameDetailsModal({ open,
   };
 
   const openImageGallery = (images: any[]) => {
-    console.log(images)
     const mappedGalleryImages = images.map(img =>
     typeof img === 'string' && img.includes('//')
       ? img
@@ -139,7 +137,6 @@ export function GameDetailsModal({ open,
   let mergedGame = game;
   if (gameType === "local" && game) {
     const igdbGame = game.igdbGame || fetchedIgdbGame || {};
-    console.log('Merging local game with IGDB data:', igdbGame);
     mergedGame = {
       // Prefer local game fields, fallback to igdbGame fields
       name: game.name || igdbGame.name,
@@ -159,7 +156,6 @@ export function GameDetailsModal({ open,
       ...igdbGame,
       ...game,
     };
-    console.log('Merged game:', mergedGame);
     // Ensure mergedGame.name is always present
     if (!mergedGame.name) mergedGame.name = igdbGame.name;
   }

@@ -6,6 +6,7 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import CloseIcon from "@mui/icons-material/Close";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
+import { useTranslations } from "@/hooks/useTranslations";
 
 interface PhotoGalleryModalProps {
   open: boolean;
@@ -22,6 +23,7 @@ export const PhotoGalleryModal: React.FC<PhotoGalleryModalProps> = ({
   onClose,
   title = "Photos",
 }) => {
+  const { t } = useTranslations();
   const galleryItems = images.map((url) => ({
     original: url,
     thumbnail: url,
@@ -50,7 +52,7 @@ export const PhotoGalleryModal: React.FC<PhotoGalleryModalProps> = ({
         ) : (
           <Box sx={{ textAlign: "center", py: 4 }}>
             <SportsEsportsIcon sx={{ fontSize: 60, color: "text.disabled", mb: 2 }} />
-            <Typography variant="body2" color="text.secondary">No photos</Typography>
+            <Typography variant="body2" color="text.secondary">{t("games_noPhotos")}</Typography>
           </Box>
         )}
       </Box>
