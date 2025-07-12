@@ -33,6 +33,8 @@ export function GamesTable({
           <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_platforms') || 'Platforms'}</th>
           <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_rating') || 'Rating'}</th>
           <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_console') || 'Console'}</th>
+          <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_completeness') || 'Completeness'}</th>
+          <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_region') || 'Region'}</th>
           <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_completed') || 'Completed'}</th>
           <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_favorite') || 'Favorite'}</th>
           <th style={{ padding: '8px', textAlign: 'left' }}>{'Actions'}</th>
@@ -69,7 +71,6 @@ export function GamesTable({
               key={game.id}
               style={{ borderBottom: `1px solid ${theme.palette.divider}`, cursor: 'pointer' }}
               onClick={e => {
-                // Only trigger if not clicking on a button or interactive element
                 if (
                   e.target instanceof HTMLElement &&
                   ['BUTTON', 'SPAN', 'INPUT', 'TEXTAREA', 'A'].includes(e.target.tagName)
@@ -85,12 +86,10 @@ export function GamesTable({
                   title={t('games_photos') || 'Photos'}
                   onClick={e => {
                     e.stopPropagation();
-                    // Collect all available images: photos, cover, screenshot
                     const images: string[] = [];
                     if (Array.isArray(game.photos)) images.push(...game.photos.filter(Boolean));
                     if (game.cover) images.push(game.cover);
                     if (game.screenshot) images.push(game.screenshot);
-                    // Remove duplicates
                     const uniqueImages = Array.from(new Set(images));
                     if (uniqueImages.length === 0) return;
                     if (typeof openPhotoGallery === 'function') {
@@ -134,6 +133,7 @@ export function GamesTable({
                     open={Boolean(altNamesAnchorEl)}
                     anchorEl={altNamesAnchorEl}
                     onClose={e => {
+                        // @ts-ignore
                         e.stopPropagation();
                         handleAltNamesClose();
                     }}
@@ -165,12 +165,22 @@ export function GamesTable({
               </td>
               <td style={{ padding: '8px' }}>{consoleSystemStr}</td>
               <td style={{ padding: '8px' }}>
+                {game.completeness
+                  ? t(`games_completeness_${game.completeness.toLowerCase()}`)
+                  : t('games_none')}
+              </td>
+              <td style={{ padding: '8px' }}>
+                {game.region
+                  ? t(`games_region_${game.region.toLowerCase()}`)
+                  : t('games_none')}
+              </td>
+              <td style={{ padding: '8px' }}>
                 <span
                   title={game.completed ? 'Completed' : 'Not Completed'}
                   style={{ fontSize: 22, lineHeight: 1, cursor: 'pointer' }}
                   onClick={() => onToggleCompleted(game)}
                 >
-                  {game.completed ? '🏅' : '–'}
+                  {game.completed ? '🏆' : '🎖'}
                 </span>
               </td>
               <td style={{ padding: '8px' }}>

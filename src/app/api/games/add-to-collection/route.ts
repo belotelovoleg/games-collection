@@ -13,7 +13,22 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { igdbGameId, consoleId, condition, price, purchaseDate, notes, photo } = body;
+    const {
+      igdbGameId,
+      consoleId,
+      condition,
+      price,
+      purchaseDate,
+      notes,
+      photo,
+      completeness,
+      region,
+      labelDamage,
+      discoloration,
+      rentalSticker,
+      testedWorking,
+      reproduction
+    } = body;
 
     if (!igdbGameId || !consoleId) {
       return NextResponse.json(
@@ -60,6 +75,13 @@ export async function POST(request: NextRequest) {
         purchaseDate: purchaseDate ? new Date(purchaseDate) : undefined,
         notes,
         photo,
+        completeness,
+        region,
+        labelDamage,
+        discoloration,
+        rentalSticker,
+        testedWorking,
+        reproduction
       }
     );
 

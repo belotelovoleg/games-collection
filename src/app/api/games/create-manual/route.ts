@@ -25,7 +25,14 @@ export async function POST(request: NextRequest) {
       rating,
       cover,
       screenshot,
-      photos
+      photos,
+      completeness,
+      region,
+      labelDamage,
+      discoloration,
+      rentalSticker,
+      testedWorking,
+      reproduction
     } = body;
 
     if (!title || !consoleId) {
@@ -52,6 +59,13 @@ export async function POST(request: NextRequest) {
         cover: cover || null,
         screenshot: screenshot || null,
         photos: Array.isArray(photos) ? photos.filter(Boolean) : [],
+        completeness: completeness || 'CIB',
+        region: region || 'REGION_FREE',
+        labelDamage: !!labelDamage,
+        discoloration: !!discoloration,
+        rentalSticker: !!rentalSticker,
+        testedWorking: typeof testedWorking === 'boolean' ? testedWorking : true,
+        reproduction: !!reproduction,
         genres: [],
         franchises: [],
         platforms: [],

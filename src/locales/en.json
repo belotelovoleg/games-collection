@@ -53,6 +53,8 @@
   "games_notes": "Notes",
   "games_completed": "Completed",
   "games_favorite": "Favorite",
+  "games_not_completed": "Not Completed",
+  "games_not_favorite": "Not Favorite",
   "games_subtitle": "Search and manage games for your console collection",
   "games_selectConsole": "Select Console",
   "games_searchGames": "Search Games",
@@ -104,6 +106,7 @@
   "games_wishlist": "Wishlist",
   "games_notes_placeholder": "Any additional notes about this game in your collection...",
   "games_condition_mint": "Mint",
+  "games_condition_sealed": "Sealed",
   "games_condition_excellent": "Excellent",
   "games_condition_good": "Good",
   "games_condition_fair": "Fair",
@@ -138,6 +141,23 @@
   "games_addDeveloper": "Add Developer",
   "games_addPublisher": "Add Publisher",
   "games_none": "None",
+  "games_completeness_cib": "CIB",
+  "games_completeness_game_box": "Game & Box",
+  "games_completeness_game_manual": "Game & Manual",
+  "games_completeness_loose": "Loose",
+  "games_region_region_free": "Region Free",
+  "games_region_ntsc_u": "NTSC-U (USA)",
+  "games_region_ntsc_j": "NTSC-J (Japan)",
+  "games_region_pal": "PAL (Europe/Australia)",
+  "games_completeness": "Completeness",
+  "games_region": "Region",
+  "games_labelDamage": "Label Damage",
+  "games_discoloration": "Discoloration / Yellowing",
+  "games_rentalSticker": "Rental Sticker",
+  "games_testedWorking": "Tested / Working",
+  "games_reproduction": "Reproduction / Repo",
+  "games_yes": "Yes",
+  "games_no": "No",
   
   "settings_title": "Settings",
   "settings_profile": "Profile",
@@ -221,5 +241,7 @@
   
   "theme_light": "Light",
   "theme_dark": "Dark",
-  "theme_switchTo": "Switch to {mode} theme"
+  "theme_switchTo": "Switch to {mode} theme",
+  
+  "games_physicalDetails": "Physical Details"
 }

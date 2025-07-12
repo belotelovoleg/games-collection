@@ -39,14 +39,6 @@ interface AddToCollectionModalProps {
   mode?: 'create' | 'edit' | 'igdb'; // NEW: mode prop
 }
 
-const CONDITIONS = [
-  'MINT',
-  'EXCELLENT', 
-  'GOOD',
-  'FAIR',
-  'POOR'
-];
-
 export default function AddToCollectionModal({ 
   open, 
   onClose, 
@@ -70,7 +62,14 @@ export default function AddToCollectionModal({
     title: '',
     summary: '',
     consoleId: selectedConsole?.console?.id ? String(selectedConsole.console.id) : '',
-    condition: 'GOOD',
+    condition: 'MINT',
+    completeness: 'CIB',
+    region: 'REGION_FREE',
+    labelDamage: false,
+    discoloration: false,
+    rentalSticker: false,
+    testedWorking: true,
+    reproduction: false,
     price: '',
     purchaseDate: getToday(),
     notes: '',
@@ -284,6 +283,7 @@ export default function AddToCollectionModal({
         if (photoFiles[i] && newGame && photoFiles[i] instanceof File) {
           setUploading(true);
           const url = await uploadImageToS3({
+            // @ts-ignore
             file: photoFiles[i],
             userId: newGame.userId,
             gameId: newGame.id,
@@ -323,7 +323,14 @@ export default function AddToCollectionModal({
         title: '',
         summary: '',
         consoleId: selectedConsole?.console?.id ? String(selectedConsole.console.id) : '',
-        condition: 'GOOD',
+        condition: 'MINT',
+        completeness: 'CIB',
+        region: 'REGION_FREE',
+        labelDamage: false,
+        discoloration: false,
+        rentalSticker: false,
+        testedWorking: true,
+        reproduction: false,
         price: '',
         purchaseDate: getToday(),
         notes: '',
@@ -429,7 +436,7 @@ export default function AddToCollectionModal({
               minWidth: 0,
             }}
           >
-            {/* Text block: Title, Summary, Completed, Favorite */}
+            {/* Text block: Title, Summary, Completed, Favorite, New Fields */}
             <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
               <TextField
                 fullWidth
@@ -491,7 +498,6 @@ export default function AddToCollectionModal({
                 </Box>
               </Box>
             </Box>
-            {/* Images block: Cover and Screenshot */}
             <Box
               sx={{
                 display: 'flex',
@@ -533,6 +539,7 @@ export default function AddToCollectionModal({
             </Box>
           </Box>
         )}
+
 
         {/* Multi-Photo Upload & Crop (middle block): Always show */}
         <Box sx={{ mb: 3, minWidth: 0 }}>
@@ -583,8 +590,9 @@ export default function AddToCollectionModal({
         </Box>
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
-            {/* Console Selection */}
+
             <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' }, minWidth: 0 }}>
+               {/* Console Selection */}
               <FormControl fullWidth required>
                 <InputLabel>{t('games_console')}</InputLabel>
                 <Select
@@ -609,7 +617,7 @@ export default function AddToCollectionModal({
                   ))}
                 </Select>
               </FormControl>
-
+              {/* Conditions Selection */}
               <FormControl fullWidth>
                 <InputLabel>{t("games_condition")}</InputLabel>
                 <Select
@@ -617,13 +625,71 @@ export default function AddToCollectionModal({
                   label={t("games_condition")}
                   onChange={(e) => setFormData(prev => ({ ...prev, condition: e.target.value }))}
                 >
-                  {CONDITIONS.map((condition) => (
+                  {['SEALED','MINT','EXCELLENT', 'GOOD','FAIR','POOR'].map((condition) => (
                     <MenuItem key={condition} value={condition}>
                       {(t as any)(`games_condition_${condition.toLowerCase()}`) || condition}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
+            </Box>
+
+            <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' }, minWidth: 0 }}>
+              {/* Completeness Selection */}
+              <FormControl fullWidth>
+                  <InputLabel>{t('games_completeness')}</InputLabel>
+                  <Select
+                    value={formData.completeness}
+                    label={t('games_completeness')}
+                    onChange={e => setFormData(prev => ({ ...prev, completeness: e.target.value }))}
+                  >
+                  {["CIB", "GAME_BOX", "GAME_MANUAL", "LOOSE"].map((val) => (
+                    <MenuItem key={val} value={val}>
+                      {(t as any)(`games_completeness_${val.toLowerCase()}`) || val}
+                    </MenuItem>
+                  ))}
+                  </Select>
+                </FormControl>
+                {/* Region Selection */}
+                <FormControl fullWidth>
+                  <InputLabel>{t('games_region')}</InputLabel>
+                  <Select
+                    value={formData.region}
+                    label={t('games_region')}
+                    onChange={e => setFormData(prev => ({ ...prev, region: e.target.value }))}
+                  >
+                  {["REGION_FREE", "NTSC_U", "NTSC_J", "PAL"].map((val) => (
+                    <MenuItem key={val} value={val}>
+                      {(t as any)(`games_region_${val.toLowerCase()}`) || val}
+                    </MenuItem>
+                  ))}
+                  </Select>
+                </FormControl>
+            </Box>
+
+            {/* Booleans Props*/}
+            <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' }, minWidth: 0 }}> <FormControlLabel
+                control={<Checkbox checked={formData.labelDamage} onChange={e => setFormData(prev => ({ ...prev, labelDamage: e.target.checked }))} />}
+                label={t('games_labelDamage')}
+              />
+              <FormControlLabel
+                control={<Checkbox checked={formData.discoloration} onChange={e => setFormData(prev => ({ ...prev, discoloration: e.target.checked }))} />}
+                label={t('games_discoloration')}
+              />
+              <FormControlLabel
+                control={<Checkbox checked={formData.rentalSticker} onChange={e => setFormData(prev => ({ ...prev, rentalSticker: e.target.checked }))} />}
+                label={t('games_rentalSticker')}
+              />
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' }, minWidth: 0 }}>
+              <FormControlLabel
+                control={<Checkbox checked={formData.testedWorking} onChange={e => setFormData(prev => ({ ...prev, testedWorking: e.target.checked }))} />}
+                label={t('games_testedWorking')}
+              />
+              <FormControlLabel
+                control={<Checkbox checked={formData.reproduction} onChange={e => setFormData(prev => ({ ...prev, reproduction: e.target.checked }))} />}
+                label={t('games_reproduction')}
+              />
             </Box>
 
             <Box sx={{ display: 'flex', gap: 2 }}>

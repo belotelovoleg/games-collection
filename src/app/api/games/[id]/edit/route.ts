@@ -26,7 +26,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       notes,
       completed,
       favorite,
-      rating
+      rating,
+      completeness,
+      region,
+      labelDamage,
+      discoloration,
+      rentalSticker,
+      testedWorking,
+      reproduction
     } = body;
     const updateData: any = {};
     if (title !== undefined) updateData.title = title;
@@ -39,6 +46,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (completed !== undefined) updateData.completed = !!completed;
     if (favorite !== undefined) updateData.favorite = !!favorite;
     if (rating !== undefined) updateData.rating = typeof rating === 'number' ? rating : 50;
+    if (completeness !== undefined) updateData.completeness = completeness;
+    if (region !== undefined) updateData.region = region;
+    if (labelDamage !== undefined) updateData.labelDamage = !!labelDamage;
+    if (discoloration !== undefined) updateData.discoloration = !!discoloration;
+    if (rentalSticker !== undefined) updateData.rentalSticker = !!rentalSticker;
+    if (testedWorking !== undefined) updateData.testedWorking = typeof testedWorking === 'boolean' ? testedWorking : true;
+    if (reproduction !== undefined) updateData.reproduction = !!reproduction;
     const updated = await prisma.game.update({
       where: { id: gameId },
       data: updateData,

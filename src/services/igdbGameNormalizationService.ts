@@ -949,6 +949,13 @@ export class IGDBGameNormalizationService {
       purchaseDate?: Date;
       notes?: string;
       photo?: string;
+      completeness?: string;
+      region?: string;
+      labelDamage?: boolean;
+      discoloration?: boolean;
+      rentalSticker?: boolean;
+      testedWorking?: boolean;
+      reproduction?: boolean;
     }
   ): Promise<any> {
     console.log(`🎯 Creating user game from IGDB: ${igdbGameData.name} for user ${userId} on console ${consoleId}`);
@@ -1017,6 +1024,13 @@ export class IGDBGameNormalizationService {
           price: additionalData?.price,
           purchaseDate: additionalData?.purchaseDate,
           notes: additionalData?.notes,
+          completeness: additionalData?.completeness || 'CIB',
+          region: additionalData?.region || 'REGION_FREE',
+          labelDamage: !!additionalData?.labelDamage,
+          discoloration: !!additionalData?.discoloration,
+          rentalSticker: !!additionalData?.rentalSticker,
+          testedWorking: typeof additionalData?.testedWorking === 'boolean' ? additionalData.testedWorking : true,
+          reproduction: !!additionalData?.reproduction,
           releaseYear: igdbGameData.first_release_date 
             ? new Date(igdbGameData.first_release_date * 1000).getFullYear() 
             : null,

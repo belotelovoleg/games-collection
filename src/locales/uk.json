@@ -53,6 +53,8 @@
   "games_notes": "Примітки",
   "games_completed": "Пройдено",
   "games_favorite": "Улюблене",
+  "games_not_completed": "Не пройдено",
+  "games_not_favorite": "Не улюблене",
   "games_subtitle": "Шукайте та керуйте іграми для вашої колекції консолей",
   "games_selectConsole": "Вибрати Консоль",
   "games_searchGames": "Пошук Ігор",
@@ -115,6 +117,7 @@
   "games_owned": "У власності",
   "games_wishlist": "Список бажань",
   "games_notes_placeholder": "Додаткові нотатки про цю гру у вашій колекції...",
+  "games_condition_sealed": "Запечатана",
   "games_condition_mint": "Як нова",
   "games_condition_excellent": "Відмінний стан",
   "games_condition_good": "Гарний стан",
@@ -131,6 +134,23 @@
   "games_addDeveloper": "Додати розробника",
   "games_addPublisher": "Додати видавця",
   "games_none": "Немає",
+  "games_completeness": "Комплектність",
+  "games_region": "Регіон",
+  "games_labelDamage": "Пошкодження етикетки",
+  "games_discoloration": "Знебарвлення / Пожовтіння",
+  "games_rentalSticker": "Стікер прокату",
+  "games_testedWorking": "Перевірено / Працює",
+  "games_reproduction": "Репродукція / Копія",
+  "games_yes": "Так",
+  "games_no": "Ні",
+  "games_completeness_cib": "Повна комплектація (CIB)",
+  "games_completeness_game_box": "Гра та коробка",
+  "games_completeness_game_manual": "Гра та інструкція",
+  "games_completeness_loose": "Без коробки/інструкції",
+  "games_region_region_free": "Без регіонального обмеження",
+  "games_region_ntsc_u": "NTSC-U (США)",
+  "games_region_ntsc_j": "NTSC-J (Японія)",
+  "games_region_pal": "PAL (Європа/Австралія)",
   
   "settings_title": "Налаштування",
   "settings_profile": "Профіль",
@@ -214,5 +234,7 @@
   
   "theme_light": "Світла",
   "theme_dark": "Темна",
-  "theme_switchTo": "Перемкнути на {mode} тему"
+  "theme_switchTo": "Перемкнути на {mode} тему",
+  
+  "games_physicalDetails": "Фізичний стан"
 }

@@ -18,7 +18,10 @@ import {
   Tab,
   Badge,
   CircularProgress,
-  Backdrop
+  Backdrop,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails
 } from "@mui/material";
 import { GameMediaGallery } from "./GameMediaGallery";
 import CloseIcon from "@mui/icons-material/Close";
@@ -39,6 +42,8 @@ interface GameDetailsModalProps {
   setGalleryImages: (images: any[]) => void;
   setGalleryOpen: (open: boolean) => void;
   onAddToCollection: (game: any) => void;
+  onToggleCompleted?: (game: any) => void;
+  onToggleFavorite?: (game: any) => void;
 }
 
 export function GameDetailsModal({ open, 
@@ -47,7 +52,10 @@ export function GameDetailsModal({ open,
   gameType, 
   onAddToCollection, 
   setGalleryImages, 
-  setGalleryOpen }: GameDetailsModalProps) {
+  setGalleryOpen, 
+  onToggleCompleted, 
+  onToggleFavorite 
+}: GameDetailsModalProps) {
 
   const { t } = useTranslations();
   const theme = useTheme();
@@ -134,31 +142,36 @@ export function GameDetailsModal({ open,
   };
 
   // Merge local game with igdbGame if gameType is "local"
-  let mergedGame = game;
-  if (gameType === "local" && game) {
-    const igdbGame = game.igdbGame || fetchedIgdbGame || {};
-    mergedGame = {
-      // Prefer local game fields, fallback to igdbGame fields
-      name: game.name || igdbGame.name,
-      summary: game.summary || igdbGame.summary,
-      storyline: igdbGame.storyline, // Only in IGDB
-      cover: game.cover ? { image_id: game.cover } : igdbGame.cover,
-      screenshots: (igdbGame.gameScreenshotRelations && igdbGame.gameScreenshotRelations.length > 0) ? igdbGame.gameScreenshotRelations.map((shot: any) => shot.screenshot) : [],
-      artworks: (igdbGame.gameArtworkRelations && igdbGame.gameArtworkRelations.length > 0) ? igdbGame.gameArtworkRelations.map((shot: any) => shot.artwork) : [],
-      genres: (game.genres && game.genres.length > 0) ? game.genres.map((name: string, i: number) => ({ id: i, name })) : igdbGame.genres,
-      involved_companies: igdbGame.involved_companies,
-      platforms: igdbGame.platforms,
-      total_rating: igdbGame.total_rating,
-      rating: game.rating || igdbGame.rating,
-      aggregated_rating: igdbGame.aggregated_rating,
-      first_release_date: igdbGame.first_release_date,
-      // Add all other fields from local game
-      ...igdbGame,
-      ...game,
-    };
-    // Ensure mergedGame.name is always present
-    if (!mergedGame.name) mergedGame.name = igdbGame.name;
-  }
+  const [mergedGame, setMergedGame] = useState<any>(game);
+  useEffect(() => {
+    if (gameType === "local" && game) {
+      const igdbGame = game.igdbGame || fetchedIgdbGame || {};
+      const newMerged = {
+        // Prefer local game fields, fallback to igdbGame fields
+        name: game.name || igdbGame.name,
+        summary: game.summary || igdbGame.summary,
+        storyline: igdbGame.storyline, // Only in IGDB
+        cover: game.cover ? { image_id: game.cover } : igdbGame.cover,
+        screenshots: (igdbGame.gameScreenshotRelations && igdbGame.gameScreenshotRelations.length > 0) ? igdbGame.gameScreenshotRelations.map((shot: any) => shot.screenshot) : [],
+        artworks: (igdbGame.gameArtworkRelations && igdbGame.gameArtworkRelations.length > 0) ? igdbGame.gameArtworkRelations.map((shot: any) => shot.artwork) : [],
+        genres: (game.genres && game.genres.length > 0) ? game.genres.map((name: string, i: number) => ({ id: i, name })) : igdbGame.genres,
+        involved_companies: igdbGame.involved_companies,
+        platforms: igdbGame.platforms,
+        total_rating: igdbGame.total_rating,
+        rating: game.rating || igdbGame.rating,
+        aggregated_rating: igdbGame.aggregated_rating,
+        first_release_date: igdbGame.first_release_date,
+        // Add all other fields from local game
+        ...igdbGame,
+        ...game,
+      };
+      // Ensure mergedGame.name is always present
+      if (!newMerged.name) newMerged.name = igdbGame.name;
+      setMergedGame(newMerged);
+    } else {
+      setMergedGame(game);
+    }
+  }, [game, fetchedIgdbGame, gameType]);
 
   if (!mergedGame) return null;
 
@@ -223,6 +236,37 @@ export function GameDetailsModal({ open,
                   variant="outlined"
                   color="secondary"
                 />
+              )}
+              {/* New fields for local games */}
+              {gameType === "local" && (
+                <Box sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 2, alignItems: 'center', mt: 1 }}>
+                    <span
+                      title={mergedGame.completed ? t('games_completed') : t('games_not_completed')}
+                      style={{ fontSize: 22, lineHeight: 1, cursor: 'pointer' }}
+                      onClick={async () => {
+                        if (typeof onToggleCompleted === 'function') {
+                          await onToggleCompleted(mergedGame);
+                          // Refresh mergedGame after update
+                          setMergedGame((prev: any) => ({ ...prev, completed: !prev.completed }));
+                        }
+                      }}
+                    >
+                      {mergedGame.completed ? '🏆' : '🎖'}
+                    </span>
+                    <span
+                      title={mergedGame.favorite ? t('games_favorite') : t('games_not_favorite')}
+                      style={{ fontSize: 22, lineHeight: 1, cursor: 'pointer' }}
+                      onClick={async () => {
+                        if (typeof onToggleFavorite === 'function') {
+                          await onToggleFavorite(mergedGame);
+                          // Refresh mergedGame after update
+                          setMergedGame((prev: any) => ({ ...prev, favorite: !prev.favorite }));
+                        }
+                      }}
+                    >
+                      {mergedGame.favorite ? '❤️' : '🤍'}
+                    </span>
+                </Box>
               )}
             </Box>
           </Box>
@@ -318,6 +362,35 @@ export function GameDetailsModal({ open,
             </Box>
             {/* Main Content Area */}
             <Box sx={{ flex: 1, minWidth: 0 }}>
+              {gameType === "local" && (
+                <Accordion sx={{ mt: 1 }}>
+                  <AccordionSummary
+                    expandIcon={<InfoIcon />}
+                    aria-controls="game-condition-content"
+                    id="game-condition-header"
+                  >
+                    <Typography variant="subtitle1" fontWeight="bold">
+                      {t('games_physicalDetails')}
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Box sx={{
+                      display: 'flex',
+                      flexDirection: { xs: 'column', md: 'row' },
+                      flexWrap: 'wrap',
+                      gap: 2,
+                      alignItems: 'flex-start',
+                    }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 0.5, md: 0 } }}>{t('games_region')}: <b>{mergedGame.region ? (t as any)(`games_region_${mergedGame.region.toLowerCase()}`) : t('games_none')}</b></Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 0.5, md: 0 } }}>{t('games_labelDamage')}: <b>{mergedGame.labelDamage ? t('games_yes') : t('games_no')}</b></Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 0.5, md: 0 } }}>{t('games_discoloration')}: <b>{mergedGame.discoloration ? t('games_yes') : t('games_no')}</b></Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 0.5, md: 0 } }}>{t('games_rentalSticker')}: <b>{mergedGame.rentalSticker ? t('games_yes') : t('games_no')}</b></Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 0.5, md: 0 } }}>{t('games_testedWorking')}: <b>{mergedGame.testedWorking ? t('games_yes') : t('games_no')}</b></Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 0.5, md: 0 } }}>{t('games_reproduction')}: <b>{mergedGame.reproduction ? t('games_yes') : t('games_no')}</b></Typography>
+                    </Box>
+                  </AccordionDetails>
+                </Accordion>
+              )}
               {/* Tabs for different content sections */}
               <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
                 <Tabs 
@@ -360,6 +433,7 @@ export function GameDetailsModal({ open,
                       </Box>
                     } 
                   />
+                  {(gameType === "local") && (
                    <Tab 
                     label={
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -371,6 +445,7 @@ export function GameDetailsModal({ open,
                       </Box>
                     } 
                   />
+                  )}
                 </Tabs>
               </Box>
               {/* Tab Content */}
@@ -456,7 +531,7 @@ export function GameDetailsModal({ open,
                 />
               )}
               {/* Photos Tab */}
-              {detailsTabValue === 4 && (
+              {((detailsTabValue === 4) && (gameType === "local")) && (
                 <GameMediaGallery
                   images={mergedGame.photos || []}
                   title={t("games_photos")}

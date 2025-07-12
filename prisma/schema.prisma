@@ -97,6 +97,13 @@ model Game {
   // User-specific collection data
   consoleIds      Int[]       // Which consoles this game works on (array of console IDs)
   condition       Condition   @default(GOOD)
+  completeness    Completeness? @default(CIB)
+  region          Region? @default(REGION_FREE)
+  labelDamage     Boolean @default(false)
+  discoloration   Boolean @default(false)
+  rentalSticker   Boolean @default(false)
+  testedWorking   Boolean @default(false)
+  reproduction    Boolean @default(false)
   developer       String[]
   publisher       String[]
   releaseYear     Int?
@@ -866,11 +873,26 @@ enum Role {
 }
 
 enum Condition {
+  SEALED
   MINT
-  EXCELLENT
+  VERY_GOOD
   GOOD
-  FAIR
+  ACCEPTABLE
   POOR
+}
+
+enum Completeness {
+  CIB
+  GAME_BOX
+  GAME_MANUAL
+  LOOSE
+}
+
+enum Region {
+  REGION_FREE
+  NTSC_U
+  NTSC_J
+  PAL
 }
 
 enum UserConsoleStatus {

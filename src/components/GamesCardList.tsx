@@ -115,7 +115,7 @@ export function GamesCardList({
                         color={game.completed ? 'success' : 'inherit'}
                         onClick={() => onToggleCompleted(game)}
                       >
-                        {game.completed ? '🏅' : '–'}
+                        {game.completed ? '🏆' : '🎖'}
                       </Button>
                       {/* Edit icon */}
                       <Button 
@@ -150,6 +150,13 @@ export function GamesCardList({
                 </Box>
                 {/* Console name */}
                 {consoleSystemStr && <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mt: 1 }}>{consoleSystemStr}</Typography>}
+
+                {/* New fields: Completeness, Region, Booleans */}
+                <Box sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 2, justifyContent: 'center', mt: 1 }}>
+                  <Typography variant="body2" color="text.secondary">{t('games_completeness')}: <b>{game.completeness ? t(`games_completeness_${game.completeness.toLowerCase()}`) : t('games_none')}</b></Typography>
+                  <Typography variant="body2" color="text.secondary">{t('games_region')}: <b>{game.region ? t(`games_region_${game.region.toLowerCase()}`) : t('games_none')}</b></Typography>
+                </Box>
+
                 {/* Alternative Names Button & Popover */}
                 {game.alternativeNames && game.alternativeNames.length > 0 && (
                   <Button size="small" variant="outlined" onClick={(e) => handleAltNamesClick(e, game.id)} sx={{ mb: 1, mt: 1 }}>
