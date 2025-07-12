@@ -122,6 +122,29 @@ export default function AddToCollectionModal({
         favorite: !!game.favorite,
         rating: typeof game.rating === 'number' ? game.rating : 50,
         consoleId: game.consoleIds && game.consoleIds.length > 0 ? String(game.consoleIds[0]) : prev.consoleId,
+        // Patch: load booleans from game object
+        labelDamage: !!game.labelDamage,
+        discoloration: !!game.discoloration,
+        rentalSticker: !!game.rentalSticker,
+        testedWorking: !!game.testedWorking,
+        reproduction: !!game.reproduction,
+        // Patch: load missing fields from game object
+        condition: game.condition || prev.condition,
+        completeness: game.completeness || prev.completeness,
+        region: game.region || prev.region,
+        price: game.price !== undefined && game.price !== null ? String(game.price) : prev.price,
+        purchaseDate: game.purchaseDate ? game.purchaseDate.slice(0, 10) : prev.purchaseDate,
+        notes: game.notes || prev.notes,
+      }));
+      setAdvancedFields(prev => ({
+        ...prev,
+        alternativeNames: game.alternativeNames || [],
+        genres: game.genres || [],
+        franchises: game.franchises || [],
+        platforms: game.platforms || [],
+        developer: game.developer || [],
+        publisher: game.publisher || [],
+        releaseYear: game.releaseYear || null,
       }));
       setCover(game.cover || null);
       setScreenshot(game.screenshot || null);
@@ -150,6 +173,15 @@ export default function AddToCollectionModal({
 
     } else if (!game) {
       setFormData(prev => ({ ...prev, title: '', summary: '', completed: false, favorite: false, rating: 50 }));
+      setAdvancedFields({
+        alternativeNames: [],
+        genres: [],
+        franchises: [],
+        platforms: [],
+        developer: [],
+        publisher: [],
+        releaseYear: null,
+      });
       setCover(null);
       setScreenshot(null);
       setPhotos([null, null, null, null, null]);
@@ -172,16 +204,18 @@ export default function AddToCollectionModal({
       if (mode === 'edit') {
         // ...existing code for edit...
         const payload: any = {
-          title: formData.title,
-          summary: formData.summary,
-          completed: formData.completed,
-          favorite: formData.favorite,
-          rating: formData.rating,
+          ...formData,
+          ...advancedFields,
           consoleId: Number(formData.consoleId),
-          condition: formData.condition,
           price: formData.price || null,
           purchaseDate: formData.purchaseDate || null,
           notes: formData.notes || null,
+          // Ensure booleans are sent as booleans
+          labelDamage: !!formData.labelDamage,
+          discoloration: !!formData.discoloration,
+          rentalSticker: !!formData.rentalSticker,
+          testedWorking: !!formData.testedWorking,
+          reproduction: !!formData.reproduction,
         };
         response = await fetch(`/api/games/${game.id}/edit`, {
           method: 'PATCH',
@@ -353,13 +387,7 @@ export default function AddToCollectionModal({
     }
   };
 
-  // Debug: Log the game data when the modal opens
-  useEffect(() => {
-    if (open && game) {
-      // Log the full game object for inspection
-      console.log('[AddToCollectionModal] Game data:', game);
-    }
-  }, [open, game]);
+  // Debug logging removed
 
   // Clear error when modal is opened
   useEffect(() => {

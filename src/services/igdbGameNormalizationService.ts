@@ -1008,7 +1008,11 @@ export class IGDBGameNormalizationService {
           cover: getCoverUrl(igdbGameData.cover),
           screenshot: getFirstScreenshotUrl(igdbGameData.screenshots || []),
           summary: igdbGameData.summary,
-          // genres and franchises are now normalized, not stored as arrays
+          genres: igdbGameData.genres?.map(g => g.name).filter(Boolean) || [],
+          franchises: igdbGameData.franchises?.map(f => f.name).filter(Boolean) || [],
+          companies: Array.isArray((igdbGameData as any).involved_companies)
+            ? Array.from(new Set((igdbGameData as any).involved_companies.map((ic: any) => ic?.company?.name).filter(Boolean)))
+            : [],
           platforms: igdbGameData.platforms || [], // Array of IGDB platform IDs
           rating: igdbGameData.total_rating || igdbGameData.aggregated_rating || igdbGameData.rating,
           multiplayerModes: igdbGameData.multiplayer_modes?.map(mm => {

@@ -436,7 +436,7 @@ const handleToggleFavorite = async (game: any) => {
 
   return (
     <MainLayout locale={locale}>
-      <Container maxWidth="xl" sx={{ py: 1, minWidth: 320, overflowX: 'auto' }}>
+      <Box maxWidth="xl" sx={{ py: 1, minWidth: 320, maxWidth: "100%", overflowX: 'auto' }}>
         {/* Compact Header */}
         <Box sx={{ mb: 2 }}>
           <Typography 
@@ -544,9 +544,6 @@ const handleToggleFavorite = async (game: any) => {
         {/* User Games Table/Grid with Pagination, Sorting, Filtering */}
         <Card sx={{ mt: 3 }}>
           <CardContent>
-            <Typography variant="h6" sx={{ mb: 2 }}>
-              {t("games_yourCollection") || 'Your Collection'}
-            </Typography>
             {/* Filtering and sorting controls */}
             <Box sx={{ mb: 2, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
               <GamesFilterPanel
@@ -759,7 +756,7 @@ const handleToggleFavorite = async (game: any) => {
           onSuccess={handleAddToCollectionSuccess}
           mode={addToCollectionMode}
         />
-      </Container>
+      </Box>
     </MainLayout>
   );
 }

@@ -406,7 +406,7 @@ export function GameDetailsModal({ open,
                         <ImageIcon fontSize="small" />
                         {t("games_cover")}
                         {mergedGame.cover && (
-                          <Badge badgeContent={1} color="primary" />
+                          <Badge sx={{marginLeft: 1.5}} badgeContent={1} color="primary" />
                         )}
                       </Box>
                     } 
@@ -417,7 +417,7 @@ export function GameDetailsModal({ open,
                         <PhotoLibraryIcon fontSize="small" />
                         {t("games_screenshots")}
                         {mergedGame.screenshots && mergedGame.screenshots.length > 0 && (
-                          <Badge badgeContent={mergedGame.screenshots.length} color="primary" />
+                          <Badge sx={{marginLeft: 1.5}} badgeContent={mergedGame.screenshots.length} color="primary" />
                         )}
                       </Box>
                     } 
@@ -428,7 +428,7 @@ export function GameDetailsModal({ open,
                         <ImageIcon fontSize="small" />
                         {t("games_artworks")}
                         {mergedGame.artworks && mergedGame.artworks.length > 0 && (
-                          <Badge badgeContent={mergedGame.artworks.length} color="primary" />
+                          <Badge sx={{marginLeft: 1.5}} badgeContent={mergedGame.artworks.length} color="primary" />
                         )}
                       </Box>
                     } 
@@ -440,7 +440,7 @@ export function GameDetailsModal({ open,
                         <ImageIcon fontSize="small" />
                         {t("games_photos")}
                         {mergedGame.photos && mergedGame.photos.length > 0 && (
-                          <Badge badgeContent={mergedGame.photos.length} color="primary" />
+                          <Badge sx={{marginLeft: 1.5}} badgeContent={mergedGame.photos.length} color="primary" />
                         )}
                       </Box>
                     } 

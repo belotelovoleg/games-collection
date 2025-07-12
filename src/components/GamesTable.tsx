@@ -1,5 +1,9 @@
 import React from "react";
-import { Avatar, Button, Popover, Box, Typography, Rating } from "@mui/material";
+import { Avatar, Button, Popover, Box, Typography, Rating, Tooltip, IconButton } from "@mui/material";
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import InventoryIcon from '@mui/icons-material/Inventory';
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 
 export function GamesTable({
@@ -26,18 +30,17 @@ export function GamesTable({
     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
       <thead>
         <tr style={{ background: theme.palette.background.paper, borderBottom: `2px solid ${theme.palette.divider}` }}>
-          <th style={{ padding: '8px', textAlign: 'left' }}>{'Image'}</th>
-          <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_title') || 'Title'}</th>
-          <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_alternativeNames') || 'Alternative Names'}</th>
-          {/* Genres column removed as requested */}
-          <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_platforms') || 'Platforms'}</th>
-          <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_rating') || 'Rating'}</th>
-          <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_console') || 'Console'}</th>
-          <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_completeness') || 'Completeness'}</th>
-          <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_region') || 'Region'}</th>
-          <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_completed') || 'Completed'}</th>
-          <th style={{ padding: '8px', textAlign: 'left' }}>{t('games_favorite') || 'Favorite'}</th>
-          <th style={{ padding: '8px', textAlign: 'left' }}>{'Actions'}</th>
+          <th style={{ padding: '8px', textAlign: 'center' }}>{'Image'}</th>
+          <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_filter_title') || 'Title'}</th>
+          <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_alternativeNames') || 'Alternative Names'}</th>
+          <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_platforms') || 'Platforms'}</th>
+          <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_rating') || 'Rating'}</th>
+          <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_console') || 'Console'}</th>
+          <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_condition') || 'Condition'}</th>
+          <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_region') || 'Region'}</th>
+          <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_completed') || 'Completed'}</th>
+          <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_favorite') || 'Favorite'}</th>
+          <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_actions') || 'Actions'}</th>
         </tr>
       </thead>
       <tbody>
@@ -81,38 +84,39 @@ export function GamesTable({
               }}
             >
               <td style={{ padding: '8px' }}>
-                <span
-                  style={{ cursor: 'pointer', display: 'inline-block' }}
-                  title={t('games_photos') || 'Photos'}
-                  onClick={e => {
-                    e.stopPropagation();
-                    const images: string[] = [];
-                    if (Array.isArray(game.photos)) images.push(...game.photos.filter(Boolean));
-                    if (game.cover) images.push(game.cover);
-                    if (game.screenshot) images.push(game.screenshot);
-                    const uniqueImages = Array.from(new Set(images));
-                    if (uniqueImages.length === 0) return;
-                    if (typeof openPhotoGallery === 'function') {
-                      openPhotoGallery(uniqueImages, 0);
-                    }
-                  }}
-                >
-                  <Avatar
-                    src={
-                      game.cover
-                        ? game.cover
-                        : game.photos?.[0]
-                          ? game.photos[0]
-                          : game.screenshot
-                            ? game.screenshot
-                            : undefined
-                    }
-                    variant="rounded"
-                    sx={{ width: 56, height: 56, bgcolor: 'grey.200', mx: 'auto' }}
+                <Tooltip title={t('games_photos') || 'Photos'}>
+                  <span
+                    style={{ cursor: 'pointer', display: 'inline-block' }}
+                    onClick={e => {
+                      e.stopPropagation();
+                      const images: string[] = [];
+                      if (Array.isArray(game.photos)) images.push(...game.photos.filter(Boolean));
+                      if (game.cover) images.push(game.cover);
+                      if (game.screenshot) images.push(game.screenshot);
+                      const uniqueImages = Array.from(new Set(images));
+                      if (uniqueImages.length === 0) return;
+                      if (typeof openPhotoGallery === 'function') {
+                        openPhotoGallery(uniqueImages, 0);
+                      }
+                    }}
                   >
-                    {!(game.cover || game.photos?.[0] || game.screenshot) && <SportsEsportsIcon />}
-                  </Avatar>
-                </span>
+                    <Avatar
+                      src={
+                        game.cover
+                          ? game.cover
+                          : game.photos?.[0]
+                            ? game.photos[0]
+                            : game.screenshot
+                              ? game.screenshot
+                              : undefined
+                      }
+                      variant="rounded"
+                      sx={{ width: 56, height: 56, bgcolor: 'grey.200', mx: 'auto' }}
+                    >
+                      {!(game.cover || game.photos?.[0] || game.screenshot) && <SportsEsportsIcon />}
+                    </Avatar>
+                  </span>
+                </Tooltip>
               </td>
               <td style={{ padding: '8px' }}>{game.title || game.name}</td>
               <td style={{ padding: '8px' }}>
@@ -164,39 +168,74 @@ export function GamesTable({
                 </Box>
               </td>
               <td style={{ padding: '8px' }}>{consoleSystemStr}</td>
-              <td style={{ padding: '8px' }}>
-                {game.completeness
-                  ? t(`games_completeness_${game.completeness.toLowerCase()}`)
-                  : t('games_none')}
+              <td style={{ padding: '8px', whiteSpace: 'pre-line' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Tooltip title={t('games_completeness') || 'Completeness'}>
+                    <InventoryIcon sx={{ color: theme.palette.action.disabled, fontSize: 16 }} />
+                  </Tooltip>
+                  <span style={{ fontWeight: 400, color: theme.palette.text.disabled, fontSize: '0.95em' }}>
+                    {game.completeness
+                      ? t(`games_completeness_${game.completeness.toLowerCase()}`)
+                      : t('games_none')}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                  <Tooltip title={t('games_condition') || 'Condition'}>
+                    <CheckCircleIcon sx={{ color: theme.palette.action.disabled, fontSize: 16 }} />
+                  </Tooltip>
+                  <span style={{ fontWeight: 400, color: theme.palette.text.disabled, fontSize: '0.95em' }}>
+                    {game.condition
+                      ? t(`games_condition_${game.condition.toLowerCase()}`)
+                      : t('games_none')}
+                  </span>
+                </div>
               </td>
               <td style={{ padding: '8px' }}>
-                {game.region
-                  ? t(`games_region_${game.region.toLowerCase()}`)
-                  : t('games_none')}
-              </td>
-              <td style={{ padding: '8px' }}>
-                <span
-                  title={game.completed ? 'Completed' : 'Not Completed'}
-                  style={{ fontSize: 22, lineHeight: 1, cursor: 'pointer' }}
-                  onClick={() => onToggleCompleted(game)}
-                >
-                  {game.completed ? '🏆' : '🎖'}
+                <span style={{ color: theme.palette.text.disabled, fontSize: '0.95em' }}>
+                  {game.region
+                    ? t(`games_region_${game.region.toLowerCase()}`)
+                    : t('games_none')}
                 </span>
               </td>
-              <td style={{ padding: '8px' }}>
-                <span
-                  title={game.favorite ? 'Favorite' : 'Not Favorite'}
-                  style={{ fontSize: 22, lineHeight: 1, cursor: 'pointer' }}
-                  onClick={() => onToggleFavorite(game)}
-                >
-                  {game.favorite ? '❤️' : '🤍'}
-                </span>
+              <td style={{ padding: '8px', textAlign: 'center' }}>
+                <Tooltip title={game.completed ? (t('games_completed') || 'Completed') : (t('games_not_completed') || 'Not Completed')}>
+                  <span>
+                    <IconButton onClick={() => onToggleCompleted(game)} sx={{ fontSize: 22, p: 0.5 }}>
+                      <span style={{ fontSize: 22, lineHeight: 1 }}>
+                        {game.completed ? '🏆' : '🎖'}
+                      </span>
+                    </IconButton>
+                  </span>
+                </Tooltip>
               </td>
-              <td style={{ padding: '8px' }}>
-                <Button size="small" onClick={() => handleEditGame(game)}>{t("common_edit")}</Button>
-                <Button size="small" color="error" onClick={() => handleDeleteGame(game)} disabled={deletingGameId === game.id}>
-                  {deletingGameId === game.id ? <span>...</span> : 'Delete'}
-                </Button>
+              <td style={{ padding: '8px', textAlign: 'center' }}>
+                <Tooltip title={game.favorite ? (t('games_favorite') || 'Favorite') : (t('games_not_favorite') || 'Not Favorite')}>
+                  <span>
+                    <IconButton onClick={() => onToggleFavorite(game)} sx={{ fontSize: 22, p: 0.5 }}>
+                      <span style={{ fontSize: 22, lineHeight: 1 }}>
+                        {game.favorite ? '❤️' : '🤍'}
+                      </span>
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              </td>
+              <td style={{ padding: '8px'}}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                <Tooltip title={t('common_edit') || 'Edit'}>
+                  <span>
+                    <IconButton onClick={e => { e.stopPropagation(); handleEditGame(game); }}>
+                      <EditIcon  />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+                <Tooltip title={t('common_delete') || 'Delete'}>
+                  <span>
+                    <IconButton color="error" onClick={e => { e.stopPropagation(); handleDeleteGame(game); }} disabled={deletingGameId === game.id}>
+                      {deletingGameId === game.id ? <span>...</span> : <DeleteIcon />}
+                    </IconButton>
+                  </span>
+                </Tooltip>
+                </div>
               </td>
             </tr>
           );

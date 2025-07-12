@@ -90,6 +90,7 @@ model Game {
   // Game metadata (filled from IGDB or manually)
   genres          String[]    // Array of genre names
   franchises      String[]    // Array of franchise names
+  companies       String[]    // Array of company names
   platforms       Int[]       // Array of IGDB platform IDs
   rating          Float?      // Game rating (0-100 scale from IGDB)
   multiplayerModes String[]   @map("multiplayer_modes") // Array of multiplayer mode descriptions

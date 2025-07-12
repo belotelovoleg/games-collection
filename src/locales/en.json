@@ -43,6 +43,7 @@
   "auth_registrationSuccess": "Registration successful! Please log in.",
   
   "games_title": "My Games",
+  "games_actions": "Actions",
   "games_filter_title": "Game Title",
   "games_setFilters": "Set Filters",
   "games_sortBy": "Sort by",

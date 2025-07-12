@@ -43,6 +43,7 @@
   "auth_registrationSuccess": "Реєстрація успішна! Будь ласка, увійдіть.",
   
   "games_title": "Мої Ігри",
+  "games_actions": "Дії",
   "games_filter_title": "Назва Ігри",
   "games_setFilters": "Пошук / Фільтри",
   "games_sortBy": "Сортувати",
