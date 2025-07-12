@@ -114,7 +114,7 @@ export function GameDetailsModal({ open,
     return 0;
   };
 
-  const formatCompanies = (companies: any[]) => {
+  const formatCompaniesInvolved = (companies: any[]) => {
     if (!companies || companies.length === 0) return "Unknown";
     return companies
       .filter(c => c.company?.name)
@@ -325,11 +325,11 @@ export function GameDetailsModal({ open,
                         {t("games_genre")}
                       </Typography>
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                        {mergedGame.genres.map((genre: any) => (
-                          <Chip 
-                            key={genre.id} 
-                            label={genre.name} 
-                            size="small" 
+                        {mergedGame.genres.map((genre: any, i: number) => (
+                          <Chip
+                            key={i}
+                            label={typeof genre === 'string' ? genre : genre.name}
+                            size="small"
                             variant="outlined"
                             color="primary"
                           />
@@ -343,7 +343,17 @@ export function GameDetailsModal({ open,
                         {t("games_companies")}
                       </Typography>
                       <Typography variant="body2">
-                        {formatCompanies(mergedGame.involved_companies)}
+                        {formatCompaniesInvolved(mergedGame.involved_companies)}
+                      </Typography>
+                    </Box>
+                  )}
+                  {mergedGame.companies && mergedGame.companies.length > 0 && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                        {t("games_companies")}
+                      </Typography>
+                      <Typography variant="body2">
+                        {mergedGame.companies.join(", ")}
                       </Typography>
                     </Box>
                   )}
