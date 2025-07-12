@@ -16,6 +16,9 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     if (!game || game.userId !== session.user.id) {
       return NextResponse.json({ error: 'Not found or forbidden' }, { status: 404 });
     }
+    // Delete all S3 images for this game
+    const { deleteGameImagesFromS3 } = await import('@/lib/s3');
+    await deleteGameImagesFromS3(game.userId, game.id);
     await prisma.game.delete({ where: { id: gameId } });
     return NextResponse.json({ success: true });
   } catch (error) {

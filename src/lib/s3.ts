@@ -1,3 +1,21 @@
+import { ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3';
+// Utility to delete all objects under a prefix (folder)
+export async function deleteGameImagesFromS3(userId: string, gameId: string): Promise<void> {
+  const Bucket = process.env.S3_BUCKET_NAME!;
+  const Prefix = `user/${userId}/games/${gameId}/`;
+  // List all objects under the prefix
+  const listedObjects = await s3.send(new ListObjectsV2Command({ Bucket, Prefix }));
+  if (!listedObjects.Contents || listedObjects.Contents.length === 0) return;
+  // Prepare objects for deletion
+  const deleteParams = {
+    Bucket,
+    Delete: {
+      Objects: listedObjects.Contents.map(obj => ({ Key: obj.Key! })),
+      Quiet: true,
+    },
+  };
+  await s3.send(new DeleteObjectsCommand(deleteParams));
+}
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
 const s3 = new S3Client({
