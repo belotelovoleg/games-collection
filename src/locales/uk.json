@@ -13,7 +13,7 @@
   "common_next": "Далі",
   "common_page": "Сторінка", 
   "common_pagesize": "Елементів на Сторінку",
-  "common_previous": "Попередній",
+  "common_previous": "Назад",
   "common_saving": "Збереження...",
   "common_adding": "Додавання...",
   
@@ -41,7 +41,7 @@
   "auth_dontHaveAccount": "Не маєте аккаунт?",
   "auth_invalidCredentials": "Неправильні дані для входу",
   "auth_registrationSuccess": "Реєстрація успішна! Будь ласка, увійдіть.",
-  
+
   "games_production": "Виробництво",
   "games_title": "Мої Ігри",
   "games_actions": "Дії",
