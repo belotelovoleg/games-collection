@@ -743,8 +743,8 @@ const handleToggleFavorite = async (game: any) => {
             setGameToAdd(null);
             setEditGame(null);
             setAddToCollectionMode('create');
-            // Always refresh games list on close
-            fetchUserGames();
+            // Do not refresh games list on cancel/close
+            //fetchUserGames();
           }}
           game={editGame || gameToAdd || null}
           selectedConsole={

@@ -2,6 +2,8 @@ import React from "react";
 import { Avatar, Button, Popover, Box, Typography, Rating, Tooltip, IconButton } from "@mui/material";
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EmojiObjectsIcon from '@mui/icons-material/EmojiObjects'; // Developer
+import BusinessIcon from '@mui/icons-material/Business'; // Publisher
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
@@ -33,7 +35,7 @@ export function GamesTable({
           <th style={{ padding: '8px', textAlign: 'center' }}>{'Image'}</th>
           <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_filter_title') || 'Title'}</th>
           <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_alternativeNames') || 'Alternative Names'}</th>
-          <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_platforms') || 'Platforms'}</th>
+          <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_production') || 'Production'}</th>
           <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_rating') || 'Rating'}</th>
           <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_console') || 'Console'}</th>
           <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_condition') || 'Condition'}</th>
@@ -45,19 +47,14 @@ export function GamesTable({
       </thead>
       <tbody>
         {userGames.map((game: any) => {
-          let platformStr = '';
-          if (Array.isArray(game.platforms)) {
-            if (typeof game.platforms[0] === 'object') {
-              platformStr = game.platforms.map((p: any) => p.name).join(', ');
-            } else {
-              platformStr = game.platforms
-                .map((pid: number) => {
-                  const found = allPlatforms?.find((p: any) => String(p.id) === String(pid));
-                  return found ? found.name : null;
-                })
-                .filter(Boolean)
-                .join(', ');
-            }
+          // Production cell: developer & publisher
+          let developerStr = '';
+          let publisherStr = '';
+          if (Array.isArray(game.developer)) {
+            developerStr = game.developer.filter(Boolean).join(', ');
+          }
+          if (Array.isArray(game.publisher)) {
+            publisherStr = game.publisher.filter(Boolean).join(', ');
           }
           let consoleSystemStr = '';
           if (Array.isArray(game.consoleIds)) {
@@ -151,8 +148,25 @@ export function GamesTable({
                   </Popover>
                 )}
               </td>
-              {/* Genres cell removed as requested */}
-              <td style={{ padding: '8px' }}>{platformStr}</td>
+              {/* Production cell: developer & publisher */}
+              <td style={{ padding: '8px', whiteSpace: 'pre-line' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Tooltip title={t('games_developer') || 'Developer'}>
+                    <EmojiObjectsIcon sx={{ color: theme.palette.action.disabled, fontSize: 16 }} />
+                  </Tooltip>
+                  <span style={{ fontWeight: 400, color: theme.palette.text.disabled, fontSize: '0.95em' }}>
+                    {developerStr || t('games_none')}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                  <Tooltip title={t('games_publisher') || 'Publisher'}>
+                    <BusinessIcon sx={{ color: theme.palette.action.disabled, fontSize: 16 }} />
+                  </Tooltip>
+                  <span style={{ fontWeight: 400, color: theme.palette.text.disabled, fontSize: '0.95em' }}>
+                    {publisherStr || t('games_none')}
+                  </span>
+                </div>
+              </td>
               <td style={{ padding: '8px' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <span
