@@ -17,6 +17,7 @@ import {
   Chip,
   Paper,
 } from "@mui/material";
+import GamesFilterPanel from "@/components/GamesFilterPanel";
 import { PhotoGalleryModal } from "@/components/PhotoGalleryModal";
 import { RatingPopup } from "@/components/RatingPopup";
 import Snackbar from "@mui/material/Snackbar";
@@ -71,6 +72,20 @@ export default function GamesPage() {
   const [selectedConsole, setSelectedConsole] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchNameFilterQuery, setSearchNameFilterQuery] = useState<string>("");
+  const [filters, setFilters] = useState<any>({
+    name: "",
+    platform: "",
+    consoleId: "",
+    completed: "",
+    favorite: "",
+    region: "",
+    labelDamage: "",
+    discoloration: "",
+    rentalSticker: "",
+    testedWorking: "",
+    reproduction: "",
+    completeness: "",
+  });
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<any>(null);
@@ -171,7 +186,7 @@ const handleToggleFavorite = async (game: any) => {
       fetchUserGames();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, page, pageSize, selectedConsole, searchNameFilterQuery, sortBy, sortOrder]);
+  }, [status, page, pageSize, sortBy, sortOrder, filters]);
 
   
   // Fetch all platforms once when authenticated
@@ -215,8 +230,10 @@ const handleToggleFavorite = async (game: any) => {
         sortBy,
         sortOrder,
       });
-      if (searchNameFilterQuery.trim()) params.append('name', searchNameFilterQuery.trim());
-      if (selectedConsole) params.append('consoleId', selectedConsole);
+      // Add all filter fields from GamesFilterPanel
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== "") params.append(key, String(value));
+      });
       const response = await fetch(`/api/games?${params.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch user games');
       const data = await response.json();
@@ -532,41 +549,47 @@ const handleToggleFavorite = async (game: any) => {
             </Typography>
             {/* Filtering and sorting controls */}
             <Box sx={{ mb: 2, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-              <TextField
-                label={'Filter by name'}
-                value={searchNameFilterQuery}
-                onChange={e => { setSearchNameFilterQuery(e.target.value); setPage(1); }}
-                size="small"
-                sx={{ minWidth: 180 }}
+              <GamesFilterPanel
+                filters={filters}
+                setFilters={newFilters => {
+                  setFilters(newFilters);
+                  setPage(1);
+                }}
+                allPlatforms={allPlatforms}
+                allConsoleSystems={allConsoleSystems}
+                t={t}
               />
               <FormControl size="small" sx={{ minWidth: 120 }}>
-                <InputLabel>{'Sort by'}</InputLabel>
+                <InputLabel>{t('games_sortBy') || 'Sort by'}</InputLabel>
                 <Select
                   value={sortBy}
-                  label={'Sort by'}
+                  label={t('games_sortBy') || 'Sort by'}
                   onChange={e => { setSortBy(e.target.value); setPage(1); }}
                 >
-                  <MenuItem value="title">{t('games_title') || 'Title'}</MenuItem>
-                  <MenuItem value="title">{'Title'}</MenuItem>
+                  <MenuItem value="title">{t('games_filter_title') || 'Title'}</MenuItem>
                   <MenuItem value="consoleName">{t('games_console') || 'Console'}</MenuItem>
-                  <MenuItem value="consoleName">{'Console'}</MenuItem>
                   <MenuItem value="rating">{t('games_rating') || 'Rating'}</MenuItem>
-                  <MenuItem value="rating">{'Rating'}</MenuItem>
                   <MenuItem value="completed">{t('games_completed') || 'Completed'}</MenuItem>
-                  <MenuItem value="completed">{'Completed'}</MenuItem>
                   <MenuItem value="favorite">{t('games_favorite') || 'Favorite'}</MenuItem>
-                  <MenuItem value="favorite">{'Favorite'}</MenuItem>
+                  <MenuItem value="condition">{t('games_condition') || 'Condition'}</MenuItem>
+                  <MenuItem value="completeness">{t('games_completeness') || 'Completeness'}</MenuItem>
+                  <MenuItem value="region">{t('games_region') || 'Region'}</MenuItem>
+                  <MenuItem value="labelDamage">{t('games_labelDamage') || 'Label Damage'}</MenuItem>
+                  <MenuItem value="discoloration">{t('games_discoloration') || 'Discoloration'}</MenuItem>
+                  <MenuItem value="rentalSticker">{t('games_rentalSticker') || 'Rental Sticker'}</MenuItem>
+                  <MenuItem value="testedWorking">{t('games_testedWorking') || 'Tested/Working'}</MenuItem>
+                  <MenuItem value="reproduction">{t('games_reproduction') || 'Reproduction'}</MenuItem>
                 </Select>
               </FormControl>
               <FormControl size="small" sx={{ minWidth: 100 }}>
-                <InputLabel>{'Order'}</InputLabel>
+                <InputLabel>{t('games_sortOrder') || 'Order'}</InputLabel>
                 <Select
                   value={sortOrder}
-                  label={'Order'}
+                  label={t('games_sortOrder') || 'Order'}
                   onChange={e => { setSortOrder(e.target.value as 'asc' | 'desc'); setPage(1); }}
                 >
-                  <MenuItem value="asc">{'Ascending'}</MenuItem>
-                  <MenuItem value="desc">{'Descending'}</MenuItem>
+                  <MenuItem value="asc">{t('games_sortOrderAscending') || 'Ascending'}</MenuItem>
+                  <MenuItem value="desc">{t('games_sortOrderDescending') || 'Descending'}</MenuItem>
                 </Select>
               </FormControl>
             </Box>
@@ -639,23 +662,23 @@ const handleToggleFavorite = async (game: any) => {
                 disabled={page === 1}
                 onClick={() => setPage(page - 1)}
               >
-                {'Prev'}
+                {t('common_previous') || 'Prev'}
               </Button>
               <Typography variant="body2">
-                {'Page'} {page} / {Math.max(1, Math.ceil(totalGames / pageSize))}
+                {t('common_page') || 'Page'} {page} / {Math.max(1, Math.ceil(totalGames / pageSize))}
               </Typography>
               <Button
                 size="small"
                 disabled={page >= Math.ceil(totalGames / pageSize)}
                 onClick={() => setPage(page + 1)}
               >
-                {'Next'}
+                {t('common_next') || 'Next'}
               </Button>
               <FormControl size="small" sx={{ minWidth: 80 }}>
-                <InputLabel>{'Page Size'}</InputLabel>
+                <InputLabel>{t('common_pagesize') || 'Page Size'}</InputLabel>
                 <Select
                   value={pageSize}
-                  label={'Page Size'}
+                  label={t('common_pagesize') || 'Page Size'}
                   onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
                 >
                   {[6, 12, 24, 48].map(size => (
