@@ -42,6 +42,7 @@
   "auth_invalidCredentials": "Неправильні дані для входу",
   "auth_registrationSuccess": "Реєстрація успішна! Будь ласка, увійдіть.",
 
+  "games_totalGames": "Всього Ігор",
   "games_production": "Виробництво",
   "games_title": "Мої Ігри",
   "games_actions": "Дії",

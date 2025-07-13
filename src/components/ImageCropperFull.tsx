@@ -34,6 +34,7 @@ const ImageCropperFull: React.FC<ImageCropperFullProps> = ({
   const [cropping, setCropping] = useState(false);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
+  const [minZoom, setMinZoom] = useState(1);
   const [imageSize, setImageSize] = useState<{ width: number; height: number } | null>(null);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -63,6 +64,7 @@ const ImageCropperFull: React.FC<ImageCropperFullProps> = ({
   useEffect(() => {
     if (!file) {
       setImageSize(null);
+      setMinZoom(1);
       return;
     }
     const img = new window.Image();
@@ -70,10 +72,14 @@ const ImageCropperFull: React.FC<ImageCropperFullProps> = ({
     img.src = url;
     img.onload = () => {
       setImageSize({ width: img.naturalWidth, height: img.naturalHeight });
+      // Calculate minZoom for fit
+      const fitZoom = getFitZoom();
+      setMinZoom(fitZoom);
       URL.revokeObjectURL(url);
     };
     img.onerror = () => {
       setImageSize(null);
+      setMinZoom(1);
       URL.revokeObjectURL(url);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -227,13 +233,23 @@ const ImageCropperFull: React.FC<ImageCropperFullProps> = ({
                 aspect={aspect}
                 cropShape={cropShape}
                 showGrid={true}
+                minZoom={minZoom}
+                maxZoom={10}
+                zoomSpeed={0.05} // Smoother zoom on mouse wheel
                 onCropChange={setCrop}
                 onZoomChange={setZoom}
                 onCropComplete={(_c, area) => setCroppedAreaPixels(area)}
               />
+              <Button
+                size="small"
+                variant="outlined"
+                sx={{ position: 'absolute', top: 8, right: 8, zIndex: 2 }}
+                onClick={() => setZoom(minZoom)}
+              >
+                Fit
+              </Button>
             </Box>
           )}
-
         </DialogContent>
         <DialogActions>
           <Button size="small" onClick={handleCancel}>Cancel</Button>

@@ -684,6 +684,12 @@ const handleToggleFavorite = async (game: any) => {
                 </Select>
               </FormControl>
             </Box>
+            {/* Total games count below pagination */}
+            <Box sx={{ mt: 1, textAlign: 'center' }}>
+              <Typography variant="caption" color="text.secondary">
+                {t('games_totalGames') || 'Total'}: {totalGames}
+              </Typography>
+            </Box>
           </CardContent>
         </Card>
 

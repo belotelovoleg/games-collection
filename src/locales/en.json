@@ -42,6 +42,7 @@
   "auth_invalidCredentials": "Invalid credentials",
   "auth_registrationSuccess": "Registration successful! Please log in.",
   
+  "games_totalGames": "Games Total",
   "games_production": "Production",
   "games_title": "My Games",
   "games_actions": "Actions",
