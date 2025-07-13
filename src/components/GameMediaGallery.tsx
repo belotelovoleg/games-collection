@@ -23,7 +23,7 @@ export const GameMediaGallery: React.FC<GameMediaGalleryProps> = ({
   getImageUrl,
   onOpenGallery,
   seeAllLabel,
-  maxPreview = 6,
+  maxPreview = 99,
   badgeCount,
   imageAltPrefix = "Image"
 }) => {
@@ -83,9 +83,23 @@ export const GameMediaGallery: React.FC<GameMediaGalleryProps> = ({
         {title} ({images.length})
       </Typography>
       <ImageList
-        variant="standard"
-        cols={images.length}
-        sx={{ display: "flex", flexDirection: "row", overflowX: "auto", gap: 8 }}
+        variant="masonry"
+        cols={Math.min(images.length, 6)}
+        sx={{
+          gap: 2,
+          width: '100%',
+          margin: 0,
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: 'repeat(2, 1fr)',
+            sm: 'repeat(4, 1fr)',
+            md: 'repeat(6, 1fr)',
+            lg: 'repeat(6, 1fr)',
+            xl: 'repeat(8, 1fr)'
+          },
+          gridAutoRows: '130px',
+          justifyItems: 'center',
+        }}
       >
         {images.slice(0, maxPreview).map((img: any, index: number) => {
           const url = getImageUrl(img);
@@ -93,10 +107,19 @@ export const GameMediaGallery: React.FC<GameMediaGalleryProps> = ({
             <ImageListItem
               key={index}
               sx={{
+                width: 120,
+                height: 120,
+                minWidth: 120,
+                minHeight: 120,
                 maxWidth: 120,
+                maxHeight: 120,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 cursor: "pointer",
                 borderRadius: 2,
-                overflow: "hidden"
+                overflow: "hidden",
+                backgroundColor: 'grey.100'
               }}
               onClick={() => onOpenGallery(images)}
             >
@@ -104,7 +127,7 @@ export const GameMediaGallery: React.FC<GameMediaGalleryProps> = ({
                 src={url}
                 alt={`${imageAltPrefix} ${index + 1}`}
                 loading="lazy"
-                style={{ borderRadius: 8 }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }}
               />
             </ImageListItem>
           ) : null;
