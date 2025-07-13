@@ -1,11 +1,16 @@
 import React from "react";
 import { Card, Box, Avatar, Typography, Button, Popover, Rating } from "@mui/material";
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 
 export function GamesCardList({
   userGames,
   allPlatforms,
   allConsoleSystems,
+  theme,
   altNamesGameId,
   altNamesAnchorEl,
   handleAltNamesClick,
@@ -105,22 +110,30 @@ export function GamesCardList({
                       <Button
                         variant='outlined'
                         color={game.favorite ? 'error' : 'inherit'}
-                        onClick={() => onToggleFavorite(game)}
+                        onClick={e => { e.stopPropagation(); onToggleFavorite(game); }}
                       >
-                        {game.favorite ? '❤️' : '🤍'}
+                        {game.favorite ? (
+                          <FavoriteIcon sx={{ color: theme.palette.error.main }}  />
+                        ) : (
+                          <FavoriteBorderIcon sx={{ color: theme.palette.action.disabled }} />
+                        )}
                       </Button>
                       {/* Completed button */}
                       <Button
                         variant='outlined'
                         color={game.completed ? 'success' : 'inherit'}
-                        onClick={() => onToggleCompleted(game)}
+                        onClick={e => { e.stopPropagation(); onToggleCompleted(game); }}
                       >
-                        {game.completed ? '🏆' : '🎖'}
+                        {game.completed ? (
+                          <EmojiEventsIcon />
+                        ) : (
+                          <MilitaryTechIcon sx={{ color: theme.palette.action.disabled }}/>
+                        )}
                       </Button>
                       {/* Edit icon */}
                       <Button 
                         variant='outlined'
-                        onClick={() => handleEditGame(game)}
+                        onClick={e => { e.stopPropagation(); handleEditGame(game); }}
                       >
                         <span role="img" aria-label="Edit">✏️</span>
                       </Button>
@@ -128,7 +141,7 @@ export function GamesCardList({
                       <Button  
                         variant='outlined'
                         color="error" 
-                        onClick={() => handleDeleteGame(game)} 
+                        onClick={e => { e.stopPropagation(); handleDeleteGame(game); }} 
                         disabled={deletingGameId === game.id}
                         >
                         {deletingGameId === game.id ? <span>...</span> : <span role="img" aria-label="Delete">🗑️</span>}

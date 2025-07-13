@@ -33,6 +33,10 @@ import ImageIcon from "@mui/icons-material/Image";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import { useTheme } from '@mui/material/styles';
 import { useMediaQuery } from '@mui/material';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
 
 interface GameDetailsModalProps {
   open: boolean;
@@ -251,7 +255,11 @@ export function GameDetailsModal({ open,
                         }
                       }}
                     >
-                      {mergedGame.completed ? '🏆' : '🎖'}
+                      {mergedGame.completed ? (
+                        <EmojiEventsIcon />
+                      ) : (
+                        <MilitaryTechIcon sx={{ color: theme.palette.action.disabled }}/>
+                      )}
                     </span>
                     <span
                       title={mergedGame.favorite ? t('games_favorite') : t('games_not_favorite')}
@@ -264,7 +272,11 @@ export function GameDetailsModal({ open,
                         }
                       }}
                     >
-                      {mergedGame.favorite ? '❤️' : '🤍'}
+                      {mergedGame.favorite ? (
+                        <FavoriteIcon sx={{ color: theme.palette.error.main }}  />
+                      ) : (
+                        <FavoriteBorderIcon sx={{ color: theme.palette.action.disabled }} />
+                      )}
                     </span>
                 </Box>
               )}
@@ -397,6 +409,7 @@ export function GameDetailsModal({ open,
                       <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 0.5, md: 0 } }}>{t('games_rentalSticker')}: <b>{mergedGame.rentalSticker ? t('games_yes') : t('games_no')}</b></Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 0.5, md: 0 } }}>{t('games_testedWorking')}: <b>{mergedGame.testedWorking ? t('games_yes') : t('games_no')}</b></Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 0.5, md: 0 } }}>{t('games_reproduction')}: <b>{mergedGame.reproduction ? t('games_yes') : t('games_no')}</b></Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 0.5, md: 0 } }}>{t('games_steelbook')}: <b>{mergedGame.steelbook ? t('games_yes') : t('games_no')}</b></Typography>
                     </Box>
                   </AccordionDetails>
                 </Accordion>

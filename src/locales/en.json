@@ -167,6 +167,7 @@
   "games_rentalSticker": "Rental Sticker",
   "games_testedWorking": "Tested / Working",
   "games_reproduction": "Reproduction / Repo",
+  "games_steelbook": "Steelbook",
   "games_yes": "Yes",
   "games_no": "No",
   
@@ -249,7 +250,8 @@
   
   "common_search": "Search",
   "common_searching": "Searching...",
-  
+  "common_apply": "Apply Filters",
+
   "theme_light": "Light",
   "theme_dark": "Dark",
   "theme_switchTo": "Switch to {mode} theme",

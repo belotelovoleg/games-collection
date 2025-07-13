@@ -32,7 +32,8 @@ export async function POST(request: NextRequest) {
       discoloration,
       rentalSticker,
       testedWorking,
-      reproduction
+      reproduction, 
+      steelbook
     } = body;
 
     if (!title || !consoleId) {
@@ -66,6 +67,7 @@ export async function POST(request: NextRequest) {
         rentalSticker: !!rentalSticker,
         testedWorking: typeof testedWorking === 'boolean' ? testedWorking : true,
         reproduction: !!reproduction,
+        steelbook: !!steelbook,
         genres: [],
         franchises: [],
         platforms: [],

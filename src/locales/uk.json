@@ -152,6 +152,7 @@
   "games_rentalSticker": "Стікер прокату",
   "games_testedWorking": "Перевірено / Працює",
   "games_reproduction": "Репродукція / Копія",
+  "games_steelbook": "Стілбук",
   "games_yes": "Так",
   "games_no": "Ні",
   "games_completeness_cib": "Повна комплектація (CIB)",
@@ -242,7 +243,8 @@
   
   "common_search": "Пошук",
   "common_searching": "Пошук...",
-  
+  "common_apply": "Застосувати Фільтри",
+
   "theme_light": "Світла",
   "theme_dark": "Темна",
   "theme_switchTo": "Перемкнути на {mode} тему",

@@ -36,12 +36,14 @@ export const FILTER_FIELDS = [
   { key: "rentalSticker", label: "games_rentalSticker", type: "boolean" },
   { key: "testedWorking", label: "games_testedWorking", type: "boolean" },
   { key: "reproduction", label: "games_reproduction", type: "boolean" },
+  { key: "steelbook", label: "games_steelbook", type: "boolean" },
   { key: "completeness", label: "games_completeness", type: "select" },
 ];
 
 export default function GamesFilterPanel({ filters, setFilters, allPlatforms, allConsoleSystems, t }: GamesFilterPanelProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [localFilters, setLocalFilters] = useState(filters || {});
+  const [quickName, setQuickName] = useState(filters.name || "");
 
   const handleOpen = () => {
     setLocalFilters(filters || {});
@@ -55,9 +57,27 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, al
   const handleChange = (key: string, value: any) => {
     setLocalFilters((prev: any) => ({ ...prev, [key]: value }));
   };
+  const handleQuickNameSearch = () => {
+    setFilters({ ...filters, name: quickName });
+  };
 
   return (
-    <>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <TextField
+        size="small"
+        label={t('games_filter_title') || 'Game Title'}
+        value={quickName}
+        onChange={e => setQuickName(e.target.value)}
+        sx={{ minWidth: 180 }}
+      />
+      <Button
+        variant="outlined"
+        size="small"
+        onClick={handleQuickNameSearch}
+        sx={{ minWidth: 40, px: 1 }}
+      >
+        <span role="img" aria-label="search">🔍</span>
+      </Button>
       <Button variant="outlined" onClick={handleOpen} sx={{ minWidth: 120 }}>
         {t("games_setFilters") || "Set Filters"}
       </Button>
@@ -125,6 +145,6 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, al
           <Button onClick={handleApply} variant="contained">{t("common_apply") || "Apply"}</Button>
         </DialogActions>
       </Dialog>
-    </>
+    </Box>
   );
 }

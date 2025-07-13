@@ -1,5 +1,10 @@
 import React from "react";
 import { Avatar, Button, Popover, Box, Typography, Rating, Tooltip, IconButton } from "@mui/material";
+import ShieldIcon from '@mui/icons-material/Shield';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EmojiObjectsIcon from '@mui/icons-material/EmojiObjects'; // Developer
@@ -69,16 +74,7 @@ export function GamesTable({
           return (
             <tr
               key={game.id}
-              style={{ borderBottom: `1px solid ${theme.palette.divider}`, cursor: 'pointer' }}
-              onClick={e => {
-                if (
-                  e.target instanceof HTMLElement &&
-                  ['BUTTON', 'SPAN', 'INPUT', 'TEXTAREA', 'A'].includes(e.target.tagName)
-                ) return;
-                if (typeof handleViewGameDetails === 'function') {
-                  handleViewGameDetails(game);
-                }
-              }}
+              style={{ borderBottom: `1px solid ${theme.palette.divider}` }}
             >
               <td style={{ padding: '8px' }}>
                 <Tooltip title={t('games_photos') || 'Photos'}>
@@ -115,7 +111,18 @@ export function GamesTable({
                   </span>
                 </Tooltip>
               </td>
-              <td style={{ padding: '8px' }}>{game.title || game.name}</td>
+              <td style={{ padding: '8px' }}>
+                <span
+                  style={{ cursor: 'pointer', textDecoration: 'underline', color: theme.palette.primary.main }}
+                  onClick={() => {
+                    if (typeof handleViewGameDetails === 'function') {
+                      handleViewGameDetails(game);
+                    }
+                  }}
+                >
+                  {game.title || game.name}
+                </span>
+              </td>
               <td style={{ padding: '8px' }}>
                 {game.alternativeNames && game.alternativeNames.length > 0 && (
                     <Button
@@ -203,6 +210,16 @@ export function GamesTable({
                       : t('games_none')}
                   </span>
                 </div>
+                {game.steelbook && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                    <Tooltip title={t('games_steelbook') || 'Steelbook'}>
+                      <ShieldIcon sx={{ color: theme.palette.action.disabled, fontSize: 16 }} />
+                    </Tooltip>
+                    <span style={{ fontWeight: 400, color: theme.palette.text.disabled, fontSize: '0.95em' }}>
+                      {t('games_steelbook')}
+                    </span>
+                  </div>
+                )}
               </td>
               <td style={{ padding: '8px' }}>
                 <span style={{ color: theme.palette.text.disabled, fontSize: '0.95em' }}>
@@ -214,10 +231,12 @@ export function GamesTable({
               <td style={{ padding: '8px', textAlign: 'center' }}>
                 <Tooltip title={game.completed ? (t('games_completed') || 'Completed') : (t('games_not_completed') || 'Not Completed')}>
                   <span>
-                    <IconButton onClick={() => onToggleCompleted(game)} sx={{ fontSize: 22, p: 0.5 }}>
-                      <span style={{ fontSize: 22, lineHeight: 1 }}>
-                        {game.completed ? '🏆' : '🎖'}
-                      </span>
+                    <IconButton onClick={e => { e.stopPropagation(); onToggleCompleted(game); }} size="large">
+                      {game.completed ? (
+                        <EmojiEventsIcon/>
+                      ) : (
+                        <MilitaryTechIcon sx={{ color: theme.palette.action.disabled }} />
+                      )}
                     </IconButton>
                   </span>
                 </Tooltip>
@@ -225,10 +244,12 @@ export function GamesTable({
               <td style={{ padding: '8px', textAlign: 'center' }}>
                 <Tooltip title={game.favorite ? (t('games_favorite') || 'Favorite') : (t('games_not_favorite') || 'Not Favorite')}>
                   <span>
-                    <IconButton onClick={() => onToggleFavorite(game)} sx={{ fontSize: 22, p: 0.5 }}>
-                      <span style={{ fontSize: 22, lineHeight: 1 }}>
-                        {game.favorite ? '❤️' : '🤍'}
-                      </span>
+                    <IconButton onClick={e => { e.stopPropagation(); onToggleFavorite(game); }} size="large">
+                      {game.favorite ? (
+                        <FavoriteIcon sx={{ color: theme.palette.error.main }} />
+                      ) : (
+                        <FavoriteBorderIcon sx={{ color: theme.palette.action.disabled }} />
+                      )}
                     </IconButton>
                   </span>
                 </Tooltip>

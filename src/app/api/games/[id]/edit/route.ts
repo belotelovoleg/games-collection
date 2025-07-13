@@ -34,6 +34,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       rentalSticker,
       testedWorking,
       reproduction,
+      steelbook,
       alternativeNames,
       genres,
       franchises,
@@ -68,6 +69,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
     if (testedWorking !== undefined) updateData.testedWorking = typeof testedWorking === 'boolean' ? testedWorking : true;
     if (reproduction !== undefined) updateData.reproduction = !!reproduction;
+    if (steelbook !== undefined) updateData.steelbook = !!steelbook;
     // Advanced fields
     if (alternativeNames !== undefined) updateData.alternativeNames = Array.isArray(alternativeNames) ? alternativeNames : [];
     if (genres !== undefined) updateData.genres = Array.isArray(genres) ? genres : [];

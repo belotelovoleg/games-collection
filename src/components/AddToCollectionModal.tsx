@@ -70,6 +70,7 @@ export default function AddToCollectionModal({
     rentalSticker: false,
     testedWorking: true,
     reproduction: false,
+    steelbook: false,
     price: '',
     purchaseDate: getToday(),
     notes: '',
@@ -128,6 +129,7 @@ export default function AddToCollectionModal({
         rentalSticker: !!game.rentalSticker,
         testedWorking: !!game.testedWorking,
         reproduction: !!game.reproduction,
+        steelbook: !!game.steelbook,
         // Patch: load missing fields from game object
         condition: game.condition || prev.condition,
         completeness: game.completeness || prev.completeness,
@@ -216,6 +218,7 @@ export default function AddToCollectionModal({
           rentalSticker: !!formData.rentalSticker,
           testedWorking: !!formData.testedWorking,
           reproduction: !!formData.reproduction,
+          steelbook: !!formData.steelbook,
         };
         response = await fetch(`/api/games/${game.id}/edit`, {
           method: 'PATCH',
@@ -276,6 +279,7 @@ export default function AddToCollectionModal({
             rentalSticker: !!formData.rentalSticker,
             testedWorking: !!formData.testedWorking,
             reproduction: !!formData.reproduction,
+            steelbook: !!formData.steelbook,
             price: formData.price || null,
             purchaseDate: formData.purchaseDate || null,
             notes: formData.notes || null,
@@ -372,6 +376,7 @@ export default function AddToCollectionModal({
         rentalSticker: false,
         testedWorking: true,
         reproduction: false,
+        steelbook: false,
         price: '',
         purchaseDate: getToday(),
         notes: '',
@@ -724,6 +729,10 @@ export default function AddToCollectionModal({
               <FormControlLabel
                 control={<Checkbox checked={formData.reproduction} onChange={e => setFormData(prev => ({ ...prev, reproduction: e.target.checked }))} />}
                 label={t('games_reproduction')}
+              />
+              <FormControlLabel
+                control={<Checkbox checked={formData.steelbook} onChange={e => setFormData(prev => ({ ...prev, steelbook: e.target.checked }))} />}
+                label={t('games_steelbook')}
               />
             </Box>
 

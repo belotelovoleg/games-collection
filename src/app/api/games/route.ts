@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
   const rentalSticker = searchParams.get('rentalSticker');
   const testedWorking = searchParams.get('testedWorking');
   const reproduction = searchParams.get('reproduction');
+  const steelbook = searchParams.get('steelbook');
   const completeness = searchParams.get('completeness');
 
   // Build filters
@@ -82,6 +83,11 @@ export async function GET(req: NextRequest) {
     where.reproduction = true;
   } else if (reproduction === 'false') {
     where.reproduction = false;
+  }
+  if (steelbook === 'true') {
+    where.steelbook = true;
+  } else if (steelbook === 'false') {
+    where.steelbook = false;
   }
   if (completeness) {
     const validCompleteness = ["CIB", "GAME_BOX", "GAME_MANUAL", "LOOSE"];

@@ -105,6 +105,7 @@ model Game {
   rentalSticker   Boolean @default(false)
   testedWorking   Boolean @default(false)
   reproduction    Boolean @default(false)
+  steelbook       Boolean @default(false)
   developer       String[]
   publisher       String[]
   releaseYear     Int?

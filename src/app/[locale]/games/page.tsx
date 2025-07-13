@@ -71,7 +71,6 @@ export default function GamesPage() {
   const [userConsoles, setUserConsoles] = useState<any[]>([]);
   const [selectedConsole, setSelectedConsole] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [searchNameFilterQuery, setSearchNameFilterQuery] = useState<string>("");
   const [filters, setFilters] = useState<any>({
     name: "",
     platform: "",
@@ -85,6 +84,7 @@ export default function GamesPage() {
     testedWorking: "",
     reproduction: "",
     completeness: "",
+    steelbook: "",
   });
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
@@ -576,6 +576,7 @@ const handleToggleFavorite = async (game: any) => {
                   <MenuItem value="rentalSticker">{t('games_rentalSticker') || 'Rental Sticker'}</MenuItem>
                   <MenuItem value="testedWorking">{t('games_testedWorking') || 'Tested/Working'}</MenuItem>
                   <MenuItem value="reproduction">{t('games_reproduction') || 'Reproduction'}</MenuItem>
+                  <MenuItem value="steelbook">{t('games_steelbook') || 'Steelbook'}</MenuItem>
                 </Select>
               </FormControl>
               <FormControl size="small" sx={{ minWidth: 100 }}>
@@ -603,6 +604,7 @@ const handleToggleFavorite = async (game: any) => {
                 userGames={userGames}
                 allPlatforms={allPlatforms}
                 allConsoleSystems={allConsoleSystems}
+                theme={theme}
                 altNamesGameId={altNamesGameId}
                 altNamesAnchorEl={altNamesAnchorEl}
                 handleAltNamesClick={handleAltNamesClick}
