@@ -956,6 +956,7 @@ export class IGDBGameNormalizationService {
       rentalSticker?: boolean;
       testedWorking?: boolean;
       reproduction?: boolean;
+      steelbook?: boolean;
     }
   ): Promise<any> {
     console.log(`🎯 Creating user game from IGDB: ${igdbGameData.name} for user ${userId} on console ${consoleId}`);
@@ -1028,8 +1029,12 @@ export class IGDBGameNormalizationService {
           price: additionalData?.price,
           purchaseDate: additionalData?.purchaseDate,
           notes: additionalData?.notes,
-          completeness: additionalData?.completeness || 'CIB',
-          region: additionalData?.region || 'REGION_FREE',
+          completeness: (additionalData?.completeness && ["CIB","GAME_BOX","GAME_MANUAL","LOOSE"].includes(additionalData.completeness))
+            ? additionalData.completeness as import("@prisma/client").Completeness
+            : "CIB",
+          region: (additionalData?.region && ["REGION_FREE","NTSC_U","NTSC_J","PAL"].includes(additionalData.region))
+            ? additionalData.region as import("@prisma/client").Region
+            : "REGION_FREE",
           labelDamage: !!additionalData?.labelDamage,
           discoloration: !!additionalData?.discoloration,
           rentalSticker: !!additionalData?.rentalSticker,
@@ -1041,6 +1046,7 @@ export class IGDBGameNormalizationService {
           photos: additionalData?.photo ? [additionalData.photo] : [],
           developer: developers,
           publisher: publishers,
+          steelbook: !!additionalData?.steelbook,
         },
       });
 

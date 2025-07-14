@@ -93,10 +93,10 @@ export async function POST(request: NextRequest) {
       message: 'Game added to collection successfully',
       game: userGame,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('❌ Error adding game to collection:', error);
     return NextResponse.json(
-      { error: error?.message || String(error), stack: error?.stack },
+      { error: 'Failed to add game to collection' },
       { status: 500 }
     );
   }

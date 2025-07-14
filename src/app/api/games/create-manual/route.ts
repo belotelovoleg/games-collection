@@ -43,6 +43,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get the console and its igdbPlatformID
+    const console = await prisma.console.findUnique({
+      where: { id: parseInt(consoleId) },
+      select: { igdbPlatformID: true }
+    });
+
+    let platforms: number[] = [];
+    if (console?.igdbPlatformID) {
+      platforms = [console.igdbPlatformID];
+    }
+
     // Create the game
     const game = await prisma.game.create({
       data: {
@@ -70,7 +81,7 @@ export async function POST(request: NextRequest) {
         steelbook: !!steelbook,
         genres: [],
         franchises: [],
-        platforms: [],
+        platforms,
         multiplayerModes: [],
         developer: [],
         publisher: [],

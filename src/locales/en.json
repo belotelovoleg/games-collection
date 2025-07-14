@@ -118,7 +118,7 @@
   "games_notes_placeholder": "Any additional notes about this game in your collection...",
   "games_condition_mint": "Mint",
   "games_condition_sealed": "Sealed",
-  "games_condition_excellent": "Excellent",
+  "games_condition_very_good": "Very Good",
   "games_condition_good": "Good",
   "games_condition_fair": "Fair",
   "games_condition_poor": "Poor",
@@ -170,6 +170,7 @@
   "games_steelbook": "Steelbook",
   "games_yes": "Yes",
   "games_no": "No",
+  "games_uploading": "Uploading...",
   
   "settings_title": "Settings",
   "settings_profile": "Profile",
@@ -182,12 +183,6 @@
   "platform_xbox": "Xbox",
   "platform_nintendo": "Nintendo",
   "platform_mobile": "Mobile",
-  
-  "condition_mint": "Mint",
-  "condition_excellent": "Excellent",
-  "condition_good": "Good",
-  "condition_fair": "Fair",
-  "condition_poor": "Poor",
   
   "console_title": "Console Management",
   "console_addNew": "Add New Console",
