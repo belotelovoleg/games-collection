@@ -103,6 +103,7 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t,
   function handleResize() {
     setIsMobile(window.innerWidth < 600);
   }
+  setIsMobile(window.innerWidth < 600);
   window.addEventListener('resize', handleResize);
   return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -193,6 +194,23 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t,
   if (isMobile) {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}>
+        <Box>
+            <FormControl size="small" sx={{ minWidth: 120, width: '100%' }}>
+            <InputLabel>{t('games_platforms') || 'Platform'}</InputLabel>
+            <Select
+              value={filters.platform || ""}
+              label={t('games_platforms') || 'Platform'}
+              onChange={e => setFilters({ ...filters, platform: e.target.value })}
+            >
+              <MenuItem value="">{t('games_none') || 'All'}</MenuItem>
+              {allPlatforms.map(opt => (
+                <MenuItem key={opt.id || opt} value={opt.id || opt}>
+                  {opt.name || String(opt)}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <TextField
             size="small"
@@ -221,6 +239,33 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t,
           >
             <TuneIcon />
           </Button>
+          {/* Reset Filters Button: only show if any filter is set */}
+          {Object.values(filters).some(v => v !== undefined && v !== "") && (
+            <Button
+              color="error"
+              variant="outlined"
+              size="small"
+              sx={{ minWidth: 40, px: 1 }}
+              title={t('games_resetFilters') || 'Reset Filters'}
+              onClick={() => setFilters({
+                name: "",
+                platform: "",
+                consoleId: "",
+                completed: "",
+                favorite: "",
+                region: "",
+                labelDamage: "",
+                discoloration: "",
+                rentalSticker: "",
+                testedWorking: "",
+                reproduction: "",
+                completeness: "",
+                steelbook: "",
+              })}
+            >
+              <span role="img" aria-label="reset">🔄</span>
+            </Button>
+          )}
         </Box>
         {showMobileSortFilter && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
@@ -243,6 +288,21 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t,
   // Desktop (unchanged)
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+      <FormControl size="small" sx={{ minWidth: 120 }}>
+        <InputLabel>{t('games_platforms') || 'Platform'}</InputLabel>
+        <Select
+          value={filters.platform || ""}
+          label={t('games_platforms') || 'Platform'}
+          onChange={e => setFilters({ ...filters, platform: e.target.value })}
+        >
+          <MenuItem value="">{t('games_none') || 'All'}</MenuItem>
+          {allPlatforms.map(opt => (
+            <MenuItem key={opt.id || opt} value={opt.id || opt}>
+              {opt.name || String(opt)}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
       <TextField
         size="small"
         label={t('games_filter_title') || 'Game Title'}
@@ -273,6 +333,33 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t,
       <Button variant="outlined" onClick={handleOpen} sx={{ minWidth: 120 }}>
         {t("games_setFilters") || "Set Filters"}
       </Button>
+      {/* Reset Filters Button: only show if any filter is set */}
+      {Object.values(filters).some(v => v !== undefined && v !== "") && (
+        <Button
+          variant="outlined"
+          color="error"
+          size="small"
+          sx={{ minWidth: 120, px: 2 }}
+          title={t('games_resetFilters') || 'Reset Filters'}
+          onClick={() => setFilters({
+            name: "",
+            platform: "",
+            consoleId: "",
+            completed: "",
+            favorite: "",
+            region: "",
+            labelDamage: "",
+            discoloration: "",
+            rentalSticker: "",
+            testedWorking: "",
+            reproduction: "",
+            completeness: "",
+            steelbook: "",
+          })}
+        >
+          {t('games_resetFilters') || 'Reset Filters'}
+        </Button>
+      )}
       {filterDialog}
     </Box>
   );
