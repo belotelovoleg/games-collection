@@ -3,18 +3,15 @@
 import React, { useState, useEffect } from "react";
 import {
   Box,
-  Container,
   Typography,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  TextField,
   Button,
   CircularProgress,
   Card,
   CardContent,
-  Chip,
   Paper,
 } from "@mui/material";
 import GamesFilterPanel from "@/components/GamesFilterPanel";
@@ -22,9 +19,7 @@ import { PhotoGalleryModal } from "@/components/PhotoGalleryModal";
 import { RatingPopup } from "@/components/RatingPopup";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
-import SearchIcon from "@mui/icons-material/Search";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
-import AddIcon from "@mui/icons-material/Add";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useTheme } from '@mui/material/styles';

@@ -177,7 +177,8 @@
   "platform_xbox": "Xbox",
   "platform_nintendo": "Nintendo",
   "platform_mobile": "Мобільний",
-  
+
+  "console": "Консоль",
   "console_title": "Управління Консолями",
   "console_addNew": "Додати Нову Консоль",
   "console_edit": "Редагувати Консоль",

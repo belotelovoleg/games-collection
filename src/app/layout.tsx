@@ -1,4 +1,5 @@
 import { CustomThemeProvider } from '@/components/ThemeProvider';
+require('./globals.css');
 
 export const metadata = {
   title: 'GameVault',

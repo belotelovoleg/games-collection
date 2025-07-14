@@ -185,6 +185,7 @@
   "platform_nintendo": "Nintendo",
   "platform_mobile": "Mobile",
   
+  "console": "Console",
   "console_title": "Console Management",
   "console_addNew": "Add New Console",
   "console_edit": "Edit Console",

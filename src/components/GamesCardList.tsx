@@ -56,17 +56,7 @@ export function GamesCardList({
         return (
           <div
             key={game.id}
-            style={{ width: '100%', cursor: 'pointer' }}
-            onClick={e => {
-              // Only trigger if not clicking on a button or interactive element
-              if (
-                e.target instanceof HTMLElement &&
-                ['BUTTON', 'SPAN', 'INPUT', 'TEXTAREA', 'A'].includes(e.target.tagName)
-              ) return;
-              if (typeof handleViewGameDetails === 'function') {
-                handleViewGameDetails(game);
-              }
-            }}
+            style={{ width: '100%'}}
           >
             <Card variant="outlined" sx={{ p: 2 }}>
               {/* Game name centered on its own line */}
@@ -77,15 +67,14 @@ export function GamesCardList({
                   {/* Game image on left */}
                   <Box
                     sx={{ cursor: 'pointer', minWidth: 80, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', width: '80px' }}
-                    onClick={() => {
-                      const images: string[] = [];
-                      if (Array.isArray(game.photos)) images.push(...game.photos.filter(Boolean));
-                      if (game.cover) images.push(game.cover);
-                      if (game.screenshot) images.push(game.screenshot);
-                      const uniqueImages = Array.from(new Set(images));
-                      if (uniqueImages.length === 0) return;
-                      if (typeof openPhotoGallery === 'function') {
-                        openPhotoGallery(uniqueImages, 0);
+                    onClick={e => {
+                      // Only trigger if not clicking on a button or interactive element
+                      if (
+                        e.target instanceof HTMLElement &&
+                        ['BUTTON', 'SPAN', 'INPUT', 'TEXTAREA', 'A'].includes(e.target.tagName)
+                      ) return;
+                      if (typeof handleViewGameDetails === 'function') {
+                        handleViewGameDetails(game);
                       }
                     }}
                   >
@@ -96,6 +85,19 @@ export function GamesCardList({
                     >
                       {!(game.cover || game.photos?.[0] || game.screenshot) && <SportsEsportsIcon />}
                     </Avatar>
+                    {/* Rating row, centered, moved under image */}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', mt: 1 }}>
+                      <span
+                        style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                        title="Set rating"
+                        onClick={e => onRatingClick(e, game)}
+                      >
+                        <Rating value={getGameRating(game)} precision={0.1} size="small" readOnly />
+                      </span>
+                      <Typography variant="caption" color="text.secondary">
+                        ({getGameRating(game).toFixed(1)})
+                      </Typography>
+                    </Box>
                   </Box>
                   {/* Buttons and info on right, all vertical for mobile */}
                   <Box sx={{ flex: 1, 
@@ -146,50 +148,43 @@ export function GamesCardList({
                         >
                         {deletingGameId === game.id ? <span>...</span> : <span role="img" aria-label="Delete">🗑️</span>}
                       </Button>
+                      {/* Alternative Names Button & Popover */}
+                      {game.alternativeNames && game.alternativeNames.length > 0 && (
+                        <Button size="small" variant="outlined" onClick={(e) => handleAltNamesClick(e, game.id)} sx={{ mb: 0.5, mt: 0.5, minWidth: 24, px: 1, py: 0.2, fontSize: '0.75rem', lineHeight: 2 }}>
+                          {t('games_alternativeNames') || 'Alt Names'}
+                        </Button>
+                      )}
+                      {altNamesGameId === game.id && (
+                        <Popover
+                          open={Boolean(altNamesAnchorEl)}
+                          anchorEl={altNamesAnchorEl}
+                          onClose={handleAltNamesClose}
+                          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                        >
+                          <Box sx={{ p: 2, minWidth: 180 }}>
+                            {game.alternativeNames.map((name: string, idx: number) => (
+                              <Typography key={idx} variant="body2" sx={{ mb: 0.5 }}>{name}</Typography>
+                            ))}
+                          </Box>
+                        </Popover>
+                      )}
                   </Box>
                 </Box>
-                {/* Rating row, centered */}
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', mt: 1 }}>
-                  <span
-                    style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                    title="Set rating"
-                    onClick={e => onRatingClick(e, game)}
-                  >
-                    <Rating value={getGameRating(game)} precision={0.1} size="small" readOnly />
-                  </span>
-                  <Typography variant="caption" color="text.secondary">
-                    ({getGameRating(game).toFixed(1)})
+
+
+                <Box sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 0, justifyContent: 'center', mt: 1 }}>
+                  {consoleSystemStr && (
+                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', width: '100%', mb: 0.2, mt: 0 }}>
+                      {t('console')}: <b>{consoleSystemStr}</b>
+                    </Typography>
+                  )}
+                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', width: '100%', mb: 0.2, mt: 0 }}>
+                    {t('games_completeness')}: <b>{game.completeness ? t(`games_completeness_${game.completeness.toLowerCase()}`) : t('games_none')}</b>
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', width: '100%', mb: 0.2, mt: 0 }}>
+                    {t('games_region')}: <b>{game.region ? t(`games_region_${game.region.toLowerCase()}`) : t('games_none')}</b>
                   </Typography>
                 </Box>
-                {/* Console name */}
-                {consoleSystemStr && <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mt: 1 }}>{consoleSystemStr}</Typography>}
-
-                {/* New fields: Completeness, Region, Booleans */}
-                <Box sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 2, justifyContent: 'center', mt: 1 }}>
-                  <Typography variant="body2" color="text.secondary">{t('games_completeness')}: <b>{game.completeness ? t(`games_completeness_${game.completeness.toLowerCase()}`) : t('games_none')}</b></Typography>
-                  <Typography variant="body2" color="text.secondary">{t('games_region')}: <b>{game.region ? t(`games_region_${game.region.toLowerCase()}`) : t('games_none')}</b></Typography>
-                </Box>
-
-                {/* Alternative Names Button & Popover */}
-                {game.alternativeNames && game.alternativeNames.length > 0 && (
-                  <Button size="small" variant="outlined" onClick={(e) => handleAltNamesClick(e, game.id)} sx={{ mb: 1, mt: 1 }}>
-                    {t('games_alternativeNames') || 'Alternative Names'}
-                  </Button>
-                )}
-                {altNamesGameId === game.id && (
-                  <Popover
-                    open={Boolean(altNamesAnchorEl)}
-                    anchorEl={altNamesAnchorEl}
-                    onClose={handleAltNamesClose}
-                    anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-                  >
-                    <Box sx={{ p: 2, minWidth: 180 }}>
-                      {game.alternativeNames.map((name: string, idx: number) => (
-                        <Typography key={idx} variant="body2" sx={{ mb: 0.5 }}>{name}</Typography>
-                      ))}
-                    </Box>
-                  </Popover>
-                )}
               </Box>
             </Card>
           </div>

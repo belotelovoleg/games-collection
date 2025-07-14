@@ -33,18 +33,41 @@ export function GamesTable({
   t,
   handleViewGameDetails
 }: any) {
+  // Column visibility state
+  const [showProduction, setShowProduction] = React.useState(true);
+  const [showRegion, setShowRegion] = React.useState(true);
+  const [showAltNames, setShowAltNames] = React.useState(true);
+
+  React.useEffect(() => {
+    function updateVisibility() {
+      const width = window.innerWidth;
+      setShowProduction(width >= 1400);
+      setShowRegion(width >= 1200);
+      setShowAltNames(width >= 1000);
+    }
+    updateVisibility(); // On mount
+    window.addEventListener('resize', updateVisibility);
+    return () => window.removeEventListener('resize', updateVisibility);
+  }, []);
+
   return (
     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
       <thead>
         <tr style={{ background: theme.palette.background.paper, borderBottom: `2px solid ${theme.palette.divider}` }}>
           <th style={{ padding: '8px', textAlign: 'center' }}>{'Image'}</th>
           <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_filter_title') || 'Title'}</th>
-          <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_alternativeNames') || 'Alternative Names'}</th>
-          <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_production') || 'Production'}</th>
+          {showAltNames && (
+            <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_alternativeNames') || 'Alternative Names'}</th>
+          )}
+          {showProduction && (
+            <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_production') || 'Production'}</th>
+          )}
           <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_rating') || 'Rating'}</th>
           <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_console') || 'Console'}</th>
           <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_condition') || 'Condition'}</th>
-          <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_region') || 'Region'}</th>
+          {showRegion && (
+            <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_region') || 'Region'}</th>
+          )}
           <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_completed') || 'Completed'}</th>
           <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_favorite') || 'Favorite'}</th>
           <th style={{ padding: '8px', textAlign: 'center' }}>{t('games_actions') || 'Actions'}</th>
@@ -123,57 +146,60 @@ export function GamesTable({
                   {game.title || game.name}
                 </span>
               </td>
-              <td style={{ padding: '8px' }}>
-                {game.alternativeNames && game.alternativeNames.length > 0 && (
-                    <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={e => {
-                        e.stopPropagation();
-                        handleAltNamesClick(e, game.id);
-                    }}
+              {showAltNames && (
+                <td style={{ padding: '8px' }}>
+                  {game.alternativeNames && game.alternativeNames.length > 0 && (
+                      <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={e => {
+                          e.stopPropagation();
+                          handleAltNamesClick(e, game.id);
+                      }}
+                      >
+                      {t('games_alternativeNames') || 'Alternative Names'}
+                      </Button>
+                  )}
+                  {altNamesGameId === game.id && (
+                    <Popover
+                      open={Boolean(altNamesAnchorEl)}
+                      anchorEl={altNamesAnchorEl}
+                      onClose={e => {
+                          // @ts-ignore
+                          e.stopPropagation();
+                          handleAltNamesClose();
+                      }}
+                      anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
                     >
-                    {t('games_alternativeNames') || 'Alternative Names'}
-                    </Button>
-                )}
-                {altNamesGameId === game.id && (
-                  <Popover
-                    open={Boolean(altNamesAnchorEl)}
-                    anchorEl={altNamesAnchorEl}
-                    onClose={e => {
-                        // @ts-ignore
-                        e.stopPropagation();
-                        handleAltNamesClose();
-                    }}
-                    anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-                  >
-                    <Box sx={{ p: 2, minWidth: 180 }}>
-                      {game.alternativeNames.map((name: string, idx: number) => (
-                        <Typography key={idx} variant="body2" sx={{ mb: 0.5 }}>{name}</Typography>
-                      ))}
-                    </Box>
-                  </Popover>
-                )}
-              </td>
-              {/* Production cell: developer & publisher */}
-              <td style={{ padding: '8px', whiteSpace: 'pre-line' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Tooltip title={t('games_developer') || 'Developer'}>
-                    <EmojiObjectsIcon sx={{ color: theme.palette.action.disabled, fontSize: 16 }} />
-                  </Tooltip>
-                  <span style={{ fontWeight: 400, color: theme.palette.text.disabled, fontSize: '0.95em' }}>
-                    {developerStr || t('games_none')}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                  <Tooltip title={t('games_publisher') || 'Publisher'}>
-                    <BusinessIcon sx={{ color: theme.palette.action.disabled, fontSize: 16 }} />
-                  </Tooltip>
-                  <span style={{ fontWeight: 400, color: theme.palette.text.disabled, fontSize: '0.95em' }}>
-                    {publisherStr || t('games_none')}
-                  </span>
-                </div>
-              </td>
+                      <Box sx={{ p: 2, minWidth: 180 }}>
+                        {game.alternativeNames.map((name: string, idx: number) => (
+                          <Typography key={idx} variant="body2" sx={{ mb: 0.5 }}>{name}</Typography>
+                        ))}
+                      </Box>
+                    </Popover>
+                  )}
+                </td>
+              )}
+              {showProduction && (
+                <td style={{ padding: '8px', whiteSpace: 'pre-line' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Tooltip title={t('games_developer') || 'Developer'}>
+                      <EmojiObjectsIcon sx={{ color: theme.palette.action.disabled, fontSize: 16 }} />
+                    </Tooltip>
+                    <span style={{ fontWeight: 400, color: theme.palette.text.disabled, fontSize: '0.95em' }}>
+                      {developerStr || t('games_none')}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                    <Tooltip title={t('games_publisher') || 'Publisher'}>
+                      <BusinessIcon sx={{ color: theme.palette.action.disabled, fontSize: 16 }} />
+                    </Tooltip>
+                    <span style={{ fontWeight: 400, color: theme.palette.text.disabled, fontSize: '0.95em' }}>
+                      {publisherStr || t('games_none')}
+                    </span>
+                  </div>
+                </td>
+              )}
               <td style={{ padding: '8px' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <span
@@ -221,13 +247,15 @@ export function GamesTable({
                   </div>
                 )}
               </td>
-              <td style={{ padding: '8px' }}>
-                <span style={{ color: theme.palette.text.disabled, fontSize: '0.95em' }}>
-                  {game.region
-                    ? t(`games_region_${game.region.toLowerCase()}`)
-                    : t('games_none')}
-                </span>
-              </td>
+              {showRegion && (
+                <td style={{ padding: '8px' }}>
+                  <span style={{ color: theme.palette.text.disabled, fontSize: '0.95em' }}>
+                    {game.region
+                      ? t(`games_region_${game.region.toLowerCase()}`)
+                      : t('games_none')}
+                  </span>
+                </td>
+              )}
               <td style={{ padding: '8px', textAlign: 'center' }}>
                 <Tooltip title={game.completed ? (t('games_completed') || 'Completed') : (t('games_not_completed') || 'Not Completed')}>
                   <span>
