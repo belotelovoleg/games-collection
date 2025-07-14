@@ -21,7 +21,7 @@ export type GamesFilterPanelProps = {
   filters: any;
   setFilters: (filters: any) => void;
   allPlatforms: any[];
-  allConsoleSystems: any[];
+  allConsoleSystems?: any[];
   t: any;
   sortBy: string;
   setSortBy: (value: string) => void;
@@ -32,7 +32,6 @@ export type GamesFilterPanelProps = {
 export const FILTER_FIELDS = [
   { key: "name", label: "games_filter_title", type: "text" },
   { key: "platform", label: "games_platforms", type: "select" },
-  { key: "consoleId", label: "games_console", type: "select" },
   { key: "completed", label: "games_completed", type: "boolean" },
   { key: "favorite", label: "games_favorite", type: "boolean" },
   { key: "region", label: "games_region", type: "select" },
@@ -63,7 +62,6 @@ function SortingControls({ sortBy, setSortBy, sortOrder, setSortOrder, t }: {
           onChange={e => setSortBy(e.target.value)}
         >
           <MenuItem value="title">{t('games_filter_title') || 'Title'}</MenuItem>
-          <MenuItem value="consoleName">{t('games_console') || 'Console'}</MenuItem>
           <MenuItem value="rating">{t('games_rating') || 'Rating'}</MenuItem>
           <MenuItem value="completed">{t('games_completed') || 'Completed'}</MenuItem>
           <MenuItem value="favorite">{t('games_favorite') || 'Favorite'}</MenuItem>
@@ -93,8 +91,8 @@ function SortingControls({ sortBy, setSortBy, sortOrder, setSortOrder, t }: {
   );
 }
 
-export default function GamesFilterPanel({ filters, setFilters, allPlatforms, allConsoleSystems, t, sortBy, setSortBy, sortOrder, setSortOrder }: GamesFilterPanelProps) {
-  // Detect mobile device
+export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t, sortBy, setSortBy, sortOrder, setSortOrder }: GamesFilterPanelProps) {
+  // Accept allConsoleSystems prop for future use (fixes warning)
   const [isMobile, setIsMobile] = useState(false);
   const [showMobileSortFilter, setShowMobileSortFilter] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -146,7 +144,6 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, al
             if (field.type === "select") {
               let options: any[] = [];
               if (field.key === "platform") options = allPlatforms;
-              else if (field.key === "consoleId") options = allConsoleSystems;
               else if (field.key === "region") options = ["REGION_FREE", "NTSC_U", "NTSC_J", "PAL"];
               else if (field.key === "completeness") options = ["CIB", "GAME_BOX", "GAME_MANUAL", "LOOSE"];
               return (
@@ -195,14 +192,17 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, al
 
   if (isMobile) {
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <TextField
             size="small"
             label={t('games_filter_title') || 'Game Title'}
             value={quickName}
             onChange={e => setQuickName(e.target.value)}
-            sx={{ minWidth: 180 }}
+            sx={{ minWidth: 180, flex: 1 }}
+            onKeyDown={e => {
+              if (e.key === 'Enter') handleQuickNameSearch();
+            }}
           />
           <Button
             variant="outlined"
@@ -249,6 +249,9 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, al
         value={quickName}
         onChange={e => setQuickName(e.target.value)}
         sx={{ minWidth: 180 }}
+        onKeyDown={e => {
+          if (e.key === 'Enter') handleQuickNameSearch();
+        }}
       />
       <Button
         variant="outlined"

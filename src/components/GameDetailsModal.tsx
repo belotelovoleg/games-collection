@@ -203,7 +203,7 @@ export function GameDetailsModal({ open,
             position: 'absolute',
             zIndex: (theme) => theme.zIndex.drawer + 2,
             color: '#fff',
-            backgroundColor: 'rgba(0,0,0,0.2)'
+            backgroundColor: 'rgba(0,0,0,0.9)'
           }}
         >
           <CircularProgress color="inherit" />
