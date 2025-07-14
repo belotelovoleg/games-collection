@@ -35,12 +35,15 @@ import { GameDetailsModal } from "@/components/GameDetailsModal";
 import AddToCollectionModal from "@/components/AddToCollectionModal";
 import EnhancedSearchResultsModal from "@/components/EnhancedSearchResultsModal";
 import { GamesTable } from "@/components/GamesTable";
+import { GamesSearchControls } from "@/components/GamesSearchControls";
 import { GamesCardList } from "@/components/GamesCardList";
 
 import "react-image-gallery/styles/css/image-gallery.css";
 
 
 export default function GamesPage() {
+  // Mobile expand/collapse state for search/add controls
+  const [showMobileControls, setShowMobileControls] = useState(false);
   const [allPlatforms, setAllPlatforms] = useState<any[]>([]);
   const [allConsoleSystems, setAllConsoleSystems] = useState<any[]>([]);
   const [altNamesAnchorEl, setAltNamesAnchorEl] = useState<null | HTMLElement>(null);
@@ -457,89 +460,24 @@ const handleToggleFavorite = async (game: any) => {
           </Typography>
         </Box>
 
-        {/* Compact Search Controls */}
-        <Card sx={{ mb: 2 }}>
-          <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-            {/* Show search error if present */}
-            {searchError && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {searchError}
-              </Alert>
-            )}
-            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, alignItems: 'center' }}>
-              {/* Console Selection */}
-              <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 30%' }, minWidth: { xs: 200, sm: 180 }, maxWidth: { xs: '100%', sm: 300 } }}>
-                <FormControl fullWidth size="small" sx={{ minWidth: { xs: 200, sm: 180 } }}>
-                  <InputLabel id="console-select-label">
-                    {t("games_selectConsole")}
-                  </InputLabel>
-                  <Select
-                    labelId="console-select-label"
-                    value={selectedConsole}
-                    label={t("games_selectConsole")}
-                    onChange={(e) => setSelectedConsole(e.target.value)}
-                    disabled={loading}
-                    sx={{ minWidth: { xs: 120, sm: 180 }, width: '100%' }}
-                  >
-                    {userConsoles.map((userConsole) => (
-                      <MenuItem key={userConsole.id} value={String(userConsole.console.id)}>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, width: "100%" }}>
-                          <span>{userConsole.console.name}</span>
-                          <Chip 
-                            size="small" 
-                            label={userConsole.status === "OWNED" ? t("consoles_owned") : t("consoles_wishlist")}
-                            color={userConsole.status === "OWNED" ? "success" : "primary"}
-                            sx={{ ml: "auto" }}
-                          />
-                        </Box>
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Box>
-
-              {/* Game Search */}
-              <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 40%' }, minWidth: { xs: 200, sm: 240 }, maxWidth: { xs: '100%', sm: 400 } }}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  label={t("games_searchGames")}
-                  placeholder={t("games_searchPlaceholder")}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={handleSearchKeyDown}
-                  disabled={loading || !selectedConsole}
-                  sx={{ minWidth: { xs: 200, sm: 240 } }}
-                />
-              </Box>
-
-              {/* Action Buttons */}
-              <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 30%' }, display: "flex", gap: 1 }}>
-                <Button
-                  variant="contained"
-                  size="small"
-                  startIcon={searching ? <CircularProgress size={16} color="inherit" /> : <SearchIcon />}
-                  onClick={handleSearch}
-                  disabled={loading || searching || !selectedConsole || !searchQuery.trim()}
-                  sx={{ flex: 1 }}
-                >
-                  {searching ? t("common_searching") : t("common_search")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outlined"
-                  size="small"
-                  startIcon={<AddIcon />}
-                  onClick={handleAddGame}
-                  disabled={loading}
-                  sx={{ flex: 1 }}
-                >
-                  {t("games_addNew")}
-                </Button>
-              </Box>
-            </Box>
-          </CardContent>
-        </Card>
+        {/* Mobile/Desktop: Search & Add controls (reused) */}
+        <GamesSearchControls
+          isMobile={isMobile}
+          showMobileControls={showMobileControls}
+          setShowMobileControls={setShowMobileControls}
+          userConsoles={userConsoles}
+          selectedConsole={selectedConsole}
+          setSelectedConsole={setSelectedConsole}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          handleSearchKeyDown={handleSearchKeyDown}
+          loading={loading}
+          searching={searching}
+          searchError={searchError}
+          handleSearch={handleSearch}
+          handleAddGame={handleAddGame}
+          t={t}
+        />
 
         {/* User Games Table/Grid with Pagination, Sorting, Filtering */}
         <Card sx={{ mt: 3 }}>
@@ -555,41 +493,11 @@ const handleToggleFavorite = async (game: any) => {
                 allPlatforms={allPlatforms}
                 allConsoleSystems={allConsoleSystems}
                 t={t}
+                sortBy={sortBy}
+                setSortBy={value => { setSortBy(value); setPage(1); }}
+                sortOrder={sortOrder}
+                setSortOrder={value => { setSortOrder(value); setPage(1); }}
               />
-              <FormControl size="small" sx={{ minWidth: 120 }}>
-                <InputLabel>{t('games_sortBy') || 'Sort by'}</InputLabel>
-                <Select
-                  value={sortBy}
-                  label={t('games_sortBy') || 'Sort by'}
-                  onChange={e => { setSortBy(e.target.value); setPage(1); }}
-                >
-                  <MenuItem value="title">{t('games_filter_title') || 'Title'}</MenuItem>
-                  <MenuItem value="consoleName">{t('games_console') || 'Console'}</MenuItem>
-                  <MenuItem value="rating">{t('games_rating') || 'Rating'}</MenuItem>
-                  <MenuItem value="completed">{t('games_completed') || 'Completed'}</MenuItem>
-                  <MenuItem value="favorite">{t('games_favorite') || 'Favorite'}</MenuItem>
-                  <MenuItem value="condition">{t('games_condition') || 'Condition'}</MenuItem>
-                  <MenuItem value="completeness">{t('games_completeness') || 'Completeness'}</MenuItem>
-                  <MenuItem value="region">{t('games_region') || 'Region'}</MenuItem>
-                  <MenuItem value="labelDamage">{t('games_labelDamage') || 'Label Damage'}</MenuItem>
-                  <MenuItem value="discoloration">{t('games_discoloration') || 'Discoloration'}</MenuItem>
-                  <MenuItem value="rentalSticker">{t('games_rentalSticker') || 'Rental Sticker'}</MenuItem>
-                  <MenuItem value="testedWorking">{t('games_testedWorking') || 'Tested/Working'}</MenuItem>
-                  <MenuItem value="reproduction">{t('games_reproduction') || 'Reproduction'}</MenuItem>
-                  <MenuItem value="steelbook">{t('games_steelbook') || 'Steelbook'}</MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl size="small" sx={{ minWidth: 100 }}>
-                <InputLabel>{t('games_sortOrder') || 'Order'}</InputLabel>
-                <Select
-                  value={sortOrder}
-                  label={t('games_sortOrder') || 'Order'}
-                  onChange={e => { setSortOrder(e.target.value as 'asc' | 'desc'); setPage(1); }}
-                >
-                  <MenuItem value="asc">{t('games_sortOrderAscending') || 'Ascending'}</MenuItem>
-                  <MenuItem value="desc">{t('games_sortOrderDescending') || 'Descending'}</MenuItem>
-                </Select>
-              </FormControl>
             </Box>
             {/* Table for desktop, cards for mobile */}
             {gamesLoading ? (
