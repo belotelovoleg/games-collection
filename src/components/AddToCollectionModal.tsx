@@ -336,6 +336,9 @@ export default function AddToCollectionModal({
             filename: `game-photo_${i + 1}.jpg`,
           });
           uploadedUrls.push(url as any);
+        } else if (photos[i]) {
+          // Keep existing photo URL if not edited
+          uploadedUrls.push(photos[i] as any);
         } else {
           uploadedUrls.push(null as any);
         }
@@ -440,7 +443,7 @@ export default function AddToCollectionModal({
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <AddCircleIcon color="primary" />
-          {game && game.id ? t("common_edit") : t("games_addToCollection")}
+          {game && game.id ? `${t("common_edit")}: ${game.title}` : t("games_addToCollection")}
         </Box>
         <Button onClick={onClose} size="small" sx={{ minWidth: 'auto' }}>
           <CloseIcon />
@@ -558,7 +561,7 @@ export default function AddToCollectionModal({
                   label={cover ? t('games_changeCover') : t('games_uploadCover')}
                   aspect={0.8}
                   cropShape="rect"
-                  cropSize={400}
+                  cropSize={500}
                   avatarProps={{ variant: 'rounded', sx: { width: 80, height: 100, bgcolor: 'grey.200', mb: 1 } }}
                   icon={<SportsEsportsIcon />}
                 />
@@ -569,10 +572,10 @@ export default function AddToCollectionModal({
                   value={screenshot}
                   onChange={(file: File | null, url: string | null) => { setScreenshot(url); setScreenshotFile(file); }}
                   label={screenshot ? t('games_changeScreenshot') : t('games_uploadScreenshot')}
-                  aspect={1}
+                  aspect={1.33}
                   cropShape="rect"
-                  cropSize={400}
-                  avatarProps={{ variant: 'rounded', sx: { width: 80, height: 80, bgcolor: 'grey.200', mb: 1 } }}
+                  cropSize={500}
+                  avatarProps={{ variant: 'rounded', sx: { width: 106, height: 80, bgcolor: 'grey.200', mb: 1 } }}
                   icon={<SportsEsportsIcon />}
                 />
               </Box>
@@ -614,10 +617,10 @@ export default function AddToCollectionModal({
                         });
                       }}
                       label={photo ? t('games_changePhoto') : t('games_uploadPhoto')}
-                      aspect={1}
+                      aspect={1.33}
                       cropShape="rect"
                       cropSize={500}
-                      avatarProps={{ variant: 'rounded', sx: { width: 80, height: 80, bgcolor: 'grey.200', mb: 1 } }}
+                      avatarProps={{ variant: 'rounded', sx: { width: 106, height: 80, bgcolor: 'grey.200', mb: 1 } }}
                       icon={<PhotoCameraIcon />}
                       allowDelete
                     />

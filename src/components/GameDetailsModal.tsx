@@ -69,6 +69,7 @@ export function GameDetailsModal({ open,
   const [detailsTabValue, setDetailsTabValue] = useState(0);
   const [fetchedIgdbGame, setFetchedIgdbGame] = useState(null);
   const [loadingIgdb, setLoadingIgdb] = useState(false);
+  const [mergedGame, setMergedGame] = useState<any>(game);
 
   // When you need to fetch IGDB data:
   useEffect(() => {
@@ -79,6 +80,7 @@ export function GameDetailsModal({ open,
         .then(data => setFetchedIgdbGame(data))
         .finally(() => setLoadingIgdb(false));
     } else {
+      setFetchedIgdbGame(null);
       setLoadingIgdb(false);
     }
   }, [game, gameType]);
@@ -146,9 +148,9 @@ export function GameDetailsModal({ open,
   };
 
   // Merge local game with igdbGame if gameType is "local"
-  const [mergedGame, setMergedGame] = useState<any>(game);
   useEffect(() => {
     if (gameType === "local" && game) {
+      console.log(game,'game')
       const igdbGame = game.igdbGame || fetchedIgdbGame || {};
       const newMerged = {
         // Prefer local game fields, fallback to igdbGame fields
@@ -218,7 +220,7 @@ export function GameDetailsModal({ open,
         }}>
           <Box sx={{ flex: 1 }}>
             <Typography variant="h5" fontWeight="bold" gutterBottom>
-              {mergedGame.name}
+              {mergedGame.title ? mergedGame.title : mergedGame.name}
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
               {getGameRating(mergedGame) > 0 && (
@@ -439,9 +441,11 @@ export function GameDetailsModal({ open,
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <PhotoLibraryIcon fontSize="small" />
                         {t("games_screenshots")}
-                        {mergedGame.screenshots && mergedGame.screenshots.length > 0 && (
+                        {(mergedGame.screenshots && mergedGame.screenshots.length > 0) ? (
                           <Badge sx={{marginLeft: 1.5}} badgeContent={mergedGame.screenshots.length} color="primary" />
-                        )}
+                        ) : (mergedGame.screenshot ? (
+                          <Badge sx={{marginLeft: 1.5}} badgeContent={1} color="primary" />
+                        ) : null)}
                       </Box>
                     } 
                   />
@@ -530,7 +534,13 @@ export function GameDetailsModal({ open,
               {/* Screenshots Tab */}
               {detailsTabValue === 2 && (
                 <GameMediaGallery
-                  images={mergedGame.screenshots || []}
+                  images={
+                    mergedGame.screenshots && mergedGame.screenshots.length > 0
+                      ? mergedGame.screenshots
+                      : mergedGame.screenshot
+                        ? [mergedGame.screenshot]
+                        : []
+                  }
                   title={t("games_screenshots")}
                   icon={<PhotoLibraryIcon />}
                   emptyText={t("games_noScreenshots")}

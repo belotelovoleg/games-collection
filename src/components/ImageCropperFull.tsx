@@ -104,9 +104,12 @@ const ImageCropperFull: React.FC<ImageCropperFullProps> = ({
       const url = URL.createObjectURL(file);
       image.src = url;
       image.onload = () => {
+        // Calculate output dimensions based on aspect
+        const outputWidth = size;
+        const outputHeight = cropShape === 'rect' ? Math.round(size / aspect) : size;
         const canvas = document.createElement('canvas');
-        canvas.width = size;
-        canvas.height = size;
+        canvas.width = outputWidth;
+        canvas.height = outputHeight;
         const ctx = canvas.getContext('2d');
         if (!ctx) return reject(new Error('No canvas context'));
         ctx.drawImage(
@@ -117,8 +120,8 @@ const ImageCropperFull: React.FC<ImageCropperFullProps> = ({
           crop.height,
           0,
           0,
-          size,
-          size
+          outputWidth,
+          outputHeight
         );
         canvas.toBlob(blob => {
           URL.revokeObjectURL(url);
