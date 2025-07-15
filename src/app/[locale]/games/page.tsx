@@ -33,8 +33,6 @@ import { GamesTable } from "@/components/GamesTable";
 import { GamesSearchControls } from "@/components/GamesSearchControls";
 import { GamesCardList } from "@/components/GamesCardList";
 
-import "react-image-gallery/styles/css/image-gallery.css";
-
 
 export default function GamesPage() {
   // Mobile expand/collapse state for search/add controls
