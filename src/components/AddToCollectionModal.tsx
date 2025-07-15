@@ -21,6 +21,7 @@ import {
   Checkbox,
   Slider,
   Backdrop,
+  Autocomplete,
 } from '@mui/material';
 import AdvancedGameFieldsAccordion, { AdvancedFields } from './AdvancedGameFieldsAccordion';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
@@ -37,6 +38,7 @@ interface AddToCollectionModalProps {
   userConsoles?: any[]; // Array of user's consoles
   onSuccess?: (game: any) => void;
   mode?: 'create' | 'edit' | 'igdb'; // NEW: mode prop
+  locationOptions: { id: string, name: string }[];
 }
 
 export default function AddToCollectionModal({ 
@@ -47,6 +49,7 @@ export default function AddToCollectionModal({
   userConsoles = [],
   onSuccess,
   mode = 'create', // default to create
+  locationOptions,
 }: AddToCollectionModalProps) {
   const { t } = useTranslations();
   
@@ -103,6 +106,10 @@ export default function AddToCollectionModal({
   const [platformOptions, setPlatformOptions] = useState<{id: number, name: string}[]>([]);
   const [loadingGenres, setLoadingGenres] = useState(false);
   const [loadingPlatforms, setLoadingPlatforms] = useState(false);
+  // Game Locations state
+  // locationOptions is now passed as a prop
+  const [loadingLocations] = useState(false);
+  const [selectedLocationId, setSelectedLocationId] = useState<string>("");
 
   // Update form fields when editing or selectedConsole changes
   // Only update consoleId from selectedConsole if not editing an existing game
@@ -172,6 +179,12 @@ export default function AddToCollectionModal({
         .then(res => res.json())
         .then(data => setPlatformOptions(data.map((p: any) => ({ id: p.id, name: p.name }))))
         .finally(() => setLoadingPlatforms(false));
+      // Use passed-in locationOptions and auto-select if game has gameLocationId
+      if (game && game.gameLocationId) {
+        setSelectedLocationId(game.gameLocationId);
+      } else {
+        setSelectedLocationId(''); // Default to 'Not selected'
+      }
 
     } else if (!game) {
       setFormData(prev => ({ ...prev, title: '', summary: '', completed: false, favorite: false, rating: 50 }));
@@ -220,6 +233,10 @@ export default function AddToCollectionModal({
           reproduction: !!formData.reproduction,
           steelbook: !!formData.steelbook,
         };
+        // Add gameLocationId if selectedLocationId is not empty
+        if (selectedLocationId) {
+          payload.gameLocationId = selectedLocationId;
+        }
         response = await fetch(`/api/games/${game.id}/edit`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -248,6 +265,10 @@ export default function AddToCollectionModal({
           notes: formData.notes || null,
           photos: photos.filter(Boolean),
         };
+        // Add gameLocationId if selectedLocationId is not empty
+        if (selectedLocationId) {
+          payload.gameLocationId = selectedLocationId;
+        }
         response = await fetch('/api/games/create-manual', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -283,6 +304,7 @@ export default function AddToCollectionModal({
             price: formData.price || null,
             purchaseDate: formData.purchaseDate || null,
             notes: formData.notes || null,
+            gameLocationId: selectedLocationId || null,
           }),
         });
         if (!response.ok) {
@@ -443,7 +465,7 @@ export default function AddToCollectionModal({
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <AddCircleIcon color="primary" />
-          {game && game.id ? `${t("common_edit")}: ${game.title}` : t("games_addToCollection")}
+          {game && game.id ? `${t("common_edit")}: ${game.title ? game.title : ''}` : t("games_addToCollection")}
         </Box>
         <Button onClick={onClose} size="small" sx={{ minWidth: 'auto' }}>
           <CloseIcon />
@@ -762,6 +784,38 @@ export default function AddToCollectionModal({
                   shrink: true,
                 }}
                 sx={{ minWidth: 0 }}
+              />
+            </Box>
+
+            <Box sx={{ display: 'flex', gap: 2, width: '100%' }}>
+              {/* Game Location Picker */}
+              <Autocomplete
+                fullWidth
+                options={locationOptions}
+                getOptionLabel={(option: {id: string, name: string}) => option.name}
+                loading={loadingLocations}
+                value={locationOptions.find((loc) => loc.id === selectedLocationId) || null}
+                onChange={(_event: React.SyntheticEvent, newValue: {id: string, name: string} | null) => {
+                  setSelectedLocationId(newValue ? newValue.id : "");
+                }}
+                renderInput={(params: any) => (
+                  <TextField
+                    {...params}
+                    label={t('common_location') || 'Location'}
+                    variant="outlined"
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                    InputProps={{
+                      ...params.InputProps,
+                      endAdornment: (
+                        <>
+                          {loadingLocations ? <CircularProgress color="inherit" size={20} /> : null}
+                          {params.InputProps.endAdornment}
+                        </>
+                      ),
+                    }}
+                  />
+                )}
               />
             </Box>
 

@@ -4,7 +4,8 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
 
 // PATCH /api/games/[id]/edit - Update a game by ID for the current user
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, context: { params: { id: string } }) {
+  const params = await context.params;
   const session = await getServerSession(authOptions);
   if (!session || !session.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -42,7 +43,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       platforms,
       developer,
       publisher,
-      releaseYear
+      releaseYear,
+      gameLocationId
     } = body;
     const updateData: any = {};
     if (title !== undefined) updateData.title = title;
@@ -79,6 +81,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (developer !== undefined) updateData.developer = Array.isArray(developer) ? developer : [];
     if (publisher !== undefined) updateData.publisher = Array.isArray(publisher) ? publisher : [];
     if (releaseYear !== undefined) updateData.releaseYear = releaseYear !== null ? parseInt(releaseYear) : null;
+    if (gameLocationId !== undefined) updateData.gameLocationId = gameLocationId || null;
     const updated = await prisma.game.update({
       where: { id: gameId },
       data: updateData,

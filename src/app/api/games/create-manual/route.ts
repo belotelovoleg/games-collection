@@ -33,7 +33,8 @@ export async function POST(request: NextRequest) {
       rentalSticker,
       testedWorking,
       reproduction, 
-      steelbook
+      steelbook,
+      gameLocationId
     } = body;
 
     if (!title || !consoleId) {
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
         steelbook: !!steelbook,
         genres: [],
         franchises: [],
-        platforms,
+        ...(gameLocationId ? { gameLocationId } : {}),
         multiplayerModes: [],
         developer: [],
         publisher: [],

@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
   const reproduction = searchParams.get('reproduction');
   const steelbook = searchParams.get('steelbook');
   const completeness = searchParams.get('completeness');
+  const gameLocationId = searchParams.get('gameLocationId');
 
   // Build filters
   const where: any = {};
@@ -50,6 +51,9 @@ export async function GET(req: NextRequest) {
     if (validRegion.includes(region)) {
       where.region = region;
     }
+  }
+  if (gameLocationId) {
+    where.gameLocationId = gameLocationId;
   }
   // Validate condition enum
   const condition = searchParams.get('condition');

@@ -28,7 +28,8 @@ export async function POST(request: NextRequest) {
       rentalSticker,
       testedWorking,
       reproduction,
-      steelbook
+      steelbook,
+      gameLocationId
     } = body;
 
     if (!igdbGameId || !consoleId) {
@@ -83,7 +84,8 @@ export async function POST(request: NextRequest) {
         rentalSticker,
         testedWorking,
         reproduction,
-        steelbook
+        steelbook,
+        gameLocationId: gameLocationId || null
       }
     );
 

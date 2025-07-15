@@ -957,6 +957,7 @@ export class IGDBGameNormalizationService {
       testedWorking?: boolean;
       reproduction?: boolean;
       steelbook?: boolean;
+            gameLocationId?: string | null;
     }
   ): Promise<any> {
     console.log(`🎯 Creating user game from IGDB: ${igdbGameData.name} for user ${userId} on console ${consoleId}`);
@@ -1047,6 +1048,7 @@ export class IGDBGameNormalizationService {
           developer: developers,
           publisher: publishers,
           steelbook: !!additionalData?.steelbook,
+                     ...(additionalData?.gameLocationId ? { gameLocationId: additionalData.gameLocationId } : {}),
         },
       });
 

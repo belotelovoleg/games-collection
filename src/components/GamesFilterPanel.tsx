@@ -16,9 +16,11 @@ import {
   DialogContent,
   DialogActions,
   Avatar,
+  Autocomplete,
 } from "@mui/material";
 
-export type GamesFilterPanelProps = {
+//
+export interface GamesFilterPanelProps {
   filters: any;
   setFilters: (filters: any) => void;
   allPlatforms: any[];
@@ -28,7 +30,8 @@ export type GamesFilterPanelProps = {
   setSortBy: (value: string) => void;
   sortOrder: 'asc' | 'desc';
   setSortOrder: (value: 'asc' | 'desc') => void;
-};
+  gameLocations: { id: string, name: string }[];
+}
 
 export const FILTER_FIELDS = [
   { key: "name", label: "games_filter_title", type: "text" },
@@ -92,7 +95,7 @@ function SortingControls({ sortBy, setSortBy, sortOrder, setSortOrder, t }: {
   );
 }
 
-export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t, sortBy, setSortBy, sortOrder, setSortOrder }: GamesFilterPanelProps) {
+export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t, sortBy, setSortBy, sortOrder, setSortOrder, gameLocations }: GamesFilterPanelProps) {
   // Accept allConsoleSystems prop for future use (fixes warning)
   const [isMobile, setIsMobile] = useState(false);
   const [showMobileSortFilter, setShowMobileSortFilter] = useState(false);
@@ -149,26 +152,54 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t,
               else if (field.key === "region") options = ["REGION_FREE", "NTSC_U", "NTSC_J", "PAL"];
               else if (field.key === "completeness") options = ["CIB", "GAME_BOX", "GAME_MANUAL", "LOOSE"];
               return (
-                <FormControl key={field.key} size="small" fullWidth>
-                  <InputLabel>{t(field.label) || field.label}</InputLabel>
-                  <Select
-                    value={localFilters[field.key] || ""}
-                    label={t(field.label) || field.label}
-                    onChange={e => handleChange(field.key, e.target.value)}
-                  >
-                    <MenuItem value="">{t("games_none") || "None"}</MenuItem>
-                    {options.map(opt => (
-                      <MenuItem key={opt.id || opt} value={opt.id || opt}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                          {opt.platformLogo?.url && (
-                            <Avatar src={opt.platformLogo.url} alt={opt.name} sx={{ width: 28, height: 28, mr: 1 }} />
+                <React.Fragment key={field.key}>
+                  <FormControl size="small" fullWidth>
+                    <InputLabel>{t(field.label) || field.label}</InputLabel>
+                    <Select
+                      value={localFilters[field.key] || ""}
+                      label={t(field.label) || field.label}
+                      onChange={e => handleChange(field.key, e.target.value)}
+                    >
+                      <MenuItem value="">{t("games_none") || "None"}</MenuItem>
+                      {options.map(opt => (
+                        <MenuItem key={opt.id || opt} value={opt.id || opt}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            {opt.platformLogo?.url && (
+                              <Avatar src={opt.platformLogo.url} alt={opt.name} sx={{ width: 28, height: 28, mr: 1 }} />
+                            )}
+                            {opt.name || t(`${field.label}_${String(opt).toLowerCase()}`) || String(opt)}
+                          </Box>
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  {/* Game Location Autocomplete after select */}
+                  {field.key === "platform" && gameLocations && gameLocations.length > 0 && (
+                    <Box sx={{ mt: 2 }}>
+                      <FormControl size="small" fullWidth>
+                        <Autocomplete
+                          options={gameLocations}
+                          getOptionLabel={(option: { id: string; name: string }) => option.name}
+                          value={gameLocations.find(loc => loc.id === (localFilters.gameLocationId || "")) || gameLocations[0]}
+                          onChange={(
+                            _event: React.SyntheticEvent,
+                            newValue: { id: string; name: string } | null
+                          ) => {
+                            handleChange("gameLocationId", newValue ? newValue.id : "");
+                          }}
+                          renderInput={(params: any) => (
+                            <TextField
+                              {...params}
+                              label={t('common_location') || 'Location'}
+                              variant="outlined"
+                              size="small"
+                            />
                           )}
-                          {opt.name || t(`${field.label}_${String(opt).toLowerCase()}`) || String(opt)}
-                        </Box>
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                        />
+                      </FormControl>
+                    </Box>
+                  )}
+                </React.Fragment>
               );
             }
             if (field.type === "boolean") {

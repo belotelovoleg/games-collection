@@ -96,6 +96,7 @@ export default function GamesPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [totalGames, setTotalGames] = useState(0);
   const [gameDetailsType, setGameDetailsType] = useState<'igdb' | 'local'>('igdb');
+  const [gameLocations, setGameLocations] = useState<{id: string, name: string}[]>([]);
 
 
 // Rating popup state (optimized: slider value in useRef)
@@ -190,8 +191,24 @@ const handleToggleFavorite = async (game: any) => {
     if (status === "authenticated") {
       fetchAllPlatforms();
       fetchAllConsoleSystems();
+      fetchGameLocations(); 
     }
   }, [status]);
+
+  // Fetch game locations on load
+  const fetchGameLocations = async () => {
+    try {
+      const res = await fetch('/api/game-locations?scope=me');
+      if (!res.ok) throw new Error('Failed to fetch game locations');
+      const data = await res.json();
+      setGameLocations([
+        { id: '', name: t('common_notSelected') },
+        ...data.map((loc: any) => ({ id: loc.id, name: loc.name }))
+      ]);
+    } catch (e) {
+      setGameLocations([{ id: '', name: t('common_notSelected') }]);
+    }
+  };
 
   const fetchAllPlatforms = async () => {
     try {
@@ -493,6 +510,7 @@ const handleToggleFavorite = async (game: any) => {
                 setSortBy={value => { setSortBy(value); setPage(1); }}
                 sortOrder={sortOrder}
                 setSortOrder={value => { setSortOrder(value); setPage(1); }}
+                gameLocations={gameLocations}
               />
             </Box>
             {/* Table for desktop, cards for mobile */}
@@ -655,8 +673,6 @@ const handleToggleFavorite = async (game: any) => {
             setGameToAdd(null);
             setEditGame(null);
             setAddToCollectionMode('create');
-            // Do not refresh games list on cancel/close
-            //fetchUserGames();
           }}
           game={editGame || gameToAdd || null}
           selectedConsole={
@@ -667,6 +683,7 @@ const handleToggleFavorite = async (game: any) => {
           userConsoles={userConsoles}
           onSuccess={handleAddToCollectionSuccess}
           mode={addToCollectionMode}
+          locationOptions={gameLocations}
         />
       </Box>
     </MainLayout>

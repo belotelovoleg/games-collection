@@ -28,6 +28,7 @@ model User {
   sessions Session[]
   games    Game[]
   userConsoles UserConsole[]
+  gameLocations GameLocation[]
 
   @@map("users")
 }
@@ -119,7 +120,9 @@ model Game {
   userId          String      @map("user_id")
   user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   igdbGame        IgdbGame?   @relation(fields: [igdbGameId], references: [id])
-  
+  gameLocationId  String?     @map("game_location_id")
+  gameLocation    GameLocation? @relation(fields: [gameLocationId], references: [id])
+
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -379,6 +382,22 @@ model UserConsole {
 
   @@unique([userId, consoleId])
   @@map("user_consoles")
+}
+
+// User-defined game locations
+model GameLocation {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  name      String
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  games     Game[]
+
+  @@map("game_locations")
 }
 
 // ============================================================================

@@ -33,6 +33,7 @@ import {
   Logout as LogoutIcon,
   AccountCircle,
   AdminPanelSettings as AdminIcon,
+  WarehouseOutlined as WarehouseIcon,
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
@@ -88,6 +89,11 @@ export function MainLayout({ children, locale }: MainLayoutProps) {
       text: t('nav_consoles'), 
       icon: <ConsolesIcon />, 
       href: `/${locale}/consoles` 
+    },
+    {
+      text: t('nav_gameLocations') || 'Game Locations',
+      icon: <WarehouseIcon />,
+      href: `/${locale}/game-locations`
     },
   ];
 
