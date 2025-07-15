@@ -442,15 +442,14 @@ const handleToggleFavorite = async (game: any) => {
             sx={{ 
               mb: 0.5, 
               fontWeight: "bold",
-              display: "flex",
-              alignItems: "center",
               gap: 1.5
             }}
+            textAlign={isMobile ? "center" : "left"}
           >
-            <SportsEsportsIcon sx={{ fontSize: "1.5rem" }} />
+            <SportsEsportsIcon sx={{ fontSize: "1.5rem", paddingRight:.5, minWidth: 40 }} />
             {t("games_title")}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.secondary"  textAlign={isMobile ? "center" : "left"}>
             {t("games_subtitle")}
           </Typography>
         </Box>

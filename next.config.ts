@@ -27,6 +27,7 @@ const nextConfig: NextConfig = {
     S3_SECRET_ACCESS_KEY: process.env.S3_SECRET_ACCESS_KEY,
     S3_BUCKET_NAME: process.env.S3_BUCKET_NAME,
     S3_REGION: process.env.S3_REGION,
+    NEXT_PUBLIC_APP_VERSION: require('./package.json').version,
   },
   
   // External packages for server components

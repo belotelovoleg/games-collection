@@ -4,6 +4,7 @@
   "common_loading": "Завантаження...",
   "common_error": "Помилка",
   "common_success": "Успіх",
+  "common_appVersion": "Версія додатку: {version}",
   "common_cancel": "Скасувати",
   "common_save": "Зберегти",
   "common_delete": "Видалити",

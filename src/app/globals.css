@@ -27,7 +27,7 @@ body {
 }
 
 header {
-  padding-right: 0px !important;
+  padding-right: 0 !important;
 }
 
 html {
@@ -38,14 +38,14 @@ body, #__next, #root {
   min-width: 320px;
 }
 
+.main-root-div{
+  padding-top: 0 !important;
+}
 
-@media (max-width: 600px) {
-  .MuiBox-root[class*="css-"] {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    padding: 0 !important;
-  }
-  .main-root {
+
+@media (max-width: 900px) {
+  .main-root-div{
+    padding-top: 10px !important;
     padding-left: 0 !important;
     padding-right: 0 !important;
     padding: 0 !important;

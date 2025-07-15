@@ -4,6 +4,7 @@
   "common_loading": "Loading...",
   "common_error": "Error",
   "common_success": "Success",
+  "common_appVersion": "App version: {version}",
   "common_cancel": "Cancel",
   "common_save": "Save",
   "common_delete": "Delete",

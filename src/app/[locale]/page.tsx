@@ -89,7 +89,7 @@ export default function LocalePage({ params }: { params: Promise<{ locale: strin
               fontSize: '0.875rem'
             }}
           >
-            Current language: {locale}
+            {t('common_appVersion', { version: process.env.NEXT_PUBLIC_APP_VERSION || '0.9' })}
           </Typography>
         </Box>
       </Container>

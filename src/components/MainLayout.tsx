@@ -321,10 +321,14 @@ export function MainLayout({ children, locale }: MainLayoutProps) {
       
       <Box
         component="main"
+        className="main-root-div"
         sx={{
           flexGrow: 1,
           p: 3,
           width: '100%',
+          '@media (max-width:600px)': {
+            pt: "10px !important",
+          },
         }}
       >
         <Toolbar />

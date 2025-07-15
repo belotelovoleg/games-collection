@@ -62,7 +62,7 @@ export const GamesSearchControls: React.FC<GamesSearchControlsProps> = ({
               variant="contained"
               size="medium"
               endIcon={showMobileControls ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-              sx={{ mb: 1, fontWeight: 600, fontSize: '1rem' }}
+              sx={{fontWeight: 600, fontSize: '1rem' }}
               onClick={() => setShowMobileControls && setShowMobileControls((prev: boolean) => !prev)}
             >
               {t("games_addNew")}
