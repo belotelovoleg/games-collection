@@ -668,7 +668,7 @@ export default function AddToCollectionModal({
                   label={t("games_condition")}
                   onChange={(e) => setFormData(prev => ({ ...prev, condition: e.target.value }))}
                 >
-                  {['SEALED','MINT','VERY_GOOD', 'GOOD','FAIR','POOR'].map((condition) => (
+                  {['SEALED','MINT','VERY_GOOD', 'GOOD','ACCEPTABLE','POOR'].map((condition) => (
                     <MenuItem key={condition} value={condition}>
                       {(t as any)(`games_condition_${condition.toLowerCase()}`) || condition}
                     </MenuItem>
