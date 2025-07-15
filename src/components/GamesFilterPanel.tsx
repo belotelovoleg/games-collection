@@ -288,7 +288,7 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t,
   // Desktop (unchanged)
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-      <FormControl size="small" sx={{ minWidth: 120 }}>
+      <FormControl size="small" sx={{ minWidth: 140 }}>
         <InputLabel>{t('games_platforms') || 'Platform'}</InputLabel>
         <Select
           value={filters.platform || ""}

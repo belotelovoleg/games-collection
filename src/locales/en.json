@@ -24,6 +24,7 @@
   "nav_login": "Login",
   "nav_register": "Register",
   "nav_logout": "Logout",
+  "nav_changePassword": "Change Password",
   
   "home_title": "Welcome to your Game Collection!",
   "home_subtitle": "Manage and organize your physical game collection with ease.",
@@ -205,6 +206,8 @@
   "console_noData": "No consoles found",
   "console_saveSuccess": "Console saved successfully",
   "console_deleteSuccess": "Console deleted successfully",
+  "common_switchToUkrainian": "Перемкнути на українську",
+  "common_switchToEnglish": "Switch to English",
   
   "consoles_title": "Gaming Consoles",
   "consoles_subtitle": "Browse and manage your console collection",
@@ -253,5 +256,15 @@
   "theme_dark": "Dark",
   "theme_switchTo": "Switch to {mode} theme",
   
-  "games_physicalDetails": "Physical Details"
+  "games_physicalDetails": "Physical Details",
+
+  "changePassword_title": "Change Password",
+  "changePassword_current": "Current Password",
+  "changePassword_new": "New Password",
+  "changePassword_confirm": "Confirm New Password",
+  "changePassword_submit": "Change Password",
+  "changePassword_fillAllFields": "Please fill all fields.",
+  "changePassword_passwordsDontMatch": "Passwords do not match.",
+  "changePassword_error": "Failed to change password.",
+  "changePassword_success": "Password changed successfully."
 }

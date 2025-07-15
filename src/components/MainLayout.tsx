@@ -26,7 +26,6 @@ import {
   Home as HomeIcon,
   VideogameAsset as GamesIcon,
   SportsEsports as ConsolesIcon,
-  Settings as SettingsIcon,
   LightMode,
   DarkMode,
   Login as LoginIcon,
@@ -39,6 +38,8 @@ import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
 import { useCustomTheme } from './ThemeProvider';
 import { useTranslations } from '@/hooks/useTranslations';
+import { Tooltip } from '@mui/material';
+import { Settings as SettingsIcon } from '@mui/icons-material';
 
 const drawerWidth = 240;
 
@@ -87,11 +88,6 @@ export function MainLayout({ children, locale }: MainLayoutProps) {
       text: t('nav_consoles'), 
       icon: <ConsolesIcon />, 
       href: `/${locale}/consoles` 
-    },
-    { 
-      text: t('nav_settings'), 
-      icon: <SettingsIcon />, 
-      href: `/${locale}/settings` 
     },
   ];
 
@@ -192,7 +188,7 @@ export function MainLayout({ children, locale }: MainLayoutProps) {
             aria-label="open drawer"
             edge="start"
             onClick={handleDrawerToggle}
-            sx={{ mr: 2 }}
+            sx={{ mr: 2, p: 2.2 }}
           >
             <MenuIcon />
           </IconButton>
@@ -202,14 +198,32 @@ export function MainLayout({ children, locale }: MainLayoutProps) {
           </Typography>
           
           {/* Language Switcher */}
-          <IconButton
-            color="inherit"
-            component={Link}
-            href={locale === 'en' ? '/uk' : '/en'}
-            sx={{ mr: 2 }}
-          >
-            {locale === 'en' ? 'УК' : 'EN'}
-          </IconButton>
+          <Tooltip title={locale === 'en' ? 'Switch to Ukrainian' : 'Switch to English'}>
+            <IconButton
+              color="inherit"
+              sx={{ mr: 2, p: 0 }}
+              onClick={() => {
+                // Replace locale in current path
+                const currentPath = window.location.pathname;
+                const newLocale = locale === 'en' ? 'uk' : 'en';
+                // Replace only the first segment
+                const segments = currentPath.split('/');
+                if (segments.length > 1) {
+                  segments[1] = newLocale;
+                  const newPath = segments.join('/') || '/';
+                  window.location.pathname = newPath;
+                }
+              }}
+            >
+              <Avatar sx={{ width: 32, height: 32, bgcolor: 'transparent', fontSize: '1.6rem', p: 3.2 }}>
+                {locale === 'en' ? (
+                  <Box component="span" aria-label="Ukrainian flag">🇺🇦</Box>
+                ) : (
+                  <Box component="span" aria-label="UK/US flag">🇬🇧</Box>
+                )}
+              </Avatar>
+            </IconButton>
+          </Tooltip>
 
           {/* User Menu */}
           {(status as any) === 'loading' ? (
@@ -250,6 +264,10 @@ export function MainLayout({ children, locale }: MainLayoutProps) {
                   <AccountCircle sx={{ mr: 1 }} />
                   {session.user?.name || session.user?.email}
                 </MenuItem>
+              <MenuItem component={Link} href={`/${locale}/settings/change-password`} onClick={handleClose}>
+                <SettingsIcon sx={{ mr: 1 }} />
+                {t('nav_changePassword') || 'Change Password'}
+              </MenuItem>
                 <MenuItem onClick={handleLogout}>
                   <LogoutIcon sx={{ mr: 1 }} />
                   {t('nav_logout')}

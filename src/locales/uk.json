@@ -16,7 +16,9 @@
   "common_previous": "Назад",
   "common_saving": "Збереження...",
   "common_adding": "Додавання...",
-  
+  "common_switchToUkrainian": "Перемкнути на українську",
+  "common_switchToEnglish": "Перемкнути на англійську",
+
   "nav_home": "Головна",
   "nav_games": "Ігри",
   "nav_consoles": "Консолі",
@@ -24,7 +26,8 @@
   "nav_login": "Увійти",
   "nav_register": "Реєстрація",
   "nav_logout": "Вийти",
-  
+  "nav_changePassword": "Змінити Пароль",
+
   "home_title": "Ласкаво просимо до вашої колекції ігор!",
   "home_subtitle": "Керуйте та організовуйте свою фізичну колекцію ігор з легкістю.",
   "home_getStarted": "Почати",
@@ -242,9 +245,19 @@
   "common_searching": "Пошук...",
   "common_apply": "Застосувати Фільтри",
 
-  "theme_light": "Світла",
-  "theme_dark": "Темна",
+  "theme_light": "світлу",
+  "theme_dark": "темну",
   "theme_switchTo": "Перемкнути на {mode} тему",
   
-  "games_physicalDetails": "Фізичний стан"
+  "games_physicalDetails": "Фізичний стан",
+
+  "changePassword_title": "Змінити Пароль",
+  "changePassword_current": "Поточний Пароль",
+  "changePassword_new": "Новий Пароль",
+  "changePassword_confirm": "Підтвердити Новий Пароль",
+  "changePassword_submit": "Змінити Пароль",
+  "changePassword_fillAllFields": "Будь ласка, заповніть всі поля.",
+  "changePassword_passwordsDontMatch": "Паролі не співпадають.",
+  "changePassword_error": "Не вдалося змінити пароль.",
+  "changePassword_success": "Пароль успішно змінено."
 }
