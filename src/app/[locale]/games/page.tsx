@@ -195,7 +195,11 @@ const handleToggleFavorite = async (game: any) => {
 
   const fetchAllPlatforms = async () => {
     try {
-      const response = await fetch('/api/platforms');
+      let url = '/api/platforms';
+      if (session?.user?.id) {
+        url += `?userId=${encodeURIComponent(session.user.id)}`;
+      }
+      const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch platforms');
       const data = await response.json();
       setAllPlatforms(data.platforms || data || []);

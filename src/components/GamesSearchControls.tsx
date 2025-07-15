@@ -12,6 +12,7 @@ import {
   Card,
   CardContent,
   Alert,
+  Avatar,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
@@ -88,7 +89,11 @@ export const GamesSearchControls: React.FC<GamesSearchControlsProps> = ({
                   >
                     {userConsoles.map((userConsole) => (
                       <MenuItem key={userConsole.id} value={String(userConsole.console.id)}>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, width: "100%" }}>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, width: "100%" }}>
+                          {/* Console photo/avatar */}
+                          {userConsole.console.photo && (
+                            <Avatar src={userConsole.console.photo} alt={userConsole.console.name} sx={{ width: 32, height: 32, mr: 1 }} />
+                          )}
                           <span>{userConsole.console.name}</span>
                           <Chip 
                             size="small" 
@@ -166,7 +171,11 @@ export const GamesSearchControls: React.FC<GamesSearchControlsProps> = ({
               >
                 {userConsoles.map((userConsole) => (
                   <MenuItem key={userConsole.id} value={String(userConsole.console.id)}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, width: "100%" }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, width: "100%" }}>
+                      {/* Console photo/avatar */}
+                      {userConsole.console.photo && (
+                        <Avatar src={userConsole.console.photo} alt={userConsole.console.name} sx={{ width: 32, height: 32, mr: 1 }} />
+                      )}
                       <span>{userConsole.console.name}</span>
                       <Chip 
                         size="small" 

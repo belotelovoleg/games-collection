@@ -15,6 +15,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Avatar,
 } from "@mui/material";
 
 export type GamesFilterPanelProps = {
@@ -158,7 +159,12 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t,
                     <MenuItem value="">{t("games_none") || "None"}</MenuItem>
                     {options.map(opt => (
                       <MenuItem key={opt.id || opt} value={opt.id || opt}>
-                        {opt.name || t(`${field.label}_${String(opt).toLowerCase()}`) || String(opt)}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          {opt.platformLogo?.url && (
+                            <Avatar src={opt.platformLogo.url} alt={opt.name} sx={{ width: 28, height: 28, mr: 1 }} />
+                          )}
+                          {opt.name || t(`${field.label}_${String(opt).toLowerCase()}`) || String(opt)}
+                        </Box>
                       </MenuItem>
                     ))}
                   </Select>
@@ -195,21 +201,26 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t,
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}>
         <Box>
-            <FormControl size="small" sx={{ minWidth: 120, width: '100%' }}>
-            <InputLabel>{t('games_platforms') || 'Platform'}</InputLabel>
-            <Select
-              value={filters.platform || ""}
-              label={t('games_platforms') || 'Platform'}
-              onChange={e => setFilters({ ...filters, platform: e.target.value })}
-            >
-              <MenuItem value="">{t('games_none') || 'All'}</MenuItem>
-              {allPlatforms.map(opt => (
-                <MenuItem key={opt.id || opt} value={opt.id || opt}>
-                  {opt.name || String(opt)}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+        <FormControl size="small" sx={{ minWidth: 120, width: '100%' }}>
+        <InputLabel>{t('games_platforms') || 'Platform'}</InputLabel>
+        <Select
+          value={filters.platform || ""}
+          label={t('games_platforms') || 'Platform'}
+          onChange={e => setFilters({ ...filters, platform: e.target.value })}
+        >
+          <MenuItem value="">{t('games_none') || 'All'}</MenuItem>
+          {allPlatforms.map(opt => (
+            <MenuItem key={opt.id || opt} value={opt.id || opt}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                {opt.platformLogo?.url && (
+                  <Avatar src={opt.platformLogo.url} alt={opt.name} sx={{ width: 28, height: 28, mr: 1 }} />
+                )}
+                {opt.name || String(opt)}
+              </Box>
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <TextField
@@ -298,7 +309,12 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t,
           <MenuItem value="">{t('games_none') || 'All'}</MenuItem>
           {allPlatforms.map(opt => (
             <MenuItem key={opt.id || opt} value={opt.id || opt}>
-              {opt.name || String(opt)}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                {opt.platformLogo?.url && (
+                  <Avatar src={opt.platformLogo.url} alt={opt.name} sx={{ width: 28, height: 28, mr: 1 }} />
+                )}
+                {opt.name || String(opt)}
+              </Box>
             </MenuItem>
           ))}
         </Select>
