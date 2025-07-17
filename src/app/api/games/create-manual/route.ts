@@ -34,7 +34,8 @@ export async function POST(request: NextRequest) {
       testedWorking,
       reproduction, 
       steelbook,
-      gameLocationId
+      gameLocationId,
+      platforms: payloadPlatforms
     } = body;
 
     if (!title || !consoleId) {
@@ -45,14 +46,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the console and its igdbPlatformID
-    const console = await prisma.console.findUnique({
-      where: { id: parseInt(consoleId) },
-      select: { igdbPlatformID: true }
-    });
-
-    let platforms: number[] = [];
-    if (console?.igdbPlatformID) {
-      platforms = [console.igdbPlatformID];
+    let platforms: number[] = Array.isArray(payloadPlatforms) && payloadPlatforms.length > 0 ? payloadPlatforms : [];
+    if (platforms.length === 0 && consoleId) {
+      const console = await prisma.console.findUnique({
+        where: { id: parseInt(consoleId) },
+        select: { igdbPlatformID: true }
+      });
+      if (console?.igdbPlatformID) {
+        platforms = [console.igdbPlatformID];
+      }
     }
 
     // Create the game
@@ -62,6 +64,7 @@ export async function POST(request: NextRequest) {
         title,
         summary,
         consoleIds: [parseInt(consoleId)],
+        platforms,
         condition: condition || 'GOOD',
         price: price ? parseFloat(price) : undefined,
         purchaseDate: purchaseDate ? new Date(purchaseDate) : undefined,
