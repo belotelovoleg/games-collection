@@ -8,6 +8,7 @@ export async function DELETE(req: NextRequest, context: { params: { id: string }
   const params = await context.params;
   const session = await getServerSession(authOptions);
   if (!session || !session.user?.id) {
+    console.error('Unauthorized access attempt', { session });
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const gameId = params.id;
@@ -15,14 +16,21 @@ export async function DELETE(req: NextRequest, context: { params: { id: string }
     // Only allow deleting games owned by the current user
     const game = await prisma.game.findUnique({ where: { id: gameId } });
     if (!game || game.userId !== session.user.id) {
+      console.error('Game not found or forbidden', { gameId, userId: session.user.id, game });
       return NextResponse.json({ error: 'Not found or forbidden' }, { status: 404 });
     }
     // Delete all S3 images for this game
     const { deleteGameImagesFromS3 } = await import('@/lib/s3');
-    await deleteGameImagesFromS3(game.userId, game.id);
+    try {
+      await deleteGameImagesFromS3(game.userId, game.id);
+    } catch (s3Error) {
+      console.error('Error deleting S3 images', { s3Error, gameId });
+    }
     await prisma.game.delete({ where: { id: gameId } });
+    console.log('Game deleted successfully', { gameId, userId: session.user.id });
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete game' }, { status: 500 });
+    console.error('Failed to delete game', { error, gameId, userId: session.user.id });
+    return NextResponse.json({ error: 'Failed to delete game', details: error?.message }, { status: 500 });
   }
 }
