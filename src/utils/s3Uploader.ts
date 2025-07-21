@@ -1,7 +1,7 @@
 // src/utils/s3Uploader.ts
 
 /**
- * Uploads an image file to S3 via the /api/games/upload-photo endpoint.
+ * Uploads an image file to S3 via the /api/user/games/upload-photo endpoint.
  * Returns the S3 URL on success, or null on failure.
  */
 export async function uploadImageToS3({
@@ -22,7 +22,7 @@ export async function uploadImageToS3({
   if (userId) form.append('userId', String(userId));
   if (gameId) form.append('gameId', String(gameId));
   if (photoNumber) form.append('photoNumber', String(photoNumber));
-  const uploadRes = await fetch('/api/games/upload-photo', { method: 'POST', body: form });
+  const uploadRes = await fetch('/api/user/games/upload-photo', { method: 'POST', body: form });
   if (!uploadRes.ok) return null;
   const { url } = await uploadRes.json();
   return url;

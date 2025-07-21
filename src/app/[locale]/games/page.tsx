@@ -122,7 +122,7 @@ const handleRatingSubmit = async () => {
   const game = ratingPopup.game;
   if (!game?.id) return;
   try {
-    const res = await fetch(`/api/games/${game.id}/edit`, {
+    const res = await fetch(`/api/user/games/${game.id}/edit`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ rating: ratingSliderRef.current })
@@ -142,7 +142,7 @@ const handleRatingSubmit = async () => {
 const handleToggleCompleted = async (game: any) => {
   if (!game?.id) return;
   try {
-    const res = await fetch(`/api/games/${game.id}/completed`, {
+    const res = await fetch(`/api/user/games/${game.id}/completed`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ completed: !game.completed })
@@ -161,7 +161,7 @@ const handleToggleCompleted = async (game: any) => {
 const handleToggleFavorite = async (game: any) => {
   if (!game?.id) return;
   try {
-    const res = await fetch(`/api/games/${game.id}/favorite`, {
+    const res = await fetch(`/api/user/games/${game.id}/favorite`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ favorite: !game.favorite })
@@ -198,7 +198,7 @@ const handleToggleFavorite = async (game: any) => {
   // Fetch game locations on load
   const fetchGameLocations = async () => {
     try {
-      const res = await fetch('/api/game-locations?scope=me');
+      const res = await fetch('/api/user/game-locations?scope=me');
       if (!res.ok) throw new Error('Failed to fetch game locations');
       const data = await res.json();
       setGameLocations([
@@ -287,7 +287,7 @@ const handleToggleFavorite = async (game: any) => {
     if (!window.confirm(t('games_confirmDelete') || 'Delete this game?')) return;
     setDeletingGameId(game.id);
     try {
-      const res = await fetch(`/api/games/${game.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/user/games/${game.id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Delete failed');
       setSnackbar({open: true, message: t('games_deleted') || 'Game deleted', severity: 'success'});
       fetchUserGames();
@@ -355,7 +355,7 @@ const handleToggleFavorite = async (game: any) => {
     
     try {
       const response = await fetch(
-        `/api/games/search?consoleId=${encodeURIComponent(selectedConsole)}&query=${encodeURIComponent(searchQuery.trim())}`
+        `/api/user/games/search?consoleId=${encodeURIComponent(selectedConsole)}&query=${encodeURIComponent(searchQuery.trim())}`
       );
       
       if (!response.ok) {

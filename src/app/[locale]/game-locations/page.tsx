@@ -30,12 +30,12 @@ export default function Page({ params }: { params: Promise<{ locale: string }> }
 
   // API helpers
   async function fetchLocations(): Promise<GameLocation[]> {
-    const res = await fetch("/api/game-locations?withDetails=1");
+    const res = await fetch("/api/user/game-locations?withDetails=1");
     if (!res.ok) throw new Error("Failed to fetch locations");
     return res.json();
   }
   async function addLocation(name: string): Promise<GameLocation> {
-    const res = await fetch("/api/game-locations", {
+    const res = await fetch("/api/user/game-locations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name }),
@@ -44,7 +44,7 @@ export default function Page({ params }: { params: Promise<{ locale: string }> }
     return res.json();
   }
   async function updateLocation(id: string, name: string): Promise<GameLocation> {
-    const res = await fetch("/api/game-locations", {
+    const res = await fetch("/api/user/game-locations", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, name }),
@@ -53,7 +53,7 @@ export default function Page({ params }: { params: Promise<{ locale: string }> }
     return res.json();
   }
   async function deleteLocation(id: string): Promise<any> {
-    const res = await fetch("/api/game-locations", {
+    const res = await fetch("/api/user/game-locations", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
@@ -130,7 +130,7 @@ export default function Page({ params }: { params: Promise<{ locale: string }> }
     try {
       if (editId) {
         // PATCH with note
-        const res = await fetch("/api/game-locations", {
+        const res = await fetch("/api/user/game-locations", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: editId, name: name.trim(), note: note.trim() }),
@@ -140,7 +140,7 @@ export default function Page({ params }: { params: Promise<{ locale: string }> }
         setLocations((prev) => prev.map((l) => (l.id === editId ? updated : l)));
       } else {
         // POST with note
-        const res = await fetch("/api/game-locations", {
+        const res = await fetch("/api/user/game-locations", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name: name.trim(), note: note.trim() }),

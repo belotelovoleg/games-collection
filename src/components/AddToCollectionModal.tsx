@@ -237,7 +237,7 @@ export default function AddToCollectionModal({
         if (selectedLocationId) {
           payload.gameLocationId = selectedLocationId;
         }
-        response = await fetch(`/api/games/${game.id}/edit`, {
+        response = await fetch(`/api/user/games/${game.id}/edit`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -269,7 +269,7 @@ export default function AddToCollectionModal({
         if (selectedLocationId) {
           payload.gameLocationId = selectedLocationId;
         }
-        response = await fetch('/api/games/create-manual', {
+        response = await fetch('/api/user/games/create-manual', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -286,7 +286,7 @@ export default function AddToCollectionModal({
         // IGDB add-to-collection logic
         if (!game || !game.id) throw new Error('No game to add to collection');
         // 1. Add the game to collection (creates the game in DB)
-        response = await fetch('/api/games/add-to-collection', {
+        response = await fetch('/api/user/games/add-to-collection', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -378,7 +378,7 @@ export default function AddToCollectionModal({
           if (screenshotUrl) patchBody.screenshot = screenshotUrl;
         }
         if (Object.keys(patchBody).length > 0) {
-          await fetch(`/api/games/${newGame.id}/photos`, {
+          await fetch(`/api/user/games/${newGame.id}/photos`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(patchBody),

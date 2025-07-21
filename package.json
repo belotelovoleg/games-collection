@@ -39,5 +39,19 @@
     "eslint-config-next": "15.3.5",
     "tailwindcss": "^4",
     "typescript": "^5"
-  }
+  },
+  "description": "This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).",
+  "main": "test-igdb-service.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/belotelovoleg/games-collection.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/belotelovoleg/games-collection/issues"
+  },
+  "homepage": "https://github.com/belotelovoleg/games-collection#readme"
 }
