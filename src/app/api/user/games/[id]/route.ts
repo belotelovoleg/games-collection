@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
 
-// DELETE /api/user/games/[id] - Delete a game by ID for the current user
+// DELETE /api/games/[id] - Delete a game by ID for the current user
 export async function DELETE(req: NextRequest, context: { params: { id: string } }) {
   const params = await context.params;
   const session = await getServerSession(authOptions);

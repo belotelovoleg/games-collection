@@ -48,6 +48,7 @@ const EnhancedSearchResultsModal: React.FC<EnhancedSearchResultsModalProps> = ({
   handleAddGameToCollection,
 }) => {
   const { t } = useTranslations();
+
   return (
     <Dialog 
       open={open} 
@@ -79,7 +80,7 @@ const EnhancedSearchResultsModal: React.FC<EnhancedSearchResultsModalProps> = ({
           {searchResults && (
             <Typography variant="body2" color="text.secondary">
               {searchResults.games.length} {t("games_foundFor") || 'found for'} "{searchResults.searchQuery}" 
-              {" "}{t("games_on") || 'on'} {searchResults.console.name}
+              {" "}{t("games_on") || 'on'} {searchResults.console ? searchResults.console.name : '?'}
             </Typography>
           )}
         </Box>

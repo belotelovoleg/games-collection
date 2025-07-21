@@ -15,10 +15,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing file, userId, or gameId' }, { status: 400 });
   }
 
+  // Determine type: photo, cover, screenshot
   let type: 'photo' | 'cover' | 'screenshot' = 'photo';
   if (filename.includes('cover')) type = 'cover';
   else if (filename.includes('screenshot')) type = 'screenshot';
 
+  // For photos, require photoNumber
   if (type === 'photo' && !photoNumber) {
     return NextResponse.json({ error: 'Missing photoNumber for photo upload' }, { status: 400 });
   }

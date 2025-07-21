@@ -34,20 +34,20 @@ export default function Page({ params }: { params: Promise<{ locale: string }> }
     if (!res.ok) throw new Error("Failed to fetch locations");
     return res.json();
   }
-  async function addLocation(name: string): Promise<GameLocation> {
+  async function addLocation(name: string, note?: string): Promise<GameLocation> {
     const res = await fetch("/api/user/game-locations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, note }),
     });
     if (!res.ok) throw new Error("Failed to add location");
     return res.json();
   }
-  async function updateLocation(id: string, name: string): Promise<GameLocation> {
+  async function updateLocation(id: string, name: string, note?: string): Promise<GameLocation> {
     const res = await fetch("/api/user/game-locations", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, name }),
+      body: JSON.stringify({ id, name, note }),
     });
     if (!res.ok) throw new Error("Failed to update location");
     return res.json();
@@ -129,24 +129,10 @@ export default function Page({ params }: { params: Promise<{ locale: string }> }
     setSaving(true);
     try {
       if (editId) {
-        // PATCH with note
-        const res = await fetch("/api/user/game-locations", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: editId, name: name.trim(), note: note.trim() }),
-        });
-        if (!res.ok) throw new Error();
-        const updated = await res.json();
+        const updated = await updateLocation(editId, name.trim(), note.trim());
         setLocations((prev) => prev.map((l) => (l.id === editId ? updated : l)));
       } else {
-        // POST with note
-        const res = await fetch("/api/user/game-locations", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: name.trim(), note: note.trim() }),
-        });
-        if (!res.ok) throw new Error();
-        const created = await res.json();
+        const created = await addLocation(name.trim(), note.trim());
         setLocations((prev) => [...prev, created]);
       }
       setDialogOpen(false);

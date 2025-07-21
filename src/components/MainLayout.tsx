@@ -36,6 +36,7 @@ import {
   WarehouseOutlined as WarehouseIcon,
 } from '@mui/icons-material';
 import Link from 'next/link';
+// Flag images will be loaded from public/assets via <img>
 import { useSession, signOut } from 'next-auth/react';
 import { useCustomTheme } from './ThemeProvider';
 import { useTranslations } from '@/hooks/useTranslations';
@@ -221,12 +222,12 @@ export function MainLayout({ children, locale }: MainLayoutProps) {
                 }
               }}
             >
-              <Avatar sx={{ width: 32, height: 32, bgcolor: 'transparent', fontSize: '1.6rem', p: 3.2 }}>
-                {locale === 'en' ? (
-                  <Box component="span" aria-label="Ukrainian flag">🇺🇦</Box>
-                ) : (
-                  <Box component="span" aria-label="UK/US flag">🇬🇧</Box>
-                )}
+              <Avatar sx={{ width: 32, height: 32, bgcolor: 'transparent', p: 0 }}>
+                <img
+                  src={locale === 'en' ? '/assets/english-banner.svg' : '/assets/ukrainian-banner.svg'}
+                  alt={locale === 'en' ? 'English' : 'Ukrainian'}
+                  style={{ width: '100%', height: '100%' }}
+                />
               </Avatar>
             </IconButton>
           </Tooltip>

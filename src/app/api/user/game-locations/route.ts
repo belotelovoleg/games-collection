@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
-
 // PATCH: Update location name
 export async function PATCH(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -26,10 +25,12 @@ export async function DELETE(req: NextRequest) {
   if (!id || typeof id !== 'string') {
     return NextResponse.json({ error: 'ID required' }, { status: 400 });
   }
+  // Set gameLocationId to null for all games referencing this location
   await prisma.game.updateMany({
     where: { gameLocationId: id, userId: session.user.id },
     data: { gameLocationId: null },
   });
+  // Now delete the location
   await prisma.gameLocation.delete({
     where: { id, userId: session.user.id },
   });
@@ -43,6 +44,7 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const withDetails = url.searchParams.get('withDetails');
   if (withDetails) {
+    // Return locations with gamesCount and note
     const locations = await prisma.gameLocation.findMany({
       where: { userId: session.user.id },
       orderBy: { createdAt: 'asc' },
@@ -52,6 +54,7 @@ export async function GET(req: NextRequest) {
         },
       },
     });
+    // Map to include gamesCount and note field
     const result = locations.map(loc => ({
       id: loc.id,
       name: loc.name,
@@ -62,6 +65,7 @@ export async function GET(req: NextRequest) {
     }));
     return NextResponse.json(result);
   } else {
+    // Default: no additional properties
     const locations = await prisma.gameLocation.findMany({
       where: { userId: session.user.id },
       orderBy: { createdAt: 'asc' },
@@ -78,6 +82,7 @@ export async function POST(req: NextRequest) {
   if (!name || typeof name !== 'string' || name.length < 2) {
     return NextResponse.json({ error: 'Name required' }, { status: 400 });
   }
+  // Enforce max 100 locations per user
   const count = await prisma.gameLocation.count({ where: { userId: session.user.id } });
   if (count >= 100) {
     return NextResponse.json({ error: 'Maximum 100 locations allowed per user.' }, { status: 400 });

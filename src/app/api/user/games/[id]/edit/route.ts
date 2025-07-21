@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
 
+// PATCH /api/games/[id]/edit - Update a game by ID for the current user
 export async function PATCH(req: NextRequest, context: { params: { id: string } }) {
   const params = await context.params;
   const session = await getServerSession(authOptions);
@@ -16,7 +17,35 @@ export async function PATCH(req: NextRequest, context: { params: { id: string } 
       return NextResponse.json({ error: 'Not found or forbidden' }, { status: 404 });
     }
     const body = await req.json();
-    const { title, summary, consoleId, condition, price, purchaseDate, notes, completed, favorite, rating, completeness, region, labelDamage, discoloration, rentalSticker, testedWorking, reproduction, steelbook, alternativeNames, genres, franchises, companies, platforms, developer, publisher, releaseYear, gameLocationId } = body;
+    const {
+      title,
+      summary,
+      consoleId,
+      condition,
+      price,
+      purchaseDate,
+      notes,
+      completed,
+      favorite,
+      rating,
+      completeness,
+      region,
+      labelDamage,
+      discoloration,
+      rentalSticker,
+      testedWorking,
+      reproduction,
+      steelbook,
+      alternativeNames,
+      genres,
+      franchises,
+      companies,
+      platforms,
+      developer,
+      publisher,
+      releaseYear,
+      gameLocationId
+    } = body;
     const updateData: any = {};
     if (title !== undefined) updateData.title = title;
     if (summary !== undefined) updateData.summary = summary;
@@ -32,24 +61,32 @@ export async function PATCH(req: NextRequest, context: { params: { id: string } 
     if (region !== undefined) updateData.region = region;
     if (labelDamage !== undefined) updateData.labelDamage = !!labelDamage;
     if (discoloration !== undefined) updateData.discoloration = !!discoloration;
-    if (rentalSticker !== undefined) updateData.rentalSticker = !!rentalSticker;
-    if (testedWorking !== undefined) updateData.testedWorking = !!testedWorking;
+    // Fix: handle string 'true'/'false' as well as boolean
+    if (rentalSticker !== undefined) {
+      if (typeof rentalSticker === 'string') {
+        updateData.rentalSticker = rentalSticker === 'true';
+      } else {
+        updateData.rentalSticker = !!rentalSticker;
+      }
+    }
+    if (testedWorking !== undefined) updateData.testedWorking = typeof testedWorking === 'boolean' ? testedWorking : true;
     if (reproduction !== undefined) updateData.reproduction = !!reproduction;
     if (steelbook !== undefined) updateData.steelbook = !!steelbook;
-    if (alternativeNames !== undefined) updateData.alternativeNames = alternativeNames;
-    if (genres !== undefined) updateData.genres = genres;
-    if (franchises !== undefined) updateData.franchises = franchises;
-    if (companies !== undefined) updateData.companies = companies;
-    if (platforms !== undefined) updateData.platforms = platforms;
-    if (developer !== undefined) updateData.developer = developer;
-    if (publisher !== undefined) updateData.publisher = publisher;
-    if (releaseYear !== undefined) updateData.releaseYear = releaseYear;
-    if (gameLocationId !== undefined) updateData.gameLocationId = gameLocationId;
-    const updatedGame = await prisma.game.update({
+    // Advanced fields
+    if (alternativeNames !== undefined) updateData.alternativeNames = Array.isArray(alternativeNames) ? alternativeNames : [];
+    if (genres !== undefined) updateData.genres = Array.isArray(genres) ? genres : [];
+    if (franchises !== undefined) updateData.franchises = Array.isArray(franchises) ? franchises : [];
+    if (companies !== undefined) updateData.companies = Array.isArray(companies) ? companies : [];
+    if (platforms !== undefined) updateData.platforms = Array.isArray(platforms) ? platforms.map(Number) : [];
+    if (developer !== undefined) updateData.developer = Array.isArray(developer) ? developer : [];
+    if (publisher !== undefined) updateData.publisher = Array.isArray(publisher) ? publisher : [];
+    if (releaseYear !== undefined) updateData.releaseYear = releaseYear !== null ? parseInt(releaseYear) : null;
+    if (gameLocationId !== undefined) updateData.gameLocationId = gameLocationId || null;
+    const updated = await prisma.game.update({
       where: { id: gameId },
       data: updateData,
     });
-    return NextResponse.json({ success: true, game: updatedGame });
+    return NextResponse.json({ game: updated });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to update game' }, { status: 500 });
   }

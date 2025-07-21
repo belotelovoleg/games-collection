@@ -5,22 +5,59 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
     const body = await request.json();
-    const { title, summary, consoleId, condition, price, purchaseDate, notes, completed, favorite, rating, cover, screenshot, photos, completeness, region, labelDamage, discoloration, rentalSticker, testedWorking, reproduction, steelbook, gameLocationId, platforms: payloadPlatforms } = body;
+    const {
+      title,
+      summary,
+      consoleId,
+      condition,
+      price,
+      purchaseDate,
+      notes,
+      completed,
+      favorite,
+      rating,
+      cover,
+      screenshot,
+      photos,
+      completeness,
+      region,
+      labelDamage,
+      discoloration,
+      rentalSticker,
+      testedWorking,
+      reproduction, 
+      steelbook,
+      gameLocationId,
+      platforms: payloadPlatforms
+    } = body;
+
     if (!title || !consoleId) {
-      return NextResponse.json({ error: 'Title and console ID are required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Title and console ID are required' },
+        { status: 400 }
+      );
     }
-    let platforms = Array.isArray(payloadPlatforms) && payloadPlatforms.length > 0 ? payloadPlatforms : [];
+
+    // Get the console and its igdbPlatformID
+    let platforms: number[] = Array.isArray(payloadPlatforms) && payloadPlatforms.length > 0 ? payloadPlatforms : [];
     if (platforms.length === 0 && consoleId) {
-      const console = await prisma.console.findUnique({ where: { id: parseInt(consoleId) }, select: { igdbPlatformID: true } });
+      const console = await prisma.console.findUnique({
+        where: { id: parseInt(consoleId) },
+        select: { igdbPlatformID: true }
+      });
       if (console?.igdbPlatformID) {
         platforms = [console.igdbPlatformID];
       }
     }
+
+    // Create the game
     const game = await prisma.game.create({
       data: {
         userId: session.user.id,
@@ -54,8 +91,16 @@ export async function POST(request: NextRequest) {
         publisher: [],
       },
     });
-    return NextResponse.json({ message: 'Manual game created successfully', game });
+
+    return NextResponse.json({
+      message: 'Manual game created successfully',
+      game,
+    });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to create manual game' }, { status: 500 });
+    console.error('❌ Error creating manual game:', error);
+    return NextResponse.json(
+      { error: 'Failed to create manual game' },
+      { status: 500 }
+    );
   }
 }

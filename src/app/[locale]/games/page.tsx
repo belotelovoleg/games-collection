@@ -251,7 +251,7 @@ const handleToggleFavorite = async (game: any) => {
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined && value !== "") params.append(key, String(value));
       });
-      const response = await fetch(`/api/games?${params.toString()}`);
+      const response = await fetch(`/api/user/games?${params.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch user games');
       const data = await response.json();
       setUserGames(data.games || []);
@@ -364,12 +364,16 @@ const handleToggleFavorite = async (game: any) => {
       }
       
       const data = await response.json();
-      setSearchResults(data);
+      let consoleObj = userConsoles.find(c => c.consoleId == selectedConsole) || null;
+      
+      setSearchResults({
+        games: data.games || [],
+        searchQuery,
+        console: consoleObj?.console || null,
+      });
       setResultsDialogOpen(true);
       
       // Console log the results as requested
-      console.log(`🎮 Games search results for "${searchQuery}" on ${data.console.name}:`);
-      console.log('Full response:', data);
       console.log('Games found:', data.games);
       
     } catch (error) {
