@@ -47,7 +47,8 @@
   "auth_dontHaveAccount": "Don't have an account?",
   "auth_invalidCredentials": "Invalid credentials",
   "auth_registrationSuccess": "Registration successful! Please log in.",
-  
+
+  "game_title": "Game Title",
   "games_totalGames": "Games Total",
   "games_production": "Production",
   "games_title": "My Games",

@@ -27,10 +27,10 @@ export async function DELETE(req: NextRequest, context: { params: { id: string }
       console.error('Error deleting S3 images', { s3Error, gameId });
     }
     await prisma.game.delete({ where: { id: gameId } });
-    console.log('Game deleted successfully', { gameId, userId: session.user.id });
+    console.log('Game deleted successfully');
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Failed to delete game', { error, gameId, userId: session.user.id });
-    return NextResponse.json({ error: 'Failed to delete game', details: error?.message }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to delete game' }, { status: 500 });
   }
 }

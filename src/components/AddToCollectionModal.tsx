@@ -505,7 +505,7 @@ export default function AddToCollectionModal({
             <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
               <TextField
                 fullWidth
-                label={t('games_title') || 'Title'}
+                label={t('game_title') || 'Title'}
                 value={formData.title}
                 onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
                 required
@@ -531,11 +531,11 @@ export default function AddToCollectionModal({
               >
                 <FormControlLabel
                   control={<Checkbox checked={formData.completed} onChange={e => setFormData(prev => ({ ...prev, completed: e.target.checked }))} />}
-                  label={<span>{t('games_completed') || 'Completed'} <span style={{ color: '#43A047', fontSize: 18, verticalAlign: 'middle' }}>✓</span></span>}
+                  label={<span>{t('games_completed') || 'Completed'}</span>}
                 />
                 <FormControlLabel
                   control={<Checkbox checked={formData.favorite} onChange={e => setFormData(prev => ({ ...prev, favorite: e.target.checked }))} />}
-                  label={<span>{t('games_favorite') || 'Favorite'} <span style={{ color: '#E91E63', fontSize: 18, verticalAlign: 'middle' }}>❤</span></span>}
+                  label={<span>{t('games_favorite') || 'Favorite'}</span>}
                 />
                 <Box
                   sx={{
