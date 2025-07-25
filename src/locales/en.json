@@ -190,7 +190,8 @@
   "games_no": "No",
   "games_uploading": "Uploading...",
   "games_resetFilters": "Reset Filters",
-  
+  "games_tableColumnControl": "Table Settings",
+
   "settings_title": "Settings",
   "settings_profile": "Profile",
   "settings_preferences": "Preferences",
