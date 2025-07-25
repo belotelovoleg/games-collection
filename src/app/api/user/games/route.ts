@@ -7,6 +7,8 @@ const prisma = new PrismaClient();
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
+  const offsetParam = searchParams.get('offset');
+  const limitParam = searchParams.get('limit');
   const page = parseInt(searchParams.get('page') || '1', 10);
   const pageSize = parseInt(searchParams.get('pageSize') || '20', 10);
   const sort = searchParams.get('sortBy') || 'createdAt';
@@ -113,12 +115,20 @@ export async function GET(req: NextRequest) {
   // Get total count
   const total = await prisma.game.count({ where });
 
+  // Use offset/limit if provided, else page/pageSize
+  let skip = (page - 1) * pageSize;
+  let take = pageSize;
+  if (offsetParam !== null && limitParam !== null) {
+    skip = parseInt(offsetParam, 10) || 0;
+    take = parseInt(limitParam, 10) || 20;
+  }
+
   // Get paginated games
   const games = await prisma.game.findMany({
     where,
     orderBy: { [sort]: order },
-    skip: (page - 1) * pageSize,
-    take: pageSize,
+    skip,
+    take,
     include: {
       user: true,
     },

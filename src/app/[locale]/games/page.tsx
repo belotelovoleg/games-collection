@@ -92,6 +92,11 @@ export default function GamesPage() {
   const [gameToAdd, setGameToAdd] = useState<any>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
+  // Infinite scroll states for mobile
+  const [offset, setOffset] = useState(0);
+  const [limit, setLimit] = useState(12);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [sortBy, setSortBy] = useState('title');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [totalGames, setTotalGames] = useState(0);
@@ -209,6 +214,33 @@ const handleTableColumnsChange = async (newColumns: GameTableColumnSetting[]) =>
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, page, pageSize, sortBy, sortOrder, filters]);
+  // Fetch user's games for desktop/table (pagination)
+  useEffect(() => {
+    if (status === "authenticated" && !isMobile) {
+      fetchUserGames();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, page, pageSize, sortBy, sortOrder, filters, isMobile]);
+
+  // Reset mobile games when filters/sort change
+  useEffect(() => {
+    if (isMobile && status === "authenticated") {
+      setHasMore(true);
+      setOffset(0);
+      // Fetch only after offset is set to 0
+      // Use a microtask to ensure offset is updated before fetch
+      Promise.resolve().then(() => fetchMobileGames(0, limit, true));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters, sortBy, sortOrder, isMobile, status]);
+
+  // Fetch more games on offset change (scroll)
+  useEffect(() => {
+    if (isMobile && status === "authenticated" && offset > 0) {
+      fetchMobileGames(offset, limit, false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [offset, limit, isMobile, status]);
 
   // Fetch all platforms once when authenticated
   useEffect(() => {
@@ -320,6 +352,59 @@ const handleTableColumnsChange = async (newColumns: GameTableColumnSetting[]) =>
       setGamesLoading(false);
     }
   };
+  // Mobile infinite scroll fetch (offset/limit)
+  const fetchMobileGames = async (offsetVal: number, limitVal: number, reset: boolean = false) => {
+    try {
+      if (reset) setGamesLoading(true);
+      setLoadingMore(true);
+      const params = new URLSearchParams({
+        offset: String(offsetVal),
+        limit: String(limitVal),
+        sortBy,
+        sortOrder,
+      });
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== "") params.append(key, String(value));
+      });
+      const response = await fetch(`/api/user/games?${params.toString()}`);
+      if (!response.ok) throw new Error('Failed to fetch user games');
+      const data = await response.json();
+      if (reset) {
+        setUserGames(data.games || []);
+      } else {
+        setUserGames(prev => [...prev, ...(data.games || [])]);
+      }
+      setTotalGames(data.total || 0);
+      setHasMore((offsetVal + limitVal) < (data.total || 0));
+    } catch (e) {
+      if (reset) setUserGames([]);
+      setHasMore(false);
+    } finally {
+      setGamesLoading(false);
+      setLoadingMore(false);
+    }
+  };
+  // Reset mobile games when filters/sort change
+  useEffect(() => {
+    if (isMobile) {
+      setOffset(0);
+      setHasMore(true);
+    }
+  }, [filters, sortBy, sortOrder, isMobile]);
+
+  // Infinite scroll observer for mobile
+  useEffect(() => {
+    if (!isMobile || !hasMore || gamesLoading || loadingMore) return;
+    const observerElem = document.getElementById('mobile-infinite-scroll-trigger');
+    if (!observerElem) return;
+    const observer = new window.IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasMore && !gamesLoading && !loadingMore) {
+        setOffset(prev => prev + limit);
+      }
+    }, { threshold: 1 });
+    observer.observe(observerElem);
+    return () => observer.disconnect();
+  }, [isMobile, hasMore, gamesLoading, loadingMore, limit, userGames.length]);
 
   
   const fetchUserConsoles = async () => {
@@ -570,27 +655,38 @@ const handleTableColumnsChange = async (newColumns: GameTableColumnSetting[]) =>
               <Typography color="text.secondary">{t("games_noGamesInCollection") || 'No games in your collection'}</Typography>
             ) : (
               isMobile ? (
-              <GamesCardList
-                userGames={userGames}
-                allPlatforms={allPlatforms}
-                allConsoleSystems={allConsoleSystems}
-                theme={theme}
-                altNamesGameId={altNamesGameId}
-                altNamesAnchorEl={altNamesAnchorEl}
-                handleAltNamesClick={handleAltNamesClick}
-                handleAltNamesClose={handleAltNamesClose}
-                getGameRating={getGameRating}
-                deletingGameId={deletingGameId}
-                handleEditGame={handleEditGame}
-                handleDeleteGame={handleDeleteGame}
-                openPhotoGallery={openPhotoGallery}
-                onToggleFavorite={handleToggleFavorite}
-                onToggleCompleted={handleToggleCompleted}
-                onRatingClick={handleRatingClick}
-                t={t}
-                handleViewGameDetails={(game: any) => handleViewGameDetails(game, 'local')}
-                mobileCardViewMode={mobileCardViewMode}
-              />
+                <>
+                  <GamesCardList
+                    userGames={userGames}
+                    allPlatforms={allPlatforms}
+                    allConsoleSystems={allConsoleSystems}
+                    theme={theme}
+                    altNamesGameId={altNamesGameId}
+                    altNamesAnchorEl={altNamesAnchorEl}
+                    handleAltNamesClick={handleAltNamesClick}
+                    handleAltNamesClose={handleAltNamesClose}
+                    getGameRating={getGameRating}
+                    deletingGameId={deletingGameId}
+                    handleEditGame={handleEditGame}
+                    handleDeleteGame={handleDeleteGame}
+                    openPhotoGallery={openPhotoGallery}
+                    onToggleFavorite={handleToggleFavorite}
+                    onToggleCompleted={handleToggleCompleted}
+                    onRatingClick={handleRatingClick}
+                    t={t}
+                    handleViewGameDetails={(game: any) => handleViewGameDetails(game, 'local')}
+                    mobileCardViewMode={mobileCardViewMode}
+                  />
+                  {/* Infinite scroll trigger element */}
+                  {hasMore && !gamesLoading && !loadingMore && (
+                    <div id="mobile-infinite-scroll-trigger" style={{ height: 1 }} />
+                  )}
+                  {loadingMore && (
+                    <Box sx={{ py: 2, textAlign: 'center' }}>
+                      <CircularProgress size={24} />
+                    </Box>
+                  )}
+                </>
               ) : (
                 <Paper sx={{ width: '100%', overflowX: 'auto' }}>
                   <GamesTable
@@ -625,38 +721,40 @@ const handleTableColumnsChange = async (newColumns: GameTableColumnSetting[]) =>
               onClose={handleRatingClose}
               onSubmit={handleRatingSubmit}
             />
-            {/* Pagination controls */}
-            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
-              <Button
-                size="small"
-                disabled={page === 1}
-                onClick={() => setPage(page - 1)}
-              >
-                {t('common_previous') || 'Prev'}
-              </Button>
-              <Typography variant="body2">
-                {t('common_page') || 'Page'} {page} / {Math.max(1, Math.ceil(totalGames / pageSize))}
-              </Typography>
-              <Button
-                size="small"
-                disabled={page >= Math.ceil(totalGames / pageSize)}
-                onClick={() => setPage(page + 1)}
-              >
-                {t('common_next') || 'Next'}
-              </Button>
-              <FormControl size="small" sx={{ minWidth: 80 }}>
-                <InputLabel>{t('common_pagesize') || 'Page Size'}</InputLabel>
-                <Select
-                  value={pageSize}
-                  label={t('common_pagesize') || 'Page Size'}
-                  onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
+            {/* Pagination controls: only show on desktop */}
+            {!isMobile && (
+              <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
+                <Button
+                  size="small"
+                  disabled={page === 1}
+                  onClick={() => setPage(page - 1)}
                 >
-                  {[6, 12, 24, 48].map(size => (
-                    <MenuItem key={size} value={size}>{size}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
+                  {t('common_previous') || 'Prev'}
+                </Button>
+                <Typography variant="body2">
+                  {t('common_page') || 'Page'} {page} / {Math.max(1, Math.ceil(totalGames / pageSize))}
+                </Typography>
+                <Button
+                  size="small"
+                  disabled={page >= Math.ceil(totalGames / pageSize)}
+                  onClick={() => setPage(page + 1)}
+                >
+                  {t('common_next') || 'Next'}
+                </Button>
+                <FormControl size="small" sx={{ minWidth: 80 }}>
+                  <InputLabel>{t('common_pagesize') || 'Page Size'}</InputLabel>
+                  <Select
+                    value={pageSize}
+                    label={t('common_pagesize') || 'Page Size'}
+                    onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
+                  >
+                    {[6, 12, 24, 48].map(size => (
+                      <MenuItem key={size} value={size}>{size}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            )}
             {/* Total games count below pagination */}
             <Box sx={{ mt: 1, textAlign: 'center' }}>
               <Typography variant="caption" color="text.secondary">

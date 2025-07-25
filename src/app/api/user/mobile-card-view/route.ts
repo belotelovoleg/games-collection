@@ -23,9 +23,6 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const { mobileCardViewMode } = await req.json();
-  if (![1, 2, 3].includes(mobileCardViewMode)) {
-    return NextResponse.json({ error: 'Invalid view mode' }, { status: 400 });
-  }
   await prisma.user.update({
     where: { email: session.user.email },
     data: { mobileCardViewMode },
