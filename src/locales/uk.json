@@ -158,8 +158,9 @@
   "games_alternativeNames": "Альтернативні назви",
   "games_addName": "Додати назву",
   "games_genres": "Жанри",
-  "games_selectGenres": "Вибрати жанри",
   "games_franchises": "Франшизи",
+  "games_multiplayerModes": "Мультиплеєрні режими",
+  "games_selectGenres": "Вибрати жанри",
   "games_addFranchise": "Додати франшизу",
   "games_selectPlatforms": "Вибрати платформи",
   "games_addDeveloper": "Додати розробника",
@@ -185,6 +186,7 @@
   "games_region_ntsc_j": "NTSC-J (Японія)",
   "games_region_pal": "PAL (Європа/Австралія)",
   "games_resetFilters": "Скинути Фільтри",
+  "games_tableColumnControl": "Налаштування колонок таблиці",
   
   "settings_title": "Налаштування",
   "settings_profile": "Профіль",
@@ -260,7 +262,7 @@
   
   "common_search": "Пошук",
   "common_searching": "Пошук...",
-  "common_apply": "Застосувати Фільтри",
+  "common_apply": "Застосувати",
 
   "theme_light": "світлу",
   "theme_dark": "темну",

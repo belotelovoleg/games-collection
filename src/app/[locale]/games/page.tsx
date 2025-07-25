@@ -32,10 +32,10 @@ import EnhancedSearchResultsModal from "@/components/EnhancedSearchResultsModal"
 import { GamesTable } from "@/components/GamesTable";
 import { GamesSearchControls } from "@/components/GamesSearchControls";
 import { GamesCardList } from "@/components/GamesCardList";
+import { defaultGameTableColumns, GameTableColumnSetting } from "@/components/gameTableColumns";
 
 
 export default function GamesPage() {
-  // Mobile expand/collapse state for search/add controls
   const [showMobileControls, setShowMobileControls] = useState(false);
   const [allPlatforms, setAllPlatforms] = useState<any[]>([]);
   const [allConsoleSystems, setAllConsoleSystems] = useState<any[]>([]);
@@ -97,6 +97,7 @@ export default function GamesPage() {
   const [totalGames, setTotalGames] = useState(0);
   const [gameDetailsType, setGameDetailsType] = useState<'igdb' | 'local'>('igdb');
   const [gameLocations, setGameLocations] = useState<{id: string, name: string}[]>([]);
+  const [tableColumns, setTableColumns] = useState<GameTableColumnSetting[]>(defaultGameTableColumns);
 
 
 // Rating popup state (optimized: slider value in useRef)
@@ -177,6 +178,25 @@ const handleToggleFavorite = async (game: any) => {
   }
 };
 
+
+// Save table columns to DB when changed
+const handleTableColumnsChange = async (newColumns: GameTableColumnSetting[]) => {
+  setTableColumns(newColumns);
+  if (status === "authenticated" && session?.user?.id) {
+    try {
+      await fetch(`/api/user/table-settings?userId=${encodeURIComponent(session.user.id)}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ settings: newColumns })
+        }
+      );
+    } catch (e) {
+      // Optionally handle error
+    }
+  }
+};
+
   // Fetch user's games (with pagination/filtering)
   useEffect(() => {
     if (status === "authenticated") {
@@ -194,6 +214,26 @@ const handleToggleFavorite = async (game: any) => {
       fetchGameLocations(); 
     }
   }, [status]);
+
+    // On mount, fetch user's saved table columns from DB (if authenticated)
+  useEffect(() => {
+    async function fetchUserTableColumns() {
+      if (status === "authenticated" && session?.user?.id) {
+        try {
+          const res = await fetch(`/api/user/table-settings?userId=${encodeURIComponent(session.user.id)}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data.settings) && data.settings.length > 0) {
+              setTableColumns(data.settings);
+            }
+          }
+        } catch (e) {
+          // fallback to defaultTableColumns
+        }
+      }
+    }
+    fetchUserTableColumns();
+  }, [status, session?.user?.id]);
 
   // Fetch game locations on load
   const fetchGameLocations = async () => {
@@ -271,9 +311,6 @@ const handleToggleFavorite = async (game: any) => {
     setGalleryOpen(true);
   };
   const closeGallery = () => setGalleryOpen(false);
-  const nextGalleryImage = () => setGalleryIndex((i) => (i + 1) % galleryImages.length);
-  const prevGalleryImage = () => setGalleryIndex((i) => (i - 1 + galleryImages.length) % galleryImages.length);
-
 
   // Edit game handler
   const handleEditGame = (game: any) => {
@@ -501,6 +538,7 @@ const handleToggleFavorite = async (game: any) => {
           <CardContent>
             {/* Filtering and sorting controls */}
             <Box sx={{ mb: 2, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+              {/* GamesFilterPanel now controls tableColumns, so we need to lift state */}
               <GamesFilterPanel
                 filters={filters}
                 setFilters={newFilters => {
@@ -515,6 +553,8 @@ const handleToggleFavorite = async (game: any) => {
                 sortOrder={sortOrder}
                 setSortOrder={value => { setSortOrder(value); setPage(1); }}
                 gameLocations={gameLocations}
+                tableColumns={tableColumns}
+                setTableColumns={handleTableColumnsChange}
               />
             </Box>
             {/* Table for desktop, cards for mobile */}
@@ -565,8 +605,8 @@ const handleToggleFavorite = async (game: any) => {
                     onToggleFavorite={handleToggleFavorite}
                     onToggleCompleted={handleToggleCompleted}
                     onRatingClick={handleRatingClick}
-                    t={t}
                     handleViewGameDetails={(game: any) => handleViewGameDetails(game, 'local')}
+                    columns={tableColumns}
                   />
                 </Paper>
               )

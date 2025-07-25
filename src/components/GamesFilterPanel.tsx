@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+const TableColumnControl = React.lazy(() => import("./TableColumnControl").then(mod => ({ default: mod.TableColumnControl })));
 import TuneIcon from '@mui/icons-material/Tune';
 import {
   Box,
@@ -31,6 +32,8 @@ export interface GamesFilterPanelProps {
   sortOrder: 'asc' | 'desc';
   setSortOrder: (value: 'asc' | 'desc') => void;
   gameLocations: { id: string, name: string }[];
+  tableColumns: import("@/components/gameTableColumns").GameTableColumnSetting[];
+  setTableColumns: (columns: import("@/components/gameTableColumns").GameTableColumnSetting[]) => void | Promise<void>;
 }
 
 export const FILTER_FIELDS = [
@@ -95,7 +98,8 @@ function SortingControls({ sortBy, setSortBy, sortOrder, setSortOrder, t }: {
   );
 }
 
-export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t, sortBy, setSortBy, sortOrder, setSortOrder, gameLocations }: GamesFilterPanelProps) {
+// Remove duplicate declaration
+export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t, sortBy, setSortBy, sortOrder, setSortOrder, gameLocations, tableColumns, setTableColumns }: GamesFilterPanelProps) {
   // Accept allConsoleSystems prop for future use (fixes warning)
   const [isMobile, setIsMobile] = useState(false);
   const [showMobileSortFilter, setShowMobileSortFilter] = useState(false);
@@ -327,7 +331,20 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t,
       </Box>
     );
   }
-  // Desktop (unchanged)
+  // Desktop 
+  // Table column control state
+  const [columnControlOpen, setColumnControlOpen] = React.useState(false);
+
+  const handleColumnControlApply = (newColumns: any) => {
+    // Call the parent callback to persist and update table
+    if (typeof setTableColumns === 'function') {
+      setTableColumns(newColumns);
+    }
+    setColumnControlOpen(false);
+  };
+
+  // Pass columns to GamesTable via prop
+  // Find parent usage and update if needed
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
       <FormControl size="small" sx={{ minWidth: 140 }}>
@@ -407,6 +424,26 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t,
           {t('games_resetFilters') || 'Reset Filters'}
         </Button>
       )}
+      {/* Table Column Control Button */}
+      <Button
+        variant="outlined"
+        sx={{ minWidth: 120, px: 2 }}
+        onClick={() => setColumnControlOpen(true)}
+      >
+        {t('games_tableColumnControl') || 'Table Columns'}
+      </Button>
+      {/* Table Column Control Popup */}
+      <React.Suspense fallback={null}>
+        {columnControlOpen && (
+          <TableColumnControl
+            open={columnControlOpen}
+            onClose={() => setColumnControlOpen(false)}
+            columns={tableColumns}
+            onChange={handleColumnControlApply}
+            t={t}
+          />
+        )}
+      </React.Suspense>
       {filterDialog}
     </Box>
   );
