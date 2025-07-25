@@ -98,7 +98,7 @@ export default function GamesPage() {
   const [gameDetailsType, setGameDetailsType] = useState<'igdb' | 'local'>('igdb');
   const [gameLocations, setGameLocations] = useState<{id: string, name: string}[]>([]);
   const [tableColumns, setTableColumns] = useState<GameTableColumnSetting[]>(defaultGameTableColumns);
-
+  const [mobileCardViewMode, setMobileCardViewMode] = useState(1);
 
 // Rating popup state (optimized: slider value in useRef)
 const [ratingPopup, setRatingPopup] = useState<{ open: boolean, anchorEl: HTMLElement | null, game: any, value: number }>({ open: false, anchorEl: null, game: null, value: 50 });
@@ -182,20 +182,25 @@ const handleToggleFavorite = async (game: any) => {
 // Save table columns to DB when changed
 const handleTableColumnsChange = async (newColumns: GameTableColumnSetting[]) => {
   setTableColumns(newColumns);
-  if (status === "authenticated" && session?.user?.id) {
+  if (status === "authenticated") {
     try {
-      await fetch(`/api/user/table-settings?userId=${encodeURIComponent(session.user.id)}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ settings: newColumns })
-        }
-      );
+      await fetch(`/api/user/table-settings`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings: newColumns })
+      });
     } catch (e) {
       // Optionally handle error
     }
   }
 };
+
+    // Authentication check
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push(`/${locale}/login`);
+    }
+  }, [status, locale, router]);
 
   // Fetch user's games (with pagination/filtering)
   useEffect(() => {
@@ -205,35 +210,50 @@ const handleTableColumnsChange = async (newColumns: GameTableColumnSetting[]) =>
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, page, pageSize, sortBy, sortOrder, filters]);
 
-  
   // Fetch all platforms once when authenticated
   useEffect(() => {
     if (status === "authenticated") {
       fetchAllPlatforms();
       fetchAllConsoleSystems();
       fetchGameLocations(); 
+      fetchUserTableColumns();
+      fetchUserMobileCardViewMode();
+      fetchUserConsoles();
     }
   }, [status]);
 
-    // On mount, fetch user's saved table columns from DB (if authenticated)
-  useEffect(() => {
-    async function fetchUserTableColumns() {
-      if (status === "authenticated" && session?.user?.id) {
-        try {
-          const res = await fetch(`/api/user/table-settings?userId=${encodeURIComponent(session.user.id)}`);
-          if (res.ok) {
-            const data = await res.json();
-            if (Array.isArray(data.settings) && data.settings.length > 0) {
-              setTableColumns(data.settings);
-            }
+  // On mount, fetch user's saved table columns from DB (if authenticated)
+  const fetchUserTableColumns = async () => {
+    if (status === "authenticated") {
+      try {
+        const res = await fetch(`/api/user/table-settings`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.settings) && data.settings.length > 0) {
+            setTableColumns(data.settings);
           }
-        } catch (e) {
-          // fallback to defaultTableColumns
         }
+      } catch (e) {
+        // fallback to defaultTableColumns
       }
     }
-    fetchUserTableColumns();
-  }, [status, session?.user?.id]);
+    }
+
+  const fetchUserMobileCardViewMode = async () => {
+    if (status === "authenticated" && session?.user?.id) {
+      try {
+        const res = await fetch(`/api/user/mobile-card-view`);
+        if (res.ok) {
+          const data = await res.json();
+          if (typeof data.mobileCardViewMode === 'number') {
+            setMobileCardViewMode(data.mobileCardViewMode);
+          }
+        }
+      } catch (e) {
+        // fallback to default (1)
+      }
+    }
+  }
 
   // Fetch game locations on load
   const fetchGameLocations = async () => {
@@ -252,10 +272,7 @@ const handleTableColumnsChange = async (newColumns: GameTableColumnSetting[]) =>
 
   const fetchAllPlatforms = async () => {
     try {
-      let url = '/api/platforms';
-      if (session?.user?.id) {
-        url += `?userId=${encodeURIComponent(session.user.id)}`;
-      }
+      let url = '/api/platforms?scope=me';
       const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch platforms');
       const data = await response.json();
@@ -304,6 +321,26 @@ const handleTableColumnsChange = async (newColumns: GameTableColumnSetting[]) =>
     }
   };
 
+  
+  const fetchUserConsoles = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/user/consoles');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch user consoles');
+      }
+      
+      const data = await response.json();
+      setUserConsoles(data);
+    } catch (error) {
+      console.error('Error fetching user consoles:', error);
+      setUserConsoles([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Gallery handlers
   const openPhotoGallery = (photos: string[], idx = 0) => {
     setGalleryImages(photos);
@@ -332,41 +369,6 @@ const handleTableColumnsChange = async (newColumns: GameTableColumnSetting[]) =>
       setSnackbar({open: true, message: t('games_deleteError') || 'Failed to delete game', severity: 'error'});
     } finally {
       setDeletingGameId(null);
-    }
-  };
-
-
-
-  // Authentication check
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push(`/${locale}/login`);
-    }
-  }, [status, locale, router]);
-
-  // Fetch user's consoles
-  useEffect(() => {
-    if (status === "authenticated") {
-      fetchUserConsoles();
-    }
-  }, [status]);
-
-  const fetchUserConsoles = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/user/consoles');
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch user consoles');
-      }
-      
-      const data = await response.json();
-      setUserConsoles(data);
-    } catch (error) {
-      console.error('Error fetching user consoles:', error);
-      setUserConsoles([]);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -555,6 +557,8 @@ const handleTableColumnsChange = async (newColumns: GameTableColumnSetting[]) =>
                 gameLocations={gameLocations}
                 tableColumns={tableColumns}
                 setTableColumns={handleTableColumnsChange}
+                mobileCardViewMode={mobileCardViewMode}
+                setMobileCardViewMode={setMobileCardViewMode}
               />
             </Box>
             {/* Table for desktop, cards for mobile */}
@@ -585,6 +589,7 @@ const handleTableColumnsChange = async (newColumns: GameTableColumnSetting[]) =>
                 onRatingClick={handleRatingClick}
                 t={t}
                 handleViewGameDetails={(game: any) => handleViewGameDetails(game, 'local')}
+                mobileCardViewMode={mobileCardViewMode}
               />
               ) : (
                 <Paper sx={{ width: '100%', overflowX: 'auto' }}>

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTheme, useMediaQuery } from "@mui/material";
 const TableColumnControl = React.lazy(() => import("./TableColumnControl").then(mod => ({ default: mod.TableColumnControl })));
 import TuneIcon from '@mui/icons-material/Tune';
 import {
@@ -34,6 +35,8 @@ export interface GamesFilterPanelProps {
   gameLocations: { id: string, name: string }[];
   tableColumns: import("@/components/gameTableColumns").GameTableColumnSetting[];
   setTableColumns: (columns: import("@/components/gameTableColumns").GameTableColumnSetting[]) => void | Promise<void>;
+  mobileCardViewMode: number;
+  setMobileCardViewMode: (mode: number) => void;
 }
 
 export const FILTER_FIELDS = [
@@ -99,22 +102,15 @@ function SortingControls({ sortBy, setSortBy, sortOrder, setSortOrder, t }: {
 }
 
 // Remove duplicate declaration
-export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t, sortBy, setSortBy, sortOrder, setSortOrder, gameLocations, tableColumns, setTableColumns }: GamesFilterPanelProps) {
+export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t, sortBy, setSortBy, sortOrder, setSortOrder, gameLocations, tableColumns, setTableColumns, mobileCardViewMode, setMobileCardViewMode }: GamesFilterPanelProps) {
   // Accept allConsoleSystems prop for future use (fixes warning)
-  const [isMobile, setIsMobile] = useState(false);
   const [showMobileSortFilter, setShowMobileSortFilter] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [localFilters, setLocalFilters] = useState(filters || {});
   const [quickName, setQuickName] = useState(filters.name || "");
-
-  React.useEffect(() => {
-  function handleResize() {
-    setIsMobile(window.innerWidth < 600);
-  }
-  setIsMobile(window.innerWidth < 600);
-  window.addEventListener('resize', handleResize);
-  return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const [columnControlOpen, setColumnControlOpen] = React.useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const handleOpen = () => {
     setLocalFilters(filters || {});
@@ -235,27 +231,54 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t,
   if (isMobile) {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}>
-        <Box>
-        <FormControl size="small" sx={{ minWidth: 120, width: '100%' }}>
-        <InputLabel>{t('games_platforms') || 'Platform'}</InputLabel>
-        <Select
-          value={filters.platform || ""}
-          label={t('games_platforms') || 'Platform'}
-          onChange={e => setFilters({ ...filters, platform: e.target.value })}
-        >
-          <MenuItem value="">{t('games_none') || 'All'}</MenuItem>
-          {allPlatforms.map(opt => (
-            <MenuItem key={opt.id || opt} value={opt.id || opt}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                {opt.platformLogo?.url && (
-                  <Avatar src={opt.platformLogo.url} alt={opt.name} sx={{ width: 28, height: 28, mr: 1 }} />
-                )}
-                {opt.name || String(opt)}
-              </Box>
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <FormControl size="small" sx={{ minWidth: 120, flex: 1}}>
+            <InputLabel>{t('games_platforms') || 'Platform'}</InputLabel>
+            <Select
+              value={filters.platform || ""}
+              label={t('games_platforms') || 'Platform'}
+              onChange={e => setFilters({ ...filters, platform: e.target.value })}
+            >
+              <MenuItem value="">{t('games_none') || 'All'}</MenuItem>
+              {allPlatforms.map(opt => (
+                <MenuItem key={opt.id || opt} value={opt.id || opt}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    {opt.platformLogo?.url && (
+                      <Avatar src={opt.platformLogo.url} alt={opt.name} sx={{ width: 28, height: 28, mr: 1 }} />
+                    )}
+                    {opt.name || String(opt)}
+                  </Box>
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <Button
+            variant="outlined"
+            size="small"
+            sx={{ minWidth: 40, px: 1, borderColor: 'primary.main', color: 'primary.main', backgroundColor: 'background.paper' }}
+            title={t('games_toggleViewMode') || 'Toggle View Mode'}
+            onClick={async () => {
+              let nextMode = mobileCardViewMode + 1;
+              if (nextMode > 7) nextMode = 1;
+              setMobileCardViewMode(nextMode);
+              try {
+                await fetch('/api/user/mobile-card-view', {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ mobileCardViewMode: nextMode })
+                });
+              } catch (e) {
+                // Optionally handle error
+              }
+            }}
+          >
+            <span role="img" aria-label="view mode">
+              <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24">
+                <path d="M0 0h24v24H0V0z" fill="none"/>
+                <path d="M4 5h4v4H4V5zm0 5h4v4H4v-4zm0 5h4v4H4v-4zm5-10h4v4h-4V5zm0 5h4v4h-4v-4zm0 5h4v4h-4v-4zm5-10h4v4h-4V5zm0 5h4v4h-4v-4zm0 5h4v4h-4v-4z" fill="currentColor"/>
+              </svg>
+            </span>
+          </Button>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <TextField
@@ -333,7 +356,6 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t,
   }
   // Desktop 
   // Table column control state
-  const [columnControlOpen, setColumnControlOpen] = React.useState(false);
 
   const handleColumnControlApply = (newColumns: any) => {
     // Call the parent callback to persist and update table

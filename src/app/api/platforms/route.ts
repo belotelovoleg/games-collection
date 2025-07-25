@@ -1,15 +1,18 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
 export async function GET(req: any) {
   try {
+    const session = await getServerSession(authOptions);
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
+    const scope = searchParams.get('scope');
     let platforms;
-    if (userId) {
+    if (scope === 'me' && session?.user?.id) {
       // Get platforms used by user's consoles
       const userConsoles = await prisma.userConsole.findMany({
-        where: { userId },
+        where: { userId: session.user.id },
         select: { console: { select: { igdbPlatformID: true } } }
       });
       const platformIds = Array.from(new Set(userConsoles.map(uc => uc.console.igdbPlatformID).filter((id): id is number => typeof id === 'number')));
