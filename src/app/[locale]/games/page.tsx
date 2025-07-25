@@ -242,15 +242,20 @@ const handleTableColumnsChange = async (newColumns: GameTableColumnSetting[]) =>
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [offset, limit, isMobile, status]);
 
-  // Fetch all platforms once when authenticated
+  // Fetch all initial resources once when authenticated
   useEffect(() => {
     if (status === "authenticated") {
-      fetchAllPlatforms();
-      fetchAllConsoleSystems();
-      fetchGameLocations(); 
-      fetchUserTableColumns();
-      fetchUserMobileCardViewMode();
-      fetchUserConsoles();
+      setGamesLoading(true);
+      Promise.all([
+        fetchAllPlatforms(),
+        fetchAllConsoleSystems(),
+        fetchGameLocations(),
+        fetchUserTableColumns(),
+        fetchUserMobileCardViewMode(),
+        fetchUserConsoles()
+      ]).finally(() => {
+        setGamesLoading(false);
+      });
     }
   }, [status]);
 
