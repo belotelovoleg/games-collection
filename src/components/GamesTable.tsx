@@ -16,8 +16,7 @@ import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import { useTranslations } from "@/hooks/useTranslations";
 
 // Helper to render array or comma-separated string columns
-function renderArrayColumn(value: string[] | string, minWidth: number, maxWidth: number, showAllLabel: string) {
-  const { t } = useTranslations();
+function renderArrayColumn(value: string[] | string, minWidth: number, maxWidth: number, showAllLabel: string, t: (key: string) => string) {
   const arr = Array.isArray(value)
     ? value.filter(Boolean)
     : typeof value === 'string'
@@ -103,7 +102,6 @@ export function GamesTable({
       </thead>
       <tbody>
         {userGames.map((game: any) => {
-          console.log(game);
           // ...existing code for row rendering...
           return (
             <tr key={game.id} style={{ borderBottom: `1px solid ${theme.palette.divider}` }}>
@@ -340,19 +338,19 @@ export function GamesTable({
                   case 'genres':
                     return (
                       <td key={col.key} style={cellStyle}>
-                        {renderArrayColumn(game.genres, col.minWidth, col.maxWidth, t('games_show_all_genres') || 'Show genres')}
+                        {renderArrayColumn(game.genres, col.minWidth, col.maxWidth, t('games_show_all_genres') || 'Show genres', t)}
                       </td>
                     );
                   case 'franchises':
                     return (
                       <td key={col.key} style={cellStyle}>
-                        {renderArrayColumn(game.franchises, col.minWidth, col.maxWidth, t('games_show_all_franchises') || 'Show franchises')}
+                        {renderArrayColumn(game.franchises, col.minWidth, col.maxWidth, t('games_show_all_franchises') || 'Show franchises', t)}
                       </td>
                     );
                   case 'multiplayerModes':
                     return (
                       <td key={col.key} style={cellStyle}>
-                        {renderArrayColumn(game.multiplayerModes, col.minWidth, col.maxWidth, t('games_show_all_multiplayer_modes') || 'Show modes')}
+                        {renderArrayColumn(game.multiplayerModes, col.minWidth, col.maxWidth, t('games_show_all_multiplayer_modes') || 'Show modes', t)}
                       </td>
                     );
                   case 'releaseYear':
