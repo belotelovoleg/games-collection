@@ -46,12 +46,33 @@ export default function LoginPage({ params }: { params: Promise<{ locale: string
         <Typography variant="h4" component="h1" gutterBottom align="center">
           {t('auth_login')}
         </Typography>
-        
+
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
           </Alert>
         )}
+
+        <Box sx={{ textAlign: 'center', mb: 2 }}>
+          <Button
+            variant={locale === 'en' ? 'contained' : 'outlined'}
+            size="small"
+            sx={{ mx: 1 }}
+            component={Link}
+            href="/en/login"
+          >
+            EN
+          </Button>
+          <Button
+            variant={locale === 'ua' ? 'contained' : 'outlined'}
+            size="small"
+            sx={{ mx: 1 }}
+            component={Link}
+            href="/ua/login"
+          >
+            UA
+          </Button>
+        </Box>
 
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
           <TextField
@@ -87,7 +108,18 @@ export default function LoginPage({ params }: { params: Promise<{ locale: string
           >
             {loading ? t('common_loading') : t('auth_signIn')}
           </Button>
-          
+
+          {/* Google Sign In Button */}
+          <Button
+            fullWidth
+            variant="outlined"
+            color="primary"
+            sx={{ mt: 1, mb: 2 }}
+            onClick={() => signIn('google', { callbackUrl: `/${locale}` })}
+          >
+            {t('auth_signInWithGoogle') || 'Sign in with Google'}
+          </Button>
+
           <Box sx={{ textAlign: 'center', mt: 2 }}>
             <Typography variant="body2">
               {t('auth_dontHaveAccount')}{' '}

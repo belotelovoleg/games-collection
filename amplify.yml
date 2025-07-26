@@ -24,6 +24,8 @@ frontend:
         - echo "S3_SECRET_ACCESS_KEY=$S3_SECRET_ACCESS_KEY" >> .env.production
         - echo "S3_BUCKET_NAME=$S3_BUCKET_NAME" >> .env.production
         - echo "S3_REGION=$S3_REGION" >> .env.production
+        - echo "GOOGLE_CLIENT_ID"=$GOOGLE_CLIENT_ID" >> .env.production
+        - echo "GOOGLE_CLIENT_SECRET"=$GOOGLE_CLIENT_SECRET" >> .env.production
         - echo "NODE_ENV=production" >> .env.production
         - echo "✅ Created .env.production with $(wc -l < .env.production) variables"
         - cat .env.production

@@ -194,6 +194,7 @@
   "games_multiplayerModes": "Multiplayer Modes",
   "games_search_min_length": "Enter at least 3 characters to search.",
   "games_filter_notes": "Notes contain",
+  "auth_signInWithGoogle": "Sign in with Google",
 
   "settings_title": "Settings",
   "settings_profile": "Profile",

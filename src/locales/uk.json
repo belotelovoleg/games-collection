@@ -189,6 +189,7 @@
   "games_tableColumnControl": "Налаштування колонок таблиці",
   "games_search_min_length": "Введіть щонайменше 3 символи для пошуку.",
   "games_filter_notes": "Нотатки містять",
+  "auth_signInWithGoogle": "Увійти з Google",
 
   "settings_title": "Налаштування",
   "settings_profile": "Профіль",

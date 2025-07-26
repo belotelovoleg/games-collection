@@ -49,6 +49,27 @@ export default function RegisterPage({ params }: { params: Promise<{ locale: str
         <Typography variant="h4" component="h1" gutterBottom align="center">
           {t('auth_register')}
         </Typography>
+        {/* Language Switcher */}
+        <Box sx={{ textAlign: 'center', mb: 2 }}>
+          <Button
+            variant={locale === 'en' ? 'contained' : 'outlined'}
+            size="small"
+            sx={{ mx: 1 }}
+            component={Link}
+            href="/en/register"
+          >
+            EN
+          </Button>
+          <Button
+            variant={locale === 'ua' ? 'contained' : 'outlined'}
+            size="small"
+            sx={{ mx: 1 }}
+            component={Link}
+            href="/ua/register"
+          >
+            UA
+          </Button>
+        </Box>
         
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>

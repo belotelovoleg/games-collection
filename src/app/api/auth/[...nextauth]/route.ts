@@ -1,5 +1,6 @@
 import NextAuth, { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import GoogleProvider from 'next-auth/providers/google';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
@@ -44,17 +45,43 @@ export const authOptions: NextAuthOptions = {
           role: user.role,
         };
       }
+    }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     })
   ],
   session: {
     strategy: 'jwt'
   },
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
+    async jwt({ token, user, account, profile }) {
+      // If user is signing in with Google, create them in DB if not exists
+      if (account && account.provider === 'google') {
+        // Only create if not already present
+        let dbUser = await prisma.user.findUnique({
+          where: { email: token.email || profile?.email },
+        });
+        if (!dbUser && profile?.email) {
+          dbUser = await prisma.user.create({
+            data: {
+              email: profile.email,
+              name: profile.name || profile.email,
+              password: '', // No password for Google users
+              role: 'USER',
+            },
+          });
+        }
+        if (dbUser) {
+          token.sub = dbUser.id;
+          token.role = dbUser.role;
+          token.email = dbUser.email;
+          token.name = dbUser.name;
+        }
+      } else if (user) {
         token.role = user.role;
       }
-      
+
       // Validate user exists in database during JWT processing
       if (token.sub) {
         try {
@@ -62,7 +89,6 @@ export const authOptions: NextAuthOptions = {
             where: { id: token.sub },
             select: { id: true }
           });
-          
           if (!dbUser) {
             console.log('User not found in database during JWT validation:', token.sub);
             // Return empty token to invalidate
@@ -73,7 +99,6 @@ export const authOptions: NextAuthOptions = {
           return {};
         }
       }
-      
       return token;
     },
     async session({ session, token }) {
