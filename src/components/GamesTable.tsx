@@ -103,6 +103,7 @@ export function GamesTable({
       </thead>
       <tbody>
         {userGames.map((game: any) => {
+          console.log(game);
           // ...existing code for row rendering...
           return (
             <tr key={game.id} style={{ borderBottom: `1px solid ${theme.palette.divider}` }}>

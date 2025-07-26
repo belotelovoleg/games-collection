@@ -41,6 +41,7 @@ export interface GamesFilterPanelProps {
 
 export const FILTER_FIELDS = [
   { key: "name", label: "games_filter_title", type: "text" },
+  { key: "notes", label: "games_filter_notes", type: "text" },
   { key: "platform", label: "games_platforms", type: "select" },
   { key: "completed", label: "games_completed", type: "boolean" },
   { key: "favorite", label: "games_favorite", type: "boolean" },
@@ -103,6 +104,8 @@ function SortingControls({ sortBy, setSortBy, sortOrder, setSortOrder, t }: {
 
 // Remove duplicate declaration
 export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t, sortBy, setSortBy, sortOrder, setSortOrder, gameLocations, tableColumns, setTableColumns, mobileCardViewMode, setMobileCardViewMode }: GamesFilterPanelProps) {
+  const [notesError, setNotesError] = useState(false);
+  const [dialogNameError, setDialogNameError] = useState(false);
   // Accept allConsoleSystems prop for future use (fixes warning)
   const [showMobileSortFilter, setShowMobileSortFilter] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -113,20 +116,53 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t,
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const handleOpen = () => {
-    setLocalFilters(filters || {});
+    // Synchronize dialog name filter with last applied filter value
+    setLocalFilters({
+      ...(filters || {})
+    });
+    setDialogNameError(false);
+    setNotesError(false);
     setDialogOpen(true);
   };
   const handleClose = () => setDialogOpen(false);
   const handleApply = () => {
+    let hasError = false;
+    if ((localFilters.name || '').trim().length > 0 && (localFilters.name || '').trim().length < 3) {
+      setDialogNameError(true);
+      hasError = true;
+    } else {
+      setDialogNameError(false);
+    }
+    if ((localFilters.notes || '').trim().length > 0 && (localFilters.notes || '').trim().length < 3) {
+      setNotesError(true);
+      hasError = true;
+    } else {
+      setNotesError(false);
+    }
+    if (hasError) return;
     setFilters(localFilters);
+    setQuickName(localFilters.name || "");
     setDialogOpen(false);
   };
   const handleChange = (key: string, value: any) => {
     setLocalFilters((prev: any) => ({ ...prev, [key]: value }));
+    // Reset error for dialog filter if input is valid or cleared
+    if (key === 'name') {
+      if (dialogNameError && (value.trim().length >= 3 || value.trim().length === 0)) setDialogNameError(false);
+    }
+    if (key === 'notes') {
+      if (notesError && (value.trim().length >= 3 || value.trim().length === 0)) setNotesError(false);
+    }
   };
+  const [nameError, setNameError] = useState(false);
   const handleQuickNameSearch = () => {
+    if (quickName.trim().length < 3) {
+      setNameError(true);
+      return;
+    }
+    setNameError(false);
     setFilters({ ...filters, name: quickName });
-  };
+  }
 
   // Shared dialog for filters
   const filterDialog = (
@@ -136,6 +172,15 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t,
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {FILTER_FIELDS.map(field => {
             if (field.type === "text") {
+              let error = false;
+              let helperText = '';
+              if (field.key === 'name') {
+                error = dialogNameError;
+                helperText = error ? (t('games_search_min_length') || 'Enter at least 3 characters to search.') : '';
+              } else if (field.key === 'notes') {
+                error = notesError;
+                helperText = error ? (t('games_search_min_length') || 'Enter at least 3 characters to search.') : '';
+              }
               return (
                 <TextField
                   key={field.key}
@@ -143,6 +188,8 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t,
                   value={localFilters[field.key] || ""}
                   onChange={e => handleChange(field.key, e.target.value)}
                   size="small"
+                  error={error}
+                  helperText={helperText}
                 />
               );
             }
@@ -285,11 +332,16 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t,
             size="small"
             label={t('games_filter_title') || 'Game Title'}
             value={quickName}
-            onChange={e => setQuickName(e.target.value)}
+            onChange={e => {
+              setQuickName(e.target.value);
+              if (nameError && e.target.value.trim().length >= 3) setNameError(false);
+            }}
             sx={{ minWidth: 180, flex: 1 }}
             onKeyDown={e => {
               if (e.key === 'Enter') handleQuickNameSearch();
             }}
+            error={nameError}
+            helperText={nameError ? t('games_search_min_length') || 'Enter at least 3 characters to search.' : ''}
           />
           <Button
             variant="outlined"
@@ -393,11 +445,16 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t,
         size="small"
         label={t('games_filter_title') || 'Game Title'}
         value={quickName}
-        onChange={e => setQuickName(e.target.value)}
+        onChange={e => {
+          setQuickName(e.target.value);
+          if (nameError && (e.target.value.trim().length >= 3 || e.target.value.trim().length === 0)) setNameError(false);
+        }}
         sx={{ minWidth: 180 }}
         onKeyDown={e => {
           if (e.key === 'Enter') handleQuickNameSearch();
         }}
+        error={nameError}
+        helperText={nameError ? t('games_search_min_length') || 'Enter at least 3 characters to search.' : ''}
       />
       <Button
         variant="outlined"
@@ -424,24 +481,26 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t,
         <Button
           variant="outlined"
           color="error"
-          size="small"
           sx={{ minWidth: 120, px: 2 }}
           title={t('games_resetFilters') || 'Reset Filters'}
-          onClick={() => setFilters({
-            name: "",
-            platform: "",
-            consoleId: "",
-            completed: "",
-            favorite: "",
-            region: "",
-            labelDamage: "",
-            discoloration: "",
-            rentalSticker: "",
-            testedWorking: "",
-            reproduction: "",
-            completeness: "",
-            steelbook: "",
-          })}
+          onClick={() => {
+            setFilters({
+              name: "",
+              platform: "",
+              consoleId: "",
+              completed: "",
+              favorite: "",
+              region: "",
+              labelDamage: "",
+              discoloration: "",
+              rentalSticker: "",
+              testedWorking: "",
+              reproduction: "",
+              completeness: "",
+              steelbook: "",
+            });
+            setQuickName("");
+          }}
         >
           {t('games_resetFilters') || 'Reset Filters'}
         </Button>

@@ -584,6 +584,8 @@ const handleTableColumnsChange = async (newColumns: GameTableColumnSetting[]) =>
     return null;
   }
 
+{console.log(userGames,'aaaaaaaaaaaaa')}
+
   return (
     <MainLayout locale={locale}>
       <Box maxWidth="xl" sx={{ py: 1, minWidth: 320, maxWidth: "100%", overflowX: 'auto' }}>

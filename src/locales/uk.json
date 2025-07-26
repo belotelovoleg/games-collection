@@ -81,7 +81,7 @@
   "games_publisher": "Видавець",
   "games_releaseYear": "Рік Випуску",
   "games_price": "Ціна",
-  "games_notes": "Примітки",
+  "games_notes": "Нотатки",
   "games_completed": "Пройдено",
   "games_favorite": "Улюблене",
   "games_not_completed": "Не пройдено",
@@ -187,7 +187,9 @@
   "games_region_pal": "PAL (Європа/Австралія)",
   "games_resetFilters": "Скинути Фільтри",
   "games_tableColumnControl": "Налаштування колонок таблиці",
-  
+  "games_search_min_length": "Введіть щонайменше 3 символи для пошуку.",
+  "games_filter_notes": "Нотатки містять",
+
   "settings_title": "Налаштування",
   "settings_profile": "Профіль",
   "settings_preferences": "Вподобання",

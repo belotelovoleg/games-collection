@@ -228,7 +228,11 @@ export function GamesCardList({
             ? (game.cover || game.photos?.[0] || game.screenshot || undefined)
             : (game.photos?.[0] || game.cover || game.screenshot || undefined);
           return (
-            <div key={game.id} style={{ width: blockConfig.width, display: 'flex', justifyContent: 'center' }}>
+            <div
+              key={game.id}
+              style={{ width: blockConfig.width, display: 'flex', justifyContent: 'center', cursor: 'pointer' }}
+              onClick={() => typeof handleViewGameDetails === 'function' && handleViewGameDetails(game)}
+            >
               <Card variant="outlined" sx={{ p: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 {/* Image block with dynamic aspect ratio */}
                 <Box sx={{ width: '100%', aspectRatio: blockConfig.aspect, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
