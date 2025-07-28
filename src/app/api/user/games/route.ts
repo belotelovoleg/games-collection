@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
 
   // Build SQL WHERE clause and params
   let sqlFilters = ['user_id = $1'];
-  let params = [session.user.id];
+  let params: any[] = [session.user.id];
   let paramIdx = 2;
 
   if (name) {
@@ -52,12 +52,12 @@ export async function GET(req: NextRequest) {
   }
   if (consoleId) {
     sqlFilters.push(`$${paramIdx} = ANY(console_ids)`);
-    params.push(consoleId);
+    params.push(Number(consoleId));
     paramIdx++;
   }
   if (platform) {
     sqlFilters.push(`$${paramIdx} = ANY(platforms)`);
-    params.push(platform);
+    params.push(Number(platform));
     paramIdx++;
   }
   if (completed === 'true') {
