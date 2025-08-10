@@ -14,6 +14,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const {
+      platforms,
       igdbGameId,
       consoleId,
       condition,
@@ -65,6 +66,9 @@ export async function POST(request: NextRequest) {
     }
 
     const igdbGameData = igdbGames[0];
+    if (platforms) {
+      igdbGameData.platforms = platforms;
+    }
 
     // Create user game from IGDB data
     const userGame = await IGDBGameNormalizationService.createUserGameFromIGDB(

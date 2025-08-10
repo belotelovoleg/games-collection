@@ -286,10 +286,13 @@ export default function AddToCollectionModal({
         // IGDB add-to-collection logic
         if (!game || !game.id) throw new Error('No game to add to collection');
         // 1. Add the game to collection (creates the game in DB)
+        //aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        console.log('selectedConsole', selectedConsole);
         response = await fetch('/api/user/games/add-to-collection', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            platforms: [selectedConsole.console.igdbPlatformID],
             igdbGameId: game.id,
             consoleId: formData.consoleId,
             condition: formData.condition,

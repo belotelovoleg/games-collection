@@ -48,7 +48,9 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        console: {
+          name: 'asc',
+        },
       },
     });
 

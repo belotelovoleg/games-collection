@@ -57,6 +57,7 @@ export default function GamesPage() {
   const [addToCollectionOpen, setAddToCollectionOpen] = useState(false);
   const [userGames, setUserGames] = useState<any[]>([]);
   const [gamesLoading, setGamesLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [galleryIndex, setGalleryIndex] = useState(0);
@@ -92,7 +93,6 @@ export default function GamesPage() {
   const [gameToAdd, setGameToAdd] = useState<any>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
-  // Infinite scroll states for mobile
   const [offset, setOffset] = useState(0);
   const [limit, setLimit] = useState(12);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -104,148 +104,116 @@ export default function GamesPage() {
   const [gameLocations, setGameLocations] = useState<{id: string, name: string}[]>([]);
   const [tableColumns, setTableColumns] = useState<GameTableColumnSetting[]>(defaultGameTableColumns);
   const [mobileCardViewMode, setMobileCardViewMode] = useState(1);
-
-// Rating popup state (optimized: slider value in useRef)
-const [ratingPopup, setRatingPopup] = useState<{ open: boolean, anchorEl: HTMLElement | null, game: any, value: number }>({ open: false, anchorEl: null, game: null, value: 50 });
-const ratingSliderRef = React.useRef<number>(50);
-
-const handleRatingClick = (event: React.MouseEvent<HTMLElement>, game: any) => {
-  ratingSliderRef.current = game.rating ?? 50;
-  setRatingPopup({ open: true, anchorEl: event.currentTarget, game, value: ratingSliderRef.current });
-};
-
-const handleRatingClose = () => {
-  setRatingPopup({ open: false, anchorEl: null, game: null, value: 50 });
-};
-
-const handleRatingChange = (_: any, value: number | number[]) => {
-  ratingSliderRef.current = typeof value === 'number' ? value : ratingSliderRef.current;
-  // Only update displayed value, not state
-  setRatingPopup(prev => ({ ...prev, value: ratingSliderRef.current }));
-};
-
-const handleRatingSubmit = async () => {
-  const game = ratingPopup.game;
-  if (!game?.id) return;
-  try {
-    const res = await fetch(`/api/user/games/${game.id}/edit`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rating: ratingSliderRef.current })
-    });
-    if (!res.ok) throw new Error('Failed to update rating');
-    const { game: updatedGame } = await res.json();
-    setSnackbar({ open: true, message: 'Rating updated', severity: 'success' });
-    setUserGames(prev =>
-      prev.map(g => g.id === updatedGame.id ? { ...g, rating: updatedGame.rating } : g)
-    );
-    handleRatingClose();
-  } catch (e) {
-    setSnackbar({ open: true, message: 'Failed to update rating', severity: 'error' });
-  }
-};
-
-const handleToggleCompleted = async (game: any) => {
-  if (!game?.id) return;
-  try {
-    const res = await fetch(`/api/user/games/${game.id}/completed`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ completed: !game.completed })
-    });
-    if (!res.ok) throw new Error('Failed to update completed');
-    const { game: updatedGame } = await res.json();
-    setSnackbar({ open: true, message: !game.completed ? 'Marked as completed' : 'Marked as not completed', severity: 'success' });
-    setUserGames(prev =>
-      prev.map(g => g.id === updatedGame.id ? { ...g, completed: updatedGame.completed } : g)
-    );
-  } catch (e) {
-    setSnackbar({ open: true, message: 'Failed to update completed', severity: 'error' });
-  }
-};
-
-const handleToggleFavorite = async (game: any) => {
-  if (!game?.id) return;
-  try {
-    const res = await fetch(`/api/user/games/${game.id}/favorite`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ favorite: !game.favorite })
-    });
-    if (!res.ok) throw new Error('Failed to update favorite');
-    const { game: updatedGame } = await res.json();
-    setSnackbar({ open: true, message: !game.favorite ? 'Marked as favorite' : 'Removed from favorites', severity: 'success' });
-    setUserGames(prev =>
-      prev.map(g => g.id === updatedGame.id ? { ...g, favorite: updatedGame.favorite } : g)
-    );
-  } catch (e) {
-    setSnackbar({ open: true, message: 'Failed to update favorite', severity: 'error' });
-  }
-};
+  const [ratingPopup, setRatingPopup] = useState<{ open: boolean, anchorEl: HTMLElement | null, game: any, value: number }>({ open: false, anchorEl: null, game: null, value: 50 });
+  
+  const ratingSliderRef = React.useRef<number>(50);
 
 
-// Save table columns to DB when changed
-const handleTableColumnsChange = async (newColumns: GameTableColumnSetting[]) => {
-  setTableColumns(newColumns);
-  if (status === "authenticated") {
+  /****** HANDLERS ******/
+
+  const handleRatingClick = (event: React.MouseEvent<HTMLElement>, game: any) => {
+    ratingSliderRef.current = game.rating ?? 50;
+    setRatingPopup({ open: true, anchorEl: event.currentTarget, game, value: ratingSliderRef.current });
+  };
+
+  const handleRatingClose = () => {
+    setRatingPopup({ open: false, anchorEl: null, game: null, value: 50 });
+  };
+
+  const handleRatingChange = (_: any, value: number | number[]) => {
+    ratingSliderRef.current = typeof value === 'number' ? value : ratingSliderRef.current;
+    setRatingPopup(prev => ({ ...prev, value: ratingSliderRef.current }));
+  };
+
+  const handleRatingSubmit = async () => {
+    const game = ratingPopup.game;
+    if (!game?.id) return;
     try {
-      await fetch(`/api/user/table-settings`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ settings: newColumns })
+      const res = await fetch(`/api/user/games/${game.id}/edit`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating: ratingSliderRef.current })
       });
+      if (!res.ok) throw new Error('Failed to update rating');
+      const { game: updatedGame } = await res.json();
+      setSnackbar({ open: true, message: 'Rating updated', severity: 'success' });
+      setUserGames(prev =>
+        prev.map(g => g.id === updatedGame.id ? { ...g, rating: updatedGame.rating } : g)
+      );
+      handleRatingClose();
     } catch (e) {
-      // Optionally handle error
+      setSnackbar({ open: true, message: 'Failed to update rating', severity: 'error' });
     }
-  }
-};
+  };
 
-    // Authentication check
+  const handleToggleCompleted = async (game: any) => {
+    if (!game?.id) return;
+    try {
+      const res = await fetch(`/api/user/games/${game.id}/completed`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completed: !game.completed })
+      });
+      if (!res.ok) throw new Error('Failed to update completed');
+      const { game: updatedGame } = await res.json();
+      setSnackbar({ open: true, message: !game.completed ? 'Marked as completed' : 'Marked as not completed', severity: 'success' });
+      setUserGames(prev =>
+        prev.map(g => g.id === updatedGame.id ? { ...g, completed: updatedGame.completed } : g)
+      );
+    } catch (e) {
+      setSnackbar({ open: true, message: 'Failed to update completed', severity: 'error' });
+    }
+  };
+
+  const handleToggleFavorite = async (game: any) => {
+    if (!game?.id) return;
+    try {
+      const res = await fetch(`/api/user/games/${game.id}/favorite`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ favorite: !game.favorite })
+      });
+      if (!res.ok) throw new Error('Failed to update favorite');
+      const { game: updatedGame } = await res.json();
+      setSnackbar({ open: true, message: !game.favorite ? 'Marked as favorite' : 'Removed from favorites', severity: 'success' });
+      setUserGames(prev =>
+        prev.map(g => g.id === updatedGame.id ? { ...g, favorite: updatedGame.favorite } : g)
+      );
+    } catch (e) {
+      setSnackbar({ open: true, message: 'Failed to update favorite', severity: 'error' });
+    }
+  };
+
+  // Save table columns to DB when changed
+  const handleTableColumnsChange = async (newColumns: GameTableColumnSetting[]) => {
+    setTableColumns(newColumns);
+    if (status === "authenticated") {
+      try {
+        await fetch(`/api/user/table-settings`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ settings: newColumns })
+        });
+      } catch (e) {
+        // Optionally handle error
+      }
+    }
+  };
+
+
+  /**** useEffects ****/
+
+  // Authentication check
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push(`/${locale}/login`);
     }
   }, [status, locale, router]);
 
-  // Fetch user's games (with pagination/filtering)
-  useEffect(() => {
-    if (status === "authenticated") {
-      fetchUserGames();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, page, pageSize, sortBy, sortOrder, filters]);
-  // Fetch user's games for desktop/table (pagination)
-  useEffect(() => {
-    if (status === "authenticated" && !isMobile) {
-      fetchUserGames();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, page, pageSize, sortBy, sortOrder, filters, isMobile]);
-
-  // Reset mobile games when filters/sort change
-  useEffect(() => {
-    if (isMobile && status === "authenticated") {
-      setHasMore(true);
-      setOffset(0);
-      // Fetch only after offset is set to 0
-      // Use a microtask to ensure offset is updated before fetch
-      Promise.resolve().then(() => fetchMobileGames(0, limit, true));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, sortBy, sortOrder, isMobile, status]);
-
-  // Fetch more games on offset change (scroll)
-  useEffect(() => {
-    if (isMobile && status === "authenticated" && offset > 0) {
-      fetchMobileGames(offset, limit, false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [offset, limit, isMobile, status]);
-
   // Fetch all initial resources once when authenticated
   useEffect(() => {
     if (status === "authenticated") {
-      setGamesLoading(true);
+      setInitialLoading(true);
       Promise.all([
         fetchAllPlatforms(),
         fetchAllConsoleSystems(),
@@ -254,10 +222,56 @@ const handleTableColumnsChange = async (newColumns: GameTableColumnSetting[]) =>
         fetchUserMobileCardViewMode(),
         fetchUserConsoles()
       ]).finally(() => {
-        setGamesLoading(false);
+        setInitialLoading(false);
       });
     }
   }, [status]);
+
+  // Fetch user's games for desktop/table (pagination)
+  useEffect(() => {
+    if (!isMobile && !initialLoading) {
+      fetchUserGames();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, pageSize, sortBy, sortOrder, filters, isMobile, initialLoading]);
+
+  // Reset mobile games when filters/sort change
+  useEffect(() => {
+    if (isMobile && !initialLoading) {
+      setHasMore(true);
+      setOffset(0);
+      // Use a microtask to ensure offset is updated before fetch
+      Promise.resolve().then(() => fetchMobileGames(0, limit, true));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters, sortBy, sortOrder, isMobile, initialLoading]);
+
+  // Fetch more games on offset change (scroll)
+  useEffect(() => {
+    if (isMobile && offset > 0 && !initialLoading) {
+      fetchMobileGames(offset, limit, false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [offset, limit, isMobile, initialLoading]);
+
+  // Infinite scroll observer for mobile
+  useEffect(() => {
+    if (!isMobile || !hasMore || gamesLoading || loadingMore) return;
+    const observerElem = document.getElementById('mobile-infinite-scroll-trigger');
+    if (!observerElem) return;
+    const observer = new window.IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasMore && !gamesLoading && !loadingMore) {
+        setOffset(prev => prev + limit);
+      }
+    }, { threshold: 1 });
+    observer.observe(observerElem);
+    return () => observer.disconnect();
+  }, [isMobile, hasMore, gamesLoading, loadingMore, limit, userGames.length]);
+
+
+
+
+
 
   // On mount, fetch user's saved table columns from DB (if authenticated)
   const fetchUserTableColumns = async () => {
@@ -274,7 +288,7 @@ const handleTableColumnsChange = async (newColumns: GameTableColumnSetting[]) =>
         // fallback to defaultTableColumns
       }
     }
-    }
+  }
 
   const fetchUserMobileCardViewMode = async () => {
     if (status === "authenticated" && session?.user?.id) {
@@ -396,21 +410,6 @@ const handleTableColumnsChange = async (newColumns: GameTableColumnSetting[]) =>
       setHasMore(true);
     }
   }, [filters, sortBy, sortOrder, isMobile]);
-
-  // Infinite scroll observer for mobile
-  useEffect(() => {
-    if (!isMobile || !hasMore || gamesLoading || loadingMore) return;
-    const observerElem = document.getElementById('mobile-infinite-scroll-trigger');
-    if (!observerElem) return;
-    const observer = new window.IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && hasMore && !gamesLoading && !loadingMore) {
-        setOffset(prev => prev + limit);
-      }
-    }, { threshold: 1 });
-    observer.observe(observerElem);
-    return () => observer.disconnect();
-  }, [isMobile, hasMore, gamesLoading, loadingMore, limit, userGames.length]);
-
   
   const fetchUserConsoles = async () => {
     try {
