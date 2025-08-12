@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
   let paramIdx = 2;
 
   if (name) {
-    sqlFilters.push(`(name ILIKE $${paramIdx} OR EXISTS (SELECT 1 FROM unnest(alternative_names) alt WHERE alt ILIKE $${paramIdx}))`);
+    sqlFilters.push(`(name ILIKE $${paramIdx} OR array_to_string(alternative_names, '||') ILIKE $${paramIdx})`);
     params.push(`%${name}%`);
     paramIdx++;
   }
@@ -163,19 +163,15 @@ export async function GET(req: NextRequest) {
 
   // Data query with LEFT JOIN to game_locations
   // Helper to prefix all games table columns in WHERE clause with 'g.'
-  function prefixGamesTableColumns(filter: string) {
-    // List of columns in games table that may appear in filters
-    const columns = [
-      'user_id', 'name', 'alternative_names', 'notes', 'console_ids', 'platforms', 'completed', 'favorite',
-      'region', 'game_location_id', 'condition', 'label_damage', 'discoloration', 'rental_sticker',
-      'tested_working', 'reproduction', 'steelbook', 'completeness'
-    ];
-    let result = filter;
-    for (const col of columns) {
-      // Only prefix if not already prefixed
-      result = result.replace(new RegExp(`(?<![\w.])${col}(?![\w.])`, 'g'), `g.${col}`);
-    }
-    return result;
+  function prefixGamesTableColumns(filter) {
+    // Only prefix columns that are not inside function calls or already prefixed
+    // Avoid prefixing inside function calls like array_to_string(...)
+    // This regex matches column names not preceded by a dot or inside a function call
+    return filter.replace(/\b(user_id|name|alternative_names|notes|console_ids|platforms|completed|favorite|region|game_location_id|condition|label_damage|discoloration|rental_sticker|tested_working|reproduction|steelbook|completeness)\b(?!\s*\()/g, (match) => {
+      // Don't prefix if already prefixed with g.
+      if (filter.includes(`g.${match}`)) return match;
+      return `g.${match}`;
+    });
   }
 
   const dataSql = `

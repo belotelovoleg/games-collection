@@ -22,7 +22,7 @@ export const defaultGameTableColumns: GameTableColumnSetting[] = [
   { key: 'franchises', label: 'Franchises', maxWidth: 200, minWidth: 140, visible: false, order: 11 },
   { key: 'multiplayerModes', label: 'Multiplayer Modes', maxWidth: 120, minWidth: 120, visible: false, order: 12 },
   { key: 'createdAt', label: 'Created At', maxWidth: 140, minWidth: 100, visible: false, order: 13 },
-  { key: 'gameLocation', label: 'Location', maxWidth: 140, minWidth: 100, visible: false, order: 14 },
+  { key: 'gameLocation', label: 'Location', maxWidth: 300, minWidth: 250, visible: false, order: 14 },
   { key: 'releaseYear', label: 'Release Year', maxWidth: 100, minWidth: 100, visible: false, order: 15 },
   { key: 'completed', label: 'Completed', maxWidth: 100, minWidth: 100, visible: true, order: 14 },
   { key: 'favorite', label: 'Favorite', maxWidth: 100, minWidth: 100, visible: true, order: 15 },

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { defaultGameTableColumns, GameTableColumnSetting } from "./gameTableColumns";
 import { Avatar, Button, Popover, Box, Typography, Rating, Tooltip, IconButton } from "@mui/material";
 import ShieldIcon from '@mui/icons-material/Shield';
@@ -14,6 +14,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import { useTranslations } from "@/hooks/useTranslations";
+import { GameLocationDropdown } from "./GameLocationDropdown";
 
 // Helper to render array or comma-separated string columns
 function renderArrayColumn(value: string[] | string, minWidth: number, maxWidth: number, showAllLabel: string, t: (key: string) => string) {
@@ -77,8 +78,35 @@ export function GamesTable({
   handleViewGameDetails: (game: any) => void;
   columns: GameTableColumnSetting[];
 }) {
+  // Local state for userGames to allow inline updates
+  const [games, setGames] = useState(userGames);
   // Allow t to accept any string for dynamic translation keys
   const { t } = useTranslations() as { t: (key: string) => string };
+
+  // State for all locations
+  const [locations, setLocations] = useState<{ id: string, name: string }[]>([]);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/user/game-locations')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setLocations(data);
+      });
+  }, []);
+
+  async function handleSetLocation(gameId: string, gameLocationId: string | null) {
+    setUpdatingId(gameId);
+    await fetch(`/api/user/games/${gameId}/location`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gameLocationId }),
+    });
+    // Find the location object
+    const locationObj = locations.find(l => l.id === gameLocationId) || null;
+    setGames(prev => prev.map(g => g.id === gameId ? { ...g, gameLocation: locationObj } : g));
+    setUpdatingId(null);
+  }
   return (
     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
       <thead>
@@ -101,7 +129,7 @@ export function GamesTable({
         </tr>
       </thead>
       <tbody>
-        {userGames.map((game: any) => {
+  {games.map((game: any) => {
           // ...existing code for row rendering...
           return (
             <tr key={game.id} style={{ borderBottom: `1px solid ${theme.palette.divider}` }}>
@@ -120,7 +148,12 @@ export function GamesTable({
                   case 'gameLocation':
                     return (
                       <td key={col.key} style={cellStyle}>
-                        {game.gameLocation?.name || t('games_none')}
+                        <GameLocationDropdown
+                          value={game.gameLocation?.id || null}
+                          locations={locations}
+                          onChange={locId => handleSetLocation(game.id, locId)}
+                          disabled={updatingId === game.id}
+                        />
                       </td>
                     );
                   case 'cover':
