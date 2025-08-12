@@ -180,8 +180,9 @@ export default function AddToCollectionModal({
         .then(data => setPlatformOptions(data.map((p: any) => ({ id: p.id, name: p.name }))))
         .finally(() => setLoadingPlatforms(false));
       // Use passed-in locationOptions and auto-select if game has gameLocationId
-      if (game && game.gameLocationId) {
-        setSelectedLocationId(game.gameLocationId);
+      if (game && game.game_location_id) {
+        const exists = locationOptions.some(loc => loc.id === game.game_location_id);
+        setSelectedLocationId(exists ? game.game_location_id : "");
       } else {
         setSelectedLocationId(''); // Default to 'Not selected'
       }
@@ -468,7 +469,7 @@ export default function AddToCollectionModal({
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <AddCircleIcon color="primary" />
-          {game && game.id ? `${t("common_edit")}: ${game.title ? game.title : ''}` : t("games_addToCollection")}
+          {game && game.id ? `${t("common_edit")}: ${game.title ? game.title : ''}${game.name ? game.name : ""}` : t("games_addToCollection")}
         </Box>
         <Button onClick={onClose} size="small" sx={{ minWidth: 'auto' }}>
           <CloseIcon />

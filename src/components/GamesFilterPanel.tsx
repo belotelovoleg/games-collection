@@ -73,6 +73,8 @@ function SortingControls({ sortBy, setSortBy, sortOrder, setSortOrder, t }: {
           onChange={e => setSortBy(e.target.value)}
         >
           <MenuItem value="title">{t('games_filter_title') || 'Title'}</MenuItem>
+          <MenuItem value="createdAt">{t('games_createdAt') || 'Created At'}</MenuItem>
+          <MenuItem value="gameLocation">{t('games_gameLocation') || t('common_location') || 'Location'}</MenuItem>
           <MenuItem value="rating">{t('games_rating') || 'Rating'}</MenuItem>
           <MenuItem value="completed">{t('games_completed') || 'Completed'}</MenuItem>
           <MenuItem value="favorite">{t('games_favorite') || 'Favorite'}</MenuItem>

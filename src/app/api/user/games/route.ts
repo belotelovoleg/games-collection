@@ -135,7 +135,25 @@ export async function GET(req: NextRequest) {
   const offset = offsetParam !== null ? parseInt(offsetParam, 10) || 0 : (page - 1) * pageSize;
   const limit = limitParam !== null ? parseInt(limitParam, 10) || 20 : pageSize;
   // Sorting
-  const orderBy = sort === 'title' ? 'name' : sort;
+  const sortKeyMap: Record<string, string> = {
+    title: 'name',
+    createdAt: 'createdAt', // use camelCase for Prisma/Postgres
+    gameLocation: 'game_location_id',
+    rating: 'rating',
+    completed: 'completed',
+    favorite: 'favorite',
+    condition: 'condition',
+    completeness: 'completeness',
+    region: 'region',
+    labelDamage: 'label_damage',
+    discoloration: 'discoloration',
+    rentalSticker: 'rental_sticker',
+    testedWorking: 'tested_working',
+    reproduction: 'reproduction',
+    steelbook: 'steelbook',
+    // add more as needed
+  };
+  const orderBy = `"${sortKeyMap[sort] || 'createdAt'}"`;
   const orderDir = order === 'asc' ? 'ASC' : 'DESC';
 
   // Count query
@@ -143,18 +161,44 @@ export async function GET(req: NextRequest) {
   const countResult = await prisma.$queryRawUnsafe(countSql, ...params) as Array<{ count: string }>;
   const total = countResult && countResult.length > 0 ? Number(countResult[0].count) : 0;
 
-  // Data query
-  const dataSql = `SELECT *, alternative_names::text[] AS alternative_names FROM games WHERE ${sqlFilters.join(' AND ')} ORDER BY ${orderBy} ${orderDir} OFFSET $${paramIdx} LIMIT $${paramIdx+1}`;
+  // Data query with LEFT JOIN to game_locations
+  // Helper to prefix all games table columns in WHERE clause with 'g.'
+  function prefixGamesTableColumns(filter: string) {
+    // List of columns in games table that may appear in filters
+    const columns = [
+      'user_id', 'name', 'alternative_names', 'notes', 'console_ids', 'platforms', 'completed', 'favorite',
+      'region', 'game_location_id', 'condition', 'label_damage', 'discoloration', 'rental_sticker',
+      'tested_working', 'reproduction', 'steelbook', 'completeness'
+    ];
+    let result = filter;
+    for (const col of columns) {
+      // Only prefix if not already prefixed
+      result = result.replace(new RegExp(`(?<![\w.])${col}(?![\w.])`, 'g'), `g.${col}`);
+    }
+    return result;
+  }
+
+  const dataSql = `
+    SELECT g.*, g.alternative_names::text[] AS alternative_names,
+           gl.id AS game_location_id, gl.name AS game_location_name
+    FROM games g
+    LEFT JOIN game_locations gl ON g.game_location_id = gl.id
+    WHERE ${sqlFilters.map(f => prefixGamesTableColumns(f)).join(' AND ')}
+    ORDER BY ${orderBy.startsWith('"game_location_id"') ? 'g.game_location_id' : orderBy} ${orderDir}
+    OFFSET $${paramIdx} LIMIT $${paramIdx+1}
+  `;
   const dataParams = [...params, offset, limit];
   const games = await prisma.$queryRawUnsafe(dataSql, ...dataParams) as any[];
 
-  // Map alternative_names to alternativeNames for frontend compatibility
-  const mappedGames = games.map(g => ({
-    ...g,
-    alternativeNames: g.alternative_names,
-    // Optionally remove the snake_case key if you want
-    ...Object.fromEntries(Object.entries(g).filter(([k]) => k !== 'alternative_names'))
-  }));
+  // Map alternative_names to alternativeNames and gameLocation for frontend compatibility
+  const mappedGames = games.map(g => {
+    const { alternative_names, game_location_name, game_location_id, ...rest } = g;
+    return {
+      ...rest,
+      alternativeNames: alternative_names,
+      gameLocation: game_location_id ? { id: game_location_id, name: game_location_name } : null,
+    };
+  });
 
   return Response.json({ games: mappedGames, total });
 }

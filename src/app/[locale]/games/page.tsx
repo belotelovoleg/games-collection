@@ -109,6 +109,13 @@ export default function GamesPage() {
   const ratingSliderRef = React.useRef<number>(50);
 
 
+  // Merge user columns with default columns to ensure new columns always appear
+  function mergeTableColumns(userCols: GameTableColumnSetting[]): GameTableColumnSetting[] {
+    const userColKeys = userCols.map(col => col.key);
+    const missingCols = defaultGameTableColumns.filter(defCol => !userColKeys.includes(defCol.key));
+    return [...userCols, ...missingCols];
+  }
+
   /****** HANDLERS ******/
 
   const handleRatingClick = (event: React.MouseEvent<HTMLElement>, game: any) => {
@@ -186,13 +193,15 @@ export default function GamesPage() {
 
   // Save table columns to DB when changed
   const handleTableColumnsChange = async (newColumns: GameTableColumnSetting[]) => {
-    setTableColumns(newColumns);
+    // Always merge with default columns to ensure new ones are present
+    const merged = mergeTableColumns(newColumns);
+    setTableColumns(merged);
     if (status === "authenticated") {
       try {
         await fetch(`/api/user/table-settings`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ settings: newColumns })
+          body: JSON.stringify({ settings: merged })
         });
       } catch (e) {
         // Optionally handle error
@@ -281,7 +290,7 @@ export default function GamesPage() {
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data.settings) && data.settings.length > 0) {
-            setTableColumns(data.settings);
+            setTableColumns(mergeTableColumns(data.settings));
           }
         }
       } catch (e) {

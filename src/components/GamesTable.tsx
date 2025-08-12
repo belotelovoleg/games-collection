@@ -111,6 +111,18 @@ export function GamesTable({
                 .map((col: GameTableColumnSetting) => {
                 const cellStyle = { padding: '8px', minWidth: col.minWidth, maxWidth: col.maxWidth };
                 switch (col.key) {
+                  case 'createdAt':
+                    return (
+                      <td key={col.key} style={cellStyle}>
+                        {game.createdAt ? new Date(game.createdAt).toLocaleDateString() : t('games_none')}
+                      </td>
+                    );
+                  case 'gameLocation':
+                    return (
+                      <td key={col.key} style={cellStyle}>
+                        {game.gameLocation?.name || t('games_none')}
+                      </td>
+                    );
                   case 'cover':
                     return (
                       <td key={col.key} style={{ padding: '3px', minWidth: col.minWidth, maxWidth: col.maxWidth }}>
