@@ -284,5 +284,26 @@
   "changePassword_fillAllFields": "Будь ласка, заповніть всі поля.",
   "changePassword_passwordsDontMatch": "Паролі не співпадають.",
   "changePassword_error": "Не вдалося змінити пароль.",
-  "changePassword_success": "Пароль успішно змінено."
+  "changePassword_success": "Пароль успішно змінено.",
+
+  "guest_createTitle": "Створити Гостьовий Аккаунт",
+  "guest_createDescription": "Створіть гостьовий аккаунт, який може переглядати вашу колекцію ігор. Гостьові користувачі зможуть тільки переглядати ваші ігри - вони не можуть додавати, редагувати або видаляти що-небудь.",
+  "guest_emailLabel": "Email Гостя",
+  "guest_passwordLabel": "Пароль Гостя",
+  "guest_passwordHelper": "Виберіть пароль для гостьового аккаунта",
+  "guest_createButton": "Створити Гостьовий Аккаунт",
+  "guest_accessDeniedTitle": "Доступ Заборонено",
+  "guest_accessDeniedMessage": "Тільки USER та ADMIN аккаунти можуть створювати гостьові аккаунти.",
+  "guest_yourGuestsTitle": "Ваші Гостьові Аккаунти",
+  "guest_createdLabel": "Створено: {date}",
+  "guest_deleteConfirmTitle": "Підтвердити Видалення",
+  "guest_deleteConfirmMessage": "Ви впевнені, що хочете видалити цей гостьовий аккаунт? Цю дію не можна відмінити.",
+  "guest_createSuccess": "Гостьовий аккаунт успішно створено! Email: {email}",
+  "guest_deleteSuccess": "Гостьовий аккаунт {email} успішно видалено!",
+  "guest_createError": "Не вдалося створити гостьовий аккаунт",
+  "guest_deleteError": "Не вдалося видалити гостьовий аккаунт",
+  "guest_selectConsolesError": "Будь ласка, виберіть принаймні одну консоль",
+  "guest_selectConsolesLabel": "Виберіть Консолі",
+  "guest_selectConsolesHelper": "Виберіть, які консолі може бачити гість",
+  "guest_noPlatforms": "Немає дозволених платформ"
 }

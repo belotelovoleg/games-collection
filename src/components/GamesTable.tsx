@@ -15,6 +15,7 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import { useTranslations } from "@/hooks/useTranslations";
 import { GameLocationDropdown } from "./GameLocationDropdown";
+import { Session } from "next-auth";
 
 // Helper to render array or comma-separated string columns
 function renderArrayColumn(value: string[] | string, minWidth: number, maxWidth: number, showAllLabel: string, t: (key: string) => string) {
@@ -57,7 +58,8 @@ export function GamesTable({
   onRatingClick,
   openPhotoGallery,
   handleViewGameDetails,
-  columns
+  columns,
+  session
 }: {
   userGames: any[];
   allPlatforms: any[];
@@ -77,7 +79,10 @@ export function GamesTable({
   openPhotoGallery: (images: string[], idx?: number) => void;
   handleViewGameDetails: (game: any) => void;
   columns: GameTableColumnSetting[];
+  session: Session | null;
 }) {
+  // Check if user is a guest (guests can only view, not add/edit/delete)
+  const isGuest = session?.user?.role === 'GUEST';
   // Local state for userGames to allow inline updates
   const [games, setGames] = useState(userGames);
   // Allow t to accept any string for dynamic translation keys
@@ -306,9 +311,9 @@ export function GamesTable({
                       <td key={col.key} style={cellStyle}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                           <span
-                            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                            title="Set rating"
-                            onClick={e => onRatingClick(e, game)}
+                            style={{ cursor: isGuest ? 'default' : 'pointer', display: 'flex', alignItems: 'center' }}
+                            title={isGuest ? '' : "Set rating"}
+                            onClick={isGuest ? undefined : e => onRatingClick(e, game)}
                           >
                             <Rating value={getGameRating(game)} precision={0.1} size="small" readOnly />
                           </span>
@@ -409,7 +414,7 @@ export function GamesTable({
                       <td key={col.key} style={{ ...cellStyle, textAlign: 'center' }}>
                         <Tooltip title={game.completed ? (t('games_completed') || 'Completed') : (t('games_not_completed') || 'Not Completed')}>
                           <span>
-                            <IconButton onClick={e => { e.stopPropagation(); onToggleCompleted(game); }} size="large">
+                            <IconButton onClick={e => { e.stopPropagation(); onToggleCompleted(game); }} size="large" disabled={isGuest}>
                               {game.completed ? (
                                 <EmojiEventsIcon/>
                               ) : (
@@ -425,7 +430,7 @@ export function GamesTable({
                       <td key={col.key} style={{ ...cellStyle, textAlign: 'center' }}>
                         <Tooltip title={game.favorite ? (t('games_favorite') || 'Favorite') : (t('games_not_favorite') || 'Not Favorite')}>
                           <span>
-                            <IconButton onClick={e => { e.stopPropagation(); onToggleFavorite(game); }} size="large">
+                            <IconButton onClick={e => { e.stopPropagation(); onToggleFavorite(game); }} size="large" disabled={isGuest}>
                               {game.favorite ? (
                                 <FavoriteIcon sx={{ color: theme.palette.error.main }} />
                               ) : (
@@ -439,22 +444,24 @@ export function GamesTable({
                   case 'actions':
                     return (
                       <td key={col.key} style={cellStyle}>
-                        <div style={{ display: 'flex', gap: 8 }}>
-                          <Tooltip title={t('common_edit') || 'Edit'}>
-                            <span>
-                              <IconButton onClick={e => { e.stopPropagation(); handleEditGame(game); }}>
-                                <EditIcon  />
-                              </IconButton>
-                            </span>
-                          </Tooltip>
-                          <Tooltip title={t('common_delete') || 'Delete'}>
-                            <span>
-                              <IconButton color="error" onClick={e => { e.stopPropagation(); handleDeleteGame(game); }} disabled={deletingGameId === game.id}>
-                                {deletingGameId === game.id ? <span>...</span> : <DeleteIcon />}
-                              </IconButton>
-                            </span>
-                          </Tooltip>
-                        </div>
+                        {!isGuest && (
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <Tooltip title={t('common_edit') || 'Edit'}>
+                              <span>
+                                <IconButton onClick={e => { e.stopPropagation(); handleEditGame(game); }}>
+                                  <EditIcon  />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                            <Tooltip title={t('common_delete') || 'Delete'}>
+                              <span>
+                                <IconButton color="error" onClick={e => { e.stopPropagation(); handleDeleteGame(game); }} disabled={deletingGameId === game.id}>
+                                  {deletingGameId === game.id ? <span>...</span> : <DeleteIcon />}
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                          </div>
+                        )}
                       </td>
                     );
                   default:

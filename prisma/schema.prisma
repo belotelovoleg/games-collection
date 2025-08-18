@@ -24,6 +24,11 @@ model User {
   updatedAt     DateTime  @updatedAt
   mobileCardViewMode Int @default(1) // 1, 2, or 3: user's preferred mobile card view mode
 
+  // Guest relationship - which USER created this GUEST
+  createdByUserId String? @map("created_by_user_id")
+  createdByUser   User?   @relation("UserCreatedGuests", fields: [createdByUserId], references: [id])
+  createdGuests   User[]  @relation("UserCreatedGuests")
+
   // Relations
   accounts Account[]
   sessions Session[]
@@ -31,8 +36,25 @@ model User {
   userConsoles UserConsole[]
   gameLocations GameLocation[]
   userGameTableSettings UserGameTableSetting[]
+  
+  // Guest platform permissions (only for GUEST users)
+  guestPlatformPermissions GuestPlatformPermission[]
 
   @@map("users")
+}
+
+// Guest platform permissions - which platforms a guest user can see
+model GuestPlatformPermission {
+  id        String   @id @default(cuid())
+  guestId   String   @map("guest_id")
+  consoleId Int      @map("console_id")
+  createdAt DateTime @default(now())
+
+  guest     User     @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  console   Console  @relation(fields: [consoleId], references: [id], onDelete: Cascade)
+
+  @@unique([guestId, consoleId])
+  @@map("guest_platform_permissions")
 }
 
 // NextAuth required models
@@ -150,6 +172,9 @@ model Console {
   
   // User console relations
   userConsoles          UserConsole[]
+  
+  // Guest platform permissions
+  guestPlatformPermissions GuestPlatformPermission[]
   
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
@@ -907,6 +932,7 @@ model IgdbGameLanguageSupportRelation {
 enum Role {
   USER
   ADMIN
+  GUEST
 }
 
 enum Condition {

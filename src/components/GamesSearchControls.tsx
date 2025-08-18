@@ -17,6 +17,7 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import { Session } from "next-auth";
 
 export interface GamesSearchControlsProps {
   isMobile: boolean;
@@ -34,6 +35,7 @@ export interface GamesSearchControlsProps {
   handleSearch: () => void;
   handleAddGame: () => void;
   t: any;
+  session: Session | null;
 }
 
 export const GamesSearchControls: React.FC<GamesSearchControlsProps> = ({
@@ -52,7 +54,16 @@ export const GamesSearchControls: React.FC<GamesSearchControlsProps> = ({
   handleSearch,
   handleAddGame,
   t,
+  session,
 }) => {
+  // Check if user is a guest (guests can only view, not add/edit/delete)
+  const isGuest = session?.user?.role === 'GUEST';
+  
+  // If user is a guest, don't show search controls at all
+  if (isGuest) {
+    return null;
+  }
+  
   // Mobile: expand/collapse
   if (isMobile) {
     return (

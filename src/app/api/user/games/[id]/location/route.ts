@@ -10,6 +10,12 @@ export async function PATCH(req: NextRequest, context: { params: { id: string } 
   if (!session || !session.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  
+  // Guests cannot modify game locations
+  if (session.user.role === 'GUEST') {
+    return NextResponse.json({ error: 'Guests cannot modify games' }, { status: 403 });
+  }
+  
   const gameId = params.id;
   const { gameLocationId } = await req.json();
   if (!gameLocationId) {

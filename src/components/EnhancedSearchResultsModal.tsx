@@ -19,6 +19,7 @@ import BusinessIcon from "@mui/icons-material/Business";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import { useTranslations } from "@/hooks/useTranslations";
+import { Session } from "next-auth";
 
 interface EnhancedSearchResultsModalProps {
   open: boolean;
@@ -32,6 +33,7 @@ interface EnhancedSearchResultsModalProps {
   formatCompanies: (companies: any[]) => string;
   handleViewGameDetails: (game: any) => void;
   handleAddGameToCollection: (game: any) => void;
+  session?: Session | null;
 }
 
 const EnhancedSearchResultsModal: React.FC<EnhancedSearchResultsModalProps> = ({
@@ -46,8 +48,11 @@ const EnhancedSearchResultsModal: React.FC<EnhancedSearchResultsModalProps> = ({
   formatCompanies,
   handleViewGameDetails,
   handleAddGameToCollection,
+  session,
 }) => {
   const { t } = useTranslations();
+  // Check if user is a guest (guests can only view, not add/edit/delete)
+  const isGuest = session?.user?.role === 'GUEST';
 
   return (
     <Dialog 
@@ -198,15 +203,17 @@ const EnhancedSearchResultsModal: React.FC<EnhancedSearchResultsModalProps> = ({
                       >
                         {t("games_viewDetails")}
                       </Button>
-                      <Button
-                        variant="contained"
-                        size="small"
-                        startIcon={<AddCircleIcon />}
-                        onClick={() => handleAddGameToCollection(game)}
-                        sx={{ flexShrink: 0 }}
-                      >
-                        {t("games_addToCollection")}
-                      </Button>
+                      {!isGuest && (
+                        <Button
+                          variant="contained"
+                          size="small"
+                          startIcon={<AddCircleIcon />}
+                          onClick={() => handleAddGameToCollection(game)}
+                          sx={{ flexShrink: 0 }}
+                        >
+                          {t("games_addToCollection")}
+                        </Button>
+                      )}
                     </Box>
                   </Box>
                 </Box>

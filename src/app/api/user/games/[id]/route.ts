@@ -11,6 +11,12 @@ export async function DELETE(req: NextRequest, context: { params: { id: string }
     console.error('Unauthorized access attempt', { session });
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  
+  // Guests cannot delete games
+  if (session.user.role === 'GUEST') {
+    return NextResponse.json({ error: 'Guests cannot delete games' }, { status: 403 });
+  }
+  
   const gameId = params.id;
   try {
     // Only allow deleting games owned by the current user

@@ -23,16 +23,50 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search');
 
+    let consoleWhereClause: any = search ? {
+      OR: [
+        { name: { contains: search, mode: 'insensitive' } },
+        { alternativeName: { contains: search, mode: 'insensitive' } },
+        { abbreviation: { contains: search, mode: 'insensitive' } },
+        { platformFamily: { contains: search, mode: 'insensitive' } },
+        { platformType: { contains: search, mode: 'insensitive' } },
+      ]
+    } : undefined;
+
+    // If user is GUEST, filter consoles to only show allowed ones
+    if (user.role === 'GUEST') {
+      const guestUser = await prisma.user.findUnique({
+        where: { id: user.id },
+        include: {
+          guestPlatformPermissions: {
+            select: {
+              consoleId: true
+            }
+          }
+        }
+      });
+
+      if (!guestUser?.guestPlatformPermissions || guestUser.guestPlatformPermissions.length === 0) {
+        return NextResponse.json([]);
+      }
+
+      const allowedConsoleIds = guestUser.guestPlatformPermissions.map(p => p.consoleId);
+      
+      // Add console ID filter to the where clause
+      if (consoleWhereClause) {
+        consoleWhereClause = {
+          AND: [
+            consoleWhereClause,
+            { id: { in: allowedConsoleIds } }
+          ]
+        };
+      } else {
+        consoleWhereClause = { id: { in: allowedConsoleIds } };
+      }
+    }
+
     const consoles = await prisma.console.findMany({
-      where: search ? {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { alternativeName: { contains: search, mode: 'insensitive' } },
-          { abbreviation: { contains: search, mode: 'insensitive' } },
-          { platformFamily: { contains: search, mode: 'insensitive' } },
-          { platformType: { contains: search, mode: 'insensitive' } },
-        ]
-      } : undefined,
+      where: consoleWhereClause,
       include: {
         igdbPlatform: {
           include: {
@@ -52,10 +86,19 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Get user's console statuses separately
+    // Get user's console statuses separately (or guest creator's statuses)
+    let statusUserId = user.id;
+    if (user.role === 'GUEST') {
+      const guestUser = await prisma.user.findUnique({
+        where: { id: user.id },
+        include: { createdByUser: true }
+      });
+      statusUserId = guestUser?.createdByUser?.id || user.id;
+    }
+
     const userConsoleStatuses = await prisma.userConsole.findMany({
       where: {
-        userId: user.id,
+        userId: statusUserId,
         consoleId: {
           in: consoles.map(console => console.id),
         },

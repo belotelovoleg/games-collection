@@ -75,7 +75,7 @@ export function MainLayout({ children, locale }: MainLayoutProps) {
   };
 
   // Menu items for authenticated users
-  const authenticatedMenuItems = [
+  const baseAuthenticatedMenuItems = [
     { 
       text: t('nav_home'), 
       icon: <HomeIcon />, 
@@ -86,17 +86,34 @@ export function MainLayout({ children, locale }: MainLayoutProps) {
       icon: <GamesIcon />, 
       href: `/${locale}/games` 
     },
-    { 
-      text: t('nav_consoles'), 
-      icon: <ConsolesIcon />, 
-      href: `/${locale}/consoles` 
-    },
-    {
-      text: t('nav_gameLocations') || 'Game Locations',
-      icon: <WarehouseIcon />,
-      href: `/${locale}/game-locations`
-    },
   ];
+
+  // Add items that are only available to USER and ADMIN roles (not GUEST)
+  if (session?.user?.role !== 'GUEST') {
+    baseAuthenticatedMenuItems.push(
+      { 
+        text: t('nav_consoles'), 
+        icon: <ConsolesIcon />, 
+        href: `/${locale}/consoles` 
+      },
+      {
+        text: t('nav_gameLocations') || 'Game Locations',
+        icon: <WarehouseIcon />,
+        href: `/${locale}/game-locations`
+      }
+    );
+  }
+
+  const authenticatedMenuItems = [...baseAuthenticatedMenuItems];
+
+  // Add guest creation menu item for USER and ADMIN roles
+  if (session?.user?.role === 'USER' || session?.user?.role === 'ADMIN') {
+    authenticatedMenuItems.push({
+      text: t('guest_createTitle'),
+      icon: <RegisterIcon />,
+      href: `/${locale}/create-guest`
+    });
+  }
 
   // Add admin menu items if user is admin
   if (session?.user?.role === 'ADMIN') {

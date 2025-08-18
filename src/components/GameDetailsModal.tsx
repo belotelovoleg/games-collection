@@ -37,6 +37,7 @@ import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
+import { Session } from "next-auth";
 
 interface GameDetailsModalProps {
   open: boolean;
@@ -48,6 +49,7 @@ interface GameDetailsModalProps {
   onAddToCollection: (game: any) => void;
   onToggleCompleted?: (game: any) => void;
   onToggleFavorite?: (game: any) => void;
+  session?: Session | null;
 }
 
 export function GameDetailsModal({ open, 
@@ -58,8 +60,11 @@ export function GameDetailsModal({ open,
   setGalleryImages, 
   setGalleryOpen, 
   onToggleCompleted, 
-  onToggleFavorite 
+  onToggleFavorite,
+  session
 }: GameDetailsModalProps) {
+  // Check if user is a guest (guests can only view, not add/edit/delete)
+  const isGuest = session?.user?.role === 'GUEST';
 
   const { t } = useTranslations();
   const theme = useTheme();
@@ -244,7 +249,7 @@ export function GameDetailsModal({ open,
                 />
               )}
               {/* New fields for local games */}
-              {gameType === "local" && (
+              {gameType === "local" && !isGuest && (
                 <Box sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 2, alignItems: 'center', mt: 1 }}>
                     <span
                       title={mergedGame.completed ? t('games_completed') : t('games_not_completed')}
@@ -316,7 +321,7 @@ export function GameDetailsModal({ open,
                   >
                     <SportsEsportsIcon sx={{ fontSize: '4rem' }} />
                   </Avatar>
-                  {gameType != "local" && <Button
+                  {gameType != "local" && !isGuest && <Button
                     fullWidth
                     variant="contained"
                     size="large"

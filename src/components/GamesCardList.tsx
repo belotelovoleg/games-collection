@@ -5,6 +5,7 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
+import { Session } from "next-auth";
 
 export function GamesCardList({
   userGames,
@@ -25,8 +26,11 @@ export function GamesCardList({
   onRatingClick,
   t,
   handleViewGameDetails,
-  mobileCardViewMode
+  mobileCardViewMode,
+  session
 }: any) {
+  // Check if user is a guest (guests can only view, not add/edit/delete)
+  const isGuest = session?.user?.role === 'GUEST';
   return (
     <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '16px', justifyContent: 'flex-start' }}>
       {userGames.map((game: any) => {
@@ -106,9 +110,9 @@ export function GamesCardList({
                     {/* Rating row, centered, moved under image */}
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', mt: 1 }}>
                       <span
-                        style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                        title="Set rating"
-                        onClick={e => onRatingClick(e, game)}
+                        style={{ cursor: isGuest ? 'default' : 'pointer', display: 'flex', alignItems: 'center' }}
+                        title={isGuest ? '' : "Set rating"}
+                        onClick={isGuest ? undefined : e => onRatingClick(e, game)}
                       >
                         <Rating value={getGameRating(game)} precision={0.1} size="small" readOnly />
                       </span>
@@ -138,6 +142,7 @@ export function GamesCardList({
                       color={game.favorite ? 'error' : 'inherit'}
                       onClick={e => { e.stopPropagation(); onToggleFavorite(game); }}
                       sx={{ minWidth: '70px' }}
+                      disabled={isGuest}
                     >
                       {game.favorite ? (
                         <FavoriteIcon sx={{ color: theme.palette.error.main }}  />
@@ -151,6 +156,7 @@ export function GamesCardList({
                       color={game.completed ? 'success' : 'inherit'}
                       onClick={e => { e.stopPropagation(); onToggleCompleted(game); }}
                       sx={{ minWidth: '70px' }}
+                      disabled={isGuest}
                     >
                       {game.completed ? (
                         <EmojiEventsIcon />
@@ -159,23 +165,27 @@ export function GamesCardList({
                       )}
                     </Button>
                     {/* Edit icon */}
-                    <Button 
-                      variant='outlined'
-                      onClick={e => { e.stopPropagation(); handleEditGame(game); }}
-                      sx={{ minWidth: '70px' }}
-                    >
-                      <span role="img" aria-label="Edit">✏️</span>
-                    </Button>
-                    {/* Delete icon */}
-                    <Button  
-                      variant='outlined'
-                      color="error" 
-                      onClick={e => { e.stopPropagation(); handleDeleteGame(game); }} 
-                      disabled={deletingGameId === game.id}
-                      sx={{ minWidth: '70px' }}
+                    {!isGuest && (
+                      <Button 
+                        variant='outlined'
+                        onClick={e => { e.stopPropagation(); handleEditGame(game); }}
+                        sx={{ minWidth: '70px' }}
                       >
-                      {deletingGameId === game.id ? <span>...</span> : <span role="img" aria-label="Delete">🗑️</span>}
-                    </Button>
+                        <span role="img" aria-label="Edit">✏️</span>
+                      </Button>
+                    )}
+                    {/* Delete icon */}
+                    {!isGuest && (
+                      <Button  
+                        variant='outlined'
+                        color="error" 
+                        onClick={e => { e.stopPropagation(); handleDeleteGame(game); }} 
+                        disabled={deletingGameId === game.id}
+                        sx={{ minWidth: '70px' }}
+                        >
+                        {deletingGameId === game.id ? <span>...</span> : <span role="img" aria-label="Delete">🗑️</span>}
+                      </Button>
+                    )}
                     {/* Alternative Names Button - separate row, centered, 50% width */}
                     {game.alternativeNames && game.alternativeNames.length > 0 && (
                       <Box sx={{ gridColumn: '1 / -1', width: '100%', display: 'flex', justifyContent: 'center', mt: 1 }}>

@@ -631,6 +631,7 @@ export default function GamesPage() {
           handleSearch={handleSearch}
           handleAddGame={handleAddGame}
           t={t}
+          session={session}
         />
 
         {/* User Games Table/Grid with Pagination, Sorting, Filtering */}
@@ -689,6 +690,7 @@ export default function GamesPage() {
                     t={t}
                     handleViewGameDetails={(game: any) => handleViewGameDetails(game, 'local')}
                     mobileCardViewMode={mobileCardViewMode}
+                    session={session}
                   />
                   {/* Infinite scroll trigger element */}
                   {hasMore && !gamesLoading && !loadingMore && (
@@ -721,6 +723,7 @@ export default function GamesPage() {
                     onRatingClick={handleRatingClick}
                     handleViewGameDetails={(game: any) => handleViewGameDetails(game, 'local')}
                     columns={tableColumns}
+                    session={session}
                   />
                 </Paper>
               )
@@ -810,6 +813,7 @@ export default function GamesPage() {
           formatCompanies={formatCompanies}
           handleViewGameDetails={(game: any) => handleViewGameDetails(game, 'igdb')}
           handleAddGameToCollection={handleAddGameToCollection}
+          session={session}
         />
 
         {/* Game Details Modal Component */}
@@ -823,6 +827,7 @@ export default function GamesPage() {
           setGalleryOpen={setGalleryOpen}
           onToggleCompleted={handleToggleCompleted}
           onToggleFavorite={handleToggleFavorite}
+          session={session}
         />
 
         {/* Add to Collection Modal */}

@@ -12,6 +12,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Guests cannot add games to collection
+    if (session.user.role === 'GUEST') {
+      return NextResponse.json({ error: 'Guests cannot add games to collection' }, { status: 403 });
+    }
+
     const body = await request.json();
     const {
       platforms,

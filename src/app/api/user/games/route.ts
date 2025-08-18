@@ -35,10 +35,54 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Determine which user's games to show based on role
+  let targetUserId = session.user.id;
+  let allowedPlatformIds: number[] = [];
+  
+  if (session.user.role === 'GUEST') {
+    // Guests can only see games from their creator and only for allowed platforms
+    const guestUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: { 
+        createdByUser: true,
+        guestPlatformPermissions: {
+          include: {
+            console: true
+          }
+        }
+      }
+    });
+    
+    if (!guestUser?.createdByUser) {
+      return Response.json({ error: 'Guest account has no associated creator' }, { status: 403 });
+    }
+    
+    targetUserId = guestUser.createdByUser.id;
+    
+    // Get allowed platform IDs from the guest's console permissions
+    allowedPlatformIds = guestUser.guestPlatformPermissions
+      .map(permission => permission.console.igdbPlatformID)
+      .filter((id): id is number => id !== null);
+    
+    // If guest has no platform permissions, they can't see any games
+    if (allowedPlatformIds.length === 0) {
+      return Response.json({ games: [], total: 0 });
+    }
+  }
+
   // Build SQL WHERE clause and params
   let sqlFilters = ['user_id = $1'];
-  let params: any[] = [session.user.id];
+  let params: any[] = [targetUserId];
   let paramIdx = 2;
+
+  // Add platform filtering for GUEST users
+  if (session.user.role === 'GUEST' && allowedPlatformIds.length > 0) {
+    // Filter games to only show those with platforms the guest has permission to see
+    // Cast to integer to match the platforms column type (Int[])
+    const platformPlaceholders = allowedPlatformIds.map(() => `$${paramIdx++}::integer`).join(',');
+    sqlFilters.push(`platforms && ARRAY[${platformPlaceholders}]`);
+    params.push(...allowedPlatformIds);
+  }
 
   if (name) {
     sqlFilters.push(`(name ILIKE $${paramIdx} OR array_to_string(alternative_names, '||') ILIKE $${paramIdx})`);
@@ -163,11 +207,11 @@ export async function GET(req: NextRequest) {
 
   // Data query with LEFT JOIN to game_locations
   // Helper to prefix all games table columns in WHERE clause with 'g.'
-  function prefixGamesTableColumns(filter) {
+  function prefixGamesTableColumns(filter: string): string {
     // Only prefix columns that are not inside function calls or already prefixed
     // Avoid prefixing inside function calls like array_to_string(...)
     // This regex matches column names not preceded by a dot or inside a function call
-    return filter.replace(/\b(user_id|name|alternative_names|notes|console_ids|platforms|completed|favorite|region|game_location_id|condition|label_damage|discoloration|rental_sticker|tested_working|reproduction|steelbook|completeness)\b(?!\s*\()/g, (match) => {
+    return filter.replace(/\b(user_id|name|alternative_names|notes|console_ids|platforms|completed|favorite|region|game_location_id|condition|label_damage|discoloration|rental_sticker|tested_working|reproduction|steelbook|completeness)\b(?!\s*\()/g, (match: string) => {
       // Don't prefix if already prefixed with g.
       if (filter.includes(`g.${match}`)) return match;
       return `g.${match}`;
