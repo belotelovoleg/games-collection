@@ -102,6 +102,7 @@ export default function GamesPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [totalGames, setTotalGames] = useState(0);
   const [gameDetailsType, setGameDetailsType] = useState<'igdb' | 'local'>('igdb');
+  const [savedScrollPosition, setSavedScrollPosition] = useState(0);
   const [gameLocations, setGameLocations] = useState<{id: string, name: string}[]>([]);
   const [tableColumns, setTableColumns] = useState<GameTableColumnSetting[]>(defaultGameTableColumns);
   const [mobileCardViewMode, setMobileCardViewMode] = useState(1);
@@ -358,6 +359,44 @@ export default function GamesPage() {
     observer.observe(observerElem);
     return () => observer.disconnect();
   }, [isMobile, hasMore, gamesLoading, loadingMore, limit, userGames.length]);
+
+  // Handle browser back button and URL parameters for game details
+  useEffect(() => {
+    const gameIdFromUrl = searchParams.get('gameId');
+    const gameTypeFromUrl = searchParams.get('gameType') as 'igdb' | 'local' | null;
+    
+    if (gameIdFromUrl && gameTypeFromUrl && userGames.length > 0) {
+      // Find the game in userGames
+      const game = userGames.find(g => g.id === gameIdFromUrl);
+      if (game && !gameDetailsOpen) { // Only open if not already open
+        setSelectedGame(game);
+        setGameDetailsType(gameTypeFromUrl);
+        setGameDetailsOpen(true);
+      }
+    } else if (!gameIdFromUrl && gameDetailsOpen) {
+      // Close modal if no gameId in URL but modal is open
+      setGameDetailsOpen(false);
+      setSelectedGame(null);
+    }
+  }, [searchParams, userGames, gameDetailsOpen]);
+
+  // Handle browser back button separately
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      const currentGameId = new URLSearchParams(window.location.search).get('gameId');
+      if (!currentGameId && gameDetailsOpen) {
+        setGameDetailsOpen(false);
+        setSelectedGame(null);
+        // Restore scroll position
+        setTimeout(() => {
+          window.scrollTo(0, savedScrollPosition);
+        }, 100);
+      }
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [gameDetailsOpen, savedScrollPosition]);
 
 
 
@@ -638,9 +677,38 @@ export default function GamesPage() {
   };
 
   const handleViewGameDetails = (game: any, type: 'igdb' | 'local' = 'local') => {
+    // Save current scroll position
+    setSavedScrollPosition(window.scrollY);
+    
+    // Add game ID to URL for mobile back button handling
+    if (isMobile) {
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.set('gameId', game.id);
+      currentUrl.searchParams.set('gameType', type);
+      window.history.pushState({ gameId: game.id, gameType: type }, '', currentUrl.toString());
+    }
+    
     setSelectedGame(game);
     setGameDetailsType(type);
     setGameDetailsOpen(true);
+  };
+
+  const handleCloseGameDetails = () => {
+    // Remove game ID from URL and restore scroll position
+    if (isMobile) {
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.delete('gameId');
+      currentUrl.searchParams.delete('gameType');
+      window.history.replaceState({}, '', currentUrl.toString());
+      
+      // Restore scroll position after a short delay to ensure DOM is ready
+      setTimeout(() => {
+        window.scrollTo(0, savedScrollPosition);
+      }, 100);
+    }
+    
+    setGameDetailsOpen(false);
+    setSelectedGame(null);
   };
 
   const handleAddGameToCollection = (game: any) => {
@@ -922,7 +990,7 @@ export default function GamesPage() {
         {/* Game Details Modal Component */}
         <GameDetailsModal
           open={gameDetailsOpen}
-          onClose={() => setGameDetailsOpen(false)}
+          onClose={handleCloseGameDetails}
           game={selectedGame}
           onAddToCollection={handleAddGameToCollection}
           gameType={gameDetailsType}

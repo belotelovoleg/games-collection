@@ -155,7 +155,6 @@ export function GameDetailsModal({ open,
   // Merge local game with igdbGame if gameType is "local"
   useEffect(() => {
     if (gameType === "local" && game) {
-      console.log(game,'game')
       const igdbGame = game.igdbGame || fetchedIgdbGame || {};
       const newMerged = {
         // Prefer local game fields, fallback to igdbGame fields
