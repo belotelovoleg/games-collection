@@ -55,6 +55,26 @@ export default function LocalePage({ params }: { params: Promise<{ locale: strin
           >
             🎮 {t('common_appName')}
           </Typography>
+
+          <Box
+            sx={{
+              mb: 4,
+              display: 'flex',
+              justifyContent: 'center'
+            }}
+          >
+            <img
+              src="/home.png"
+              alt="Games Collection"
+              style={{
+                maxWidth: '100%',
+                height: 'auto',
+                maxHeight: '300px',
+                borderRadius: '12px',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+              }}
+            />
+          </Box>
           
           <Typography
             variant="h4"
