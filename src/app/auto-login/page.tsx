@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { CircularProgress, Box, Typography, Alert } from '@mui/material';
 
-export default function AutoLoginPage() {
+function AutoLoginContent() {
   const { data: session, status } = useSession();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -109,5 +109,27 @@ export default function AutoLoginPage() {
         Logging you in...
       </Typography>
     </Box>
+  );
+}
+
+export default function AutoLoginPage() {
+  return (
+    <Suspense fallback={
+      <Box 
+        display="flex" 
+        flexDirection="column" 
+        alignItems="center" 
+        justifyContent="center" 
+        minHeight="100vh"
+        gap={2}
+      >
+        <CircularProgress size={60} />
+        <Typography variant="h6" color="text.secondary">
+          Loading...
+        </Typography>
+      </Box>
+    }>
+      <AutoLoginContent />
+    </Suspense>
   );
 }
