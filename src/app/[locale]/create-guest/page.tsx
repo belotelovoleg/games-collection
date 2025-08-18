@@ -32,10 +32,13 @@ import {
   OutlinedInput,
   SelectChangeEvent,
   Checkbox,
-  ListItemIcon
+  ListItemIcon,
+  Tooltip,
+  Snackbar,
 } from "@mui/material";
 import DeleteIcon from '@mui/icons-material/Delete';
 import PersonIcon from '@mui/icons-material/Person';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { useTranslations } from "@/hooks/useTranslations";
 import { MainLayout } from "@/components/MainLayout";
 
@@ -50,6 +53,7 @@ interface GuestAccount {
       name: string;
       photo?: string;
       abbreviation?: string;
+      igdbPlatformID?: number | null;
     };
   }[];
 }
@@ -76,6 +80,9 @@ export default function CreateGuestPage({ params }: { params: Promise<{ locale: 
   const [userConsoles, setUserConsoles] = useState<any[]>([]);
   const [selectedConsoles, setSelectedConsoles] = useState<number[]>([]);
   const [consolesLoading, setConsolesLoading] = useState(true);
+  
+  // Copy guest link state
+  const [copySuccess, setCopySuccess] = useState(false);
 
   // Fetch existing guest accounts and user consoles
   useEffect(() => {
@@ -154,6 +161,34 @@ export default function CreateGuestPage({ params }: { params: Promise<{ locale: 
   const handleConsoleChange = (event: SelectChangeEvent<typeof selectedConsoles>) => {
     const value = event.target.value;
     setSelectedConsoles(typeof value === 'string' ? value.split(',').map(Number) : value);
+  };
+
+  const copyGuestLink = async (guest: GuestAccount) => {
+    try {
+      // Use the first allowed console for the platform
+      const firstPlatform = guest.guestPlatformPermissions?.[0];
+      if (!firstPlatform) {
+        console.error('No platforms available for guest');
+        return;
+      }
+
+      // Use the console's igdbPlatformID (platform ID) instead of console ID
+      const platformId = firstPlatform.console.igdbPlatformID;
+      if (!platformId) {
+        console.error('Console has no associated platform ID');
+        return;
+      }
+
+      const baseUrl = window.location.origin;
+      // Note: Password needs to be replaced with the actual guest password
+      const guestLink = `${baseUrl}/auto-login?email=${encodeURIComponent(guest.email)}&pwd=GUEST_PASSWORD&platform=${platformId}`;
+      
+      await navigator.clipboard.writeText(guestLink);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy guest link: ', err);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -355,16 +390,29 @@ export default function CreateGuestPage({ params }: { params: Promise<{ locale: 
                         </Box>
                       </>
                     }
+                    secondaryTypographyProps={{ component: 'div' }}
                   />
                   <ListItemSecondaryAction>
-                    <IconButton
-                      edge="end"
-                      color="error"
-                      onClick={() => handleDeleteClick(guest)}
-                      disabled={loading}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Tooltip title="Copy guest auto-login link">
+                        <IconButton
+                          edge="end"
+                          color="primary"
+                          onClick={() => copyGuestLink(guest)}
+                          disabled={!guest.guestPlatformPermissions?.length}
+                        >
+                          <ContentCopyIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <IconButton
+                        edge="end"
+                        color="error"
+                        onClick={() => handleDeleteClick(guest)}
+                        disabled={loading}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
                   </ListItemSecondaryAction>
                 </ListItem>
               ))}
@@ -387,6 +435,14 @@ export default function CreateGuestPage({ params }: { params: Promise<{ locale: 
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* Copy Success Snackbar */}
+        <Snackbar
+          open={copySuccess}
+          autoHideDuration={3000}
+          onClose={() => setCopySuccess(false)}
+          message="Guest link copied! Remember to replace 'GUEST_PASSWORD' with actual password."
+        />
       </Container>
     </MainLayout>
   );

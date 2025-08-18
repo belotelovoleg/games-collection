@@ -21,7 +21,7 @@ import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from '@mui/material/styles';
 import { useMediaQuery } from '@mui/material';
 import { useTranslations } from "@/hooks/useTranslations";
@@ -36,6 +36,7 @@ import { defaultGameTableColumns, GameTableColumnSetting } from "@/components/ga
 
 
 export default function GamesPage() {
+  const searchParams = useSearchParams();
   const [showMobileControls, setShowMobileControls] = useState(false);
   const [allPlatforms, setAllPlatforms] = useState<any[]>([]);
   const [allConsoleSystems, setAllConsoleSystems] = useState<any[]>([]);
@@ -210,7 +211,88 @@ export default function GamesPage() {
   };
 
 
+  /**** URL PARAMETER HELPERS ****/
+
+  // Read filters from URL parameters
+  const readFiltersFromURL = () => {
+    const urlFilters: any = {
+      name: "",
+      platform: "",
+      consoleId: "",
+      completed: "",
+      favorite: "",
+      region: "",
+      labelDamage: "",
+      discoloration: "",
+      rentalSticker: "",
+      testedWorking: "",
+      reproduction: "",
+      completeness: "",
+      steelbook: "",
+    };
+
+    // Read each filter from URL parameters
+    Object.keys(urlFilters).forEach(key => {
+      const value = searchParams.get(key);
+      if (value) {
+        urlFilters[key] = value;
+      }
+    });
+
+    return urlFilters;
+  };
+
+  // Update URL with current filters and optional sorting/page parameters
+  const updateURLWithFilters = (newFilters: any, newSortBy?: string, newSortOrder?: 'asc' | 'desc', newPage?: number) => {
+    const params = new URLSearchParams();
+    
+    // Add non-empty filter values to URL
+    Object.entries(newFilters).forEach(([key, value]) => {
+      if (value && value !== "") {
+        params.set(key, String(value));
+      }
+    });
+
+    // Add sorting parameters (use provided values or fallback to current)
+    const finalSortBy = newSortBy !== undefined ? newSortBy : (searchParams.get('sortBy') || sortBy);
+    const finalSortOrder = newSortOrder !== undefined ? newSortOrder : (searchParams.get('sortOrder') || sortOrder);
+    const finalPage = newPage !== undefined ? newPage : (searchParams.get('page') ? parseInt(searchParams.get('page')!) : page);
+    
+    if (finalSortBy && finalSortBy !== 'title') params.set('sortBy', finalSortBy);
+    if (finalSortOrder && finalSortOrder !== 'asc') params.set('sortOrder', finalSortOrder);
+    if (finalPage && finalPage !== 1) params.set('page', String(finalPage));
+
+    // Update URL without causing page reload
+    const newUrl = params.toString() ? `?${params.toString()}` : '';
+    router.replace(`/${locale}/games${newUrl}`, { scroll: false });
+  };
+
   /**** useEffects ****/
+
+  // Initialize filters from URL parameters on mount
+  useEffect(() => {
+    const urlFilters = readFiltersFromURL();
+    // Only update if there are actual filter values in URL
+    const hasFilters = Object.values(urlFilters).some(value => value !== "");
+    if (hasFilters) {
+      setFilters(urlFilters);
+    }
+
+    // Also read sorting and page from URL
+    const urlPage = searchParams.get('page');
+    const urlSortBy = searchParams.get('sortBy');
+    const urlSortOrder = searchParams.get('sortOrder');
+    
+    if (urlPage && parseInt(urlPage) > 0) {
+      setPage(parseInt(urlPage));
+    }
+    if (urlSortBy && urlSortBy !== sortBy) {
+      setSortBy(urlSortBy);
+    }
+    if (urlSortOrder && (urlSortOrder === 'asc' || urlSortOrder === 'desc') && urlSortOrder !== sortOrder) {
+      setSortOrder(urlSortOrder);
+    }
+  }, []); // Run only on mount
 
   // Authentication check
   useEffect(() => {
@@ -645,14 +727,23 @@ export default function GamesPage() {
                 setFilters={newFilters => {
                   setFilters(newFilters);
                   setPage(1);
+                  updateURLWithFilters(newFilters, undefined, undefined, 1);
                 }}
                 allPlatforms={allPlatforms}
                 allConsoleSystems={allConsoleSystems}
                 t={t}
                 sortBy={sortBy}
-                setSortBy={value => { setSortBy(value); setPage(1); }}
+                setSortBy={value => { 
+                  setSortBy(value); 
+                  setPage(1); 
+                  updateURLWithFilters(filters, value, undefined, 1);
+                }}
                 sortOrder={sortOrder}
-                setSortOrder={value => { setSortOrder(value); setPage(1); }}
+                setSortOrder={value => { 
+                  setSortOrder(value); 
+                  setPage(1); 
+                  updateURLWithFilters(filters, undefined, value, 1);
+                }}
                 gameLocations={gameLocations}
                 tableColumns={tableColumns}
                 setTableColumns={handleTableColumnsChange}
@@ -743,7 +834,11 @@ export default function GamesPage() {
                 <Button
                   size="small"
                   disabled={page === 1}
-                  onClick={() => setPage(page - 1)}
+                  onClick={() => {
+                    const newPage = page - 1;
+                    setPage(newPage);
+                    updateURLWithFilters(filters, undefined, undefined, newPage);
+                  }}
                 >
                   {t('common_previous') || 'Prev'}
                 </Button>
@@ -753,7 +848,11 @@ export default function GamesPage() {
                 <Button
                   size="small"
                   disabled={page >= Math.ceil(totalGames / pageSize)}
-                  onClick={() => setPage(page + 1)}
+                  onClick={() => {
+                    const newPage = page + 1;
+                    setPage(newPage);
+                    updateURLWithFilters(filters, undefined, undefined, newPage);
+                  }}
                 >
                   {t('common_next') || 'Next'}
                 </Button>
@@ -762,7 +861,11 @@ export default function GamesPage() {
                   <Select
                     value={pageSize}
                     label={t('common_pagesize') || 'Page Size'}
-                    onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
+                    onChange={e => { 
+                      setPageSize(Number(e.target.value)); 
+                      setPage(1);
+                      updateURLWithFilters(filters, undefined, undefined, 1);
+                    }}
                   >
                     {[6, 12, 24, 48].map(size => (
                       <MenuItem key={size} value={size}>{size}</MenuItem>

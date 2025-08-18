@@ -33,7 +33,8 @@ export async function GET(req: NextRequest) {
                 id: true,
                 name: true,
                 photo: true,
-                abbreviation: true
+                abbreviation: true,
+                igdbPlatformID: true
               }
             }
           }

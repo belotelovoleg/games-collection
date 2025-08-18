@@ -85,8 +85,15 @@ export function GamesCardList({
               <Typography variant="subtitle1" fontWeight="bold" sx={{ textAlign: 'center', mb: 1 }}>{game.title || game.name}</Typography>
               {/* Mobile-only layout: image left, buttons right, all vertical */}
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%', flexWrap: 'wrap' }}>
-                <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2, width: '100%',flexWrap: 'wrap' }}>
-                  {/* Game image on left */}
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexDirection: 'row', 
+                  gap: 2, 
+                  width: '100%',
+                  flexWrap: 'wrap',
+                  justifyContent: isGuest ? 'center' : 'flex-start' // Center for guests, left-align for others
+                }}>
+                  {/* Game image on left (centered for guests) */}
                   <Box
                     sx={{ cursor: 'pointer', minWidth: 80, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', width: '80px' }}
                     onClick={e => {
@@ -107,97 +114,100 @@ export function GamesCardList({
                     >
                       {!(game.cover || game.photos?.[0] || game.screenshot) && <SportsEsportsIcon />}
                     </Avatar>
-                    {/* Rating row, centered, moved under image */}
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', mt: 1 }}>
-                      <span
-                        style={{ cursor: isGuest ? 'default' : 'pointer', display: 'flex', alignItems: 'center' }}
-                        title={isGuest ? '' : "Set rating"}
-                        onClick={isGuest ? undefined : e => onRatingClick(e, game)}
-                      >
-                        <Rating value={getGameRating(game)} precision={0.1} size="small" readOnly />
-                      </span>
-                      <Typography variant="caption" color="text.secondary">
-                        ({getGameRating(game).toFixed(1)})
-                      </Typography>
-                    </Box>
+                    {/* Rating row, centered, moved under image - hide for guests */}
+                    {!isGuest && (
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', mt: 1 }}>
+                        <span
+                          style={{ cursor: isGuest ? 'default' : 'pointer', display: 'flex', alignItems: 'center' }}
+                          title={isGuest ? '' : "Set rating"}
+                          onClick={isGuest ? undefined : e => onRatingClick(e, game)}
+                        >
+                          <Rating value={getGameRating(game)} precision={0.1} size="small" readOnly />
+                        </span>
+                        <Typography variant="caption" color="text.secondary">
+                          ({getGameRating(game).toFixed(1)})
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
-                  {/* Buttons and info on right, all vertical for mobile */}
-                  <Box
-                    sx={{
-                      flex: 1,
-                      display: 'grid',
-                      gap: 1,
-                      width: '100%',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gridTemplateColumns: {
-                        xs: 'repeat(2, 1fr)', // 2 buttons per row on mobile
-                        sm: 'repeat(4, 1fr)', // 4 buttons per row on desktop
-                      },
-                    }}
-                  >
-                    {/* Favorite button */}
-                    <Button
-                      variant='outlined'
-                      color={game.favorite ? 'error' : 'inherit'}
-                      onClick={e => { e.stopPropagation(); onToggleFavorite(game); }}
-                      sx={{ minWidth: '70px' }}
-                      disabled={isGuest}
+                  {/* Buttons and info on right, all vertical for mobile - hide entire block for guests */}
+                  {!isGuest && (
+                    <Box
+                      sx={{
+                        flex: 1,
+                        display: 'grid',
+                        gap: 1,
+                        width: '100%',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gridTemplateColumns: {
+                          xs: 'repeat(2, 1fr)', // 2 buttons per row on mobile
+                          sm: 'repeat(4, 1fr)', // 4 buttons per row on desktop
+                        },
+                      }}
                     >
-                      {game.favorite ? (
-                        <FavoriteIcon sx={{ color: theme.palette.error.main }}  />
-                      ) : (
-                        <FavoriteBorderIcon sx={{ color: theme.palette.action.disabled }} />
-                      )}
-                    </Button>
-                    {/* Completed button */}
-                    <Button
-                      variant='outlined'
-                      color={game.completed ? 'success' : 'inherit'}
-                      onClick={e => { e.stopPropagation(); onToggleCompleted(game); }}
-                      sx={{ minWidth: '70px' }}
-                      disabled={isGuest}
-                    >
-                      {game.completed ? (
-                        <EmojiEventsIcon />
-                      ) : (
-                        <MilitaryTechIcon sx={{ color: theme.palette.action.disabled }}/>
-                      )}
-                    </Button>
-                    {/* Edit icon */}
-                    {!isGuest && (
-                      <Button 
+                      {/* Favorite button */}
+                      <Button
                         variant='outlined'
-                        onClick={e => { e.stopPropagation(); handleEditGame(game); }}
+                        color={game.favorite ? 'error' : 'inherit'}
+                        onClick={e => { e.stopPropagation(); onToggleFavorite(game); }}
                         sx={{ minWidth: '70px' }}
+                        disabled={isGuest}
                       >
-                        <span role="img" aria-label="Edit">✏️</span>
+                        {game.favorite ? (
+                          <FavoriteIcon sx={{ color: theme.palette.error.main }}  />
+                        ) : (
+                          <FavoriteBorderIcon sx={{ color: theme.palette.action.disabled }} />
+                        )}
                       </Button>
-                    )}
-                    {/* Delete icon */}
-                    {!isGuest && (
-                      <Button  
+                      {/* Completed button */}
+                      <Button
                         variant='outlined'
-                        color="error" 
-                        onClick={e => { e.stopPropagation(); handleDeleteGame(game); }} 
-                        disabled={deletingGameId === game.id}
+                        color={game.completed ? 'success' : 'inherit'}
+                        onClick={e => { e.stopPropagation(); onToggleCompleted(game); }}
                         sx={{ minWidth: '70px' }}
-                        >
-                        {deletingGameId === game.id ? <span>...</span> : <span role="img" aria-label="Delete">🗑️</span>}
+                        disabled={isGuest}
+                      >
+                        {game.completed ? (
+                          <EmojiEventsIcon />
+                        ) : (
+                          <MilitaryTechIcon sx={{ color: theme.palette.action.disabled }}/>
+                        )}
                       </Button>
-                    )}
-                    {/* Alternative Names Button - separate row, centered, 50% width */}
-                    {game.alternativeNames && game.alternativeNames.length > 0 && (
-                      <Box sx={{ gridColumn: '1 / -1', width: '100%', display: 'flex', justifyContent: 'center', mt: 1 }}>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          onClick={(e) => handleAltNamesClick(e, game.id)}
-                          sx={{ minWidth: 120, mx: 'auto', px: 1, py: 0.2, fontSize: '0.75rem', lineHeight: 2, textAlign: 'center', whiteSpace: 'nowrap' }}
+                      {/* Edit icon */}
+                      {!isGuest && (
+                        <Button 
+                          variant='outlined'
+                          onClick={e => { e.stopPropagation(); handleEditGame(game); }}
+                          sx={{ minWidth: '70px' }}
                         >
-                          {t('games_alternativeNames') || 'Alt Names'}
+                          <span role="img" aria-label="Edit">✏️</span>
                         </Button>
-                        {altNamesGameId === game.id && (
+                      )}
+                      {/* Delete icon */}
+                      {!isGuest && (
+                        <Button  
+                          variant='outlined'
+                          color="error" 
+                          onClick={e => { e.stopPropagation(); handleDeleteGame(game); }} 
+                          disabled={deletingGameId === game.id}
+                          sx={{ minWidth: '70px' }}
+                          >
+                          {deletingGameId === game.id ? <span>...</span> : <span role="img" aria-label="Delete">🗑️</span>}
+                        </Button>
+                      )}
+                      {/* Alternative Names Button - separate row, centered, 50% width */}
+                      {game.alternativeNames && game.alternativeNames.length > 0 && (
+                        <Box sx={{ gridColumn: '1 / -1', width: '100%', display: 'flex', justifyContent: 'center', mt: 1 }}>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={(e) => handleAltNamesClick(e, game.id)}
+                            sx={{ minWidth: 120, mx: 'auto', px: 1, py: 0.2, fontSize: '0.75rem', lineHeight: 2, textAlign: 'center', whiteSpace: 'nowrap' }}
+                          >
+                            {t('games_alternativeNames') || 'Alt Names'}
+                          </Button>
+                          {altNamesGameId === game.id && (
                         <Popover
                           open={Boolean(altNamesAnchorEl)}
                           anchorEl={altNamesAnchorEl}
@@ -211,9 +221,10 @@ export function GamesCardList({
                           </Box>
                         </Popover>
                       )}
-                      </Box>
-                    )}
-                  </Box>
+                        </Box>
+                      )}
+                    </Box>
+                  )}
                 </Box>
                 <Box sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 0, justifyContent: 'center', mt: 0 }}>
                   {consoleSystemStr && (

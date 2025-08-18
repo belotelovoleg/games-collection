@@ -158,10 +158,18 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t,
   };
   const [nameError, setNameError] = useState(false);
   const handleQuickNameSearch = () => {
+    // If empty, clear the search filter and error
+    if (quickName.trim().length === 0) {
+      setNameError(false);
+      setFilters({ ...filters, name: "" });
+      return;
+    }
+    // If less than 3 characters but not empty, show error
     if (quickName.trim().length < 3) {
       setNameError(true);
       return;
     }
+    // If 3 or more characters, proceed with search
     setNameError(false);
     setFilters({ ...filters, name: quickName });
   }
@@ -336,7 +344,7 @@ export default function GamesFilterPanel({ filters, setFilters, allPlatforms, t,
             value={quickName}
             onChange={e => {
               setQuickName(e.target.value);
-              if (nameError && e.target.value.trim().length >= 3) setNameError(false);
+              if (nameError && (e.target.value.trim().length >= 3 || e.target.value.trim().length === 0)) setNameError(false);
             }}
             sx={{ minWidth: 180, flex: 1 }}
             onKeyDown={e => {
