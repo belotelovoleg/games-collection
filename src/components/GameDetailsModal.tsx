@@ -21,13 +21,17 @@ import {
   Backdrop,
   Accordion,
   AccordionSummary,
-  AccordionDetails
+  AccordionDetails,
+  TextField
 } from "@mui/material";
 import { GameMediaGallery } from "./GameMediaGallery";
+import { GameLocationDropdown } from "./GameLocationDropdown";
 import CloseIcon from "@mui/icons-material/Close";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import InfoIcon from "@mui/icons-material/Info";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import EditIcon from "@mui/icons-material/Edit";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import ImageIcon from "@mui/icons-material/Image";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
@@ -49,6 +53,7 @@ interface GameDetailsModalProps {
   onAddToCollection: (game: any) => void;
   onToggleCompleted?: (game: any) => void;
   onToggleFavorite?: (game: any) => void;
+  onGameUpdate?: (game: any) => void;
   session?: Session | null;
 }
 
@@ -61,6 +66,7 @@ export function GameDetailsModal({ open,
   setGalleryOpen, 
   onToggleCompleted, 
   onToggleFavorite,
+  onGameUpdate,
   session
 }: GameDetailsModalProps) {
   // Check if user is a guest (guests can only view, not add/edit/delete)
@@ -73,8 +79,17 @@ export function GameDetailsModal({ open,
   // Modal states
   const [detailsTabValue, setDetailsTabValue] = useState(0);
   const [fetchedIgdbGame, setFetchedIgdbGame] = useState(null);
-  const [loadingIgdb, setLoadingIgdb] = useState(false);
+  const [loadingIgdb, setLoadingIgdb] = useState(true);
   const [mergedGame, setMergedGame] = useState<any>(game);
+  
+  // Location state
+  const [locations, setLocations] = useState<{ id: string, name: string }[]>([]);
+  const [updatingLocation, setUpdatingLocation] = useState(false);
+  
+  // Notes state
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesValue, setNotesValue] = useState('');
+  const [updatingNotes, setUpdatingNotes] = useState(false);
 
   // When you need to fetch IGDB data:
   useEffect(() => {
@@ -89,6 +104,91 @@ export function GameDetailsModal({ open,
       setLoadingIgdb(false);
     }
   }, [game, gameType]);
+
+  // Fetch locations
+  useEffect(() => {
+    fetch('/api/user/game-locations')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setLocations(data);
+      })
+      .catch(err => console.error('Failed to fetch locations:', err));
+  }, []);
+
+  // Handle location change
+  const handleSetLocation = async (gameLocationId: string | null) => {
+    if (!mergedGame?.id) return;
+    
+    setUpdatingLocation(true);
+    try {
+      const response = await fetch(`/api/user/games/${mergedGame.id}/location`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameLocationId }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to update location: ${response.status}`);
+      }
+      
+      // Find the location object
+      const locationObj = locations.find(l => l.id === gameLocationId) || null;
+      const updatedGame = { ...mergedGame, gameLocation: locationObj };
+      setMergedGame(updatedGame);
+      
+      // Update the parent component's game data
+      if (onGameUpdate) {
+        onGameUpdate(updatedGame);
+      }
+    } catch (error) {
+      console.error('Failed to update location:', error);
+    } finally {
+      setUpdatingLocation(false);
+    }
+  };
+
+  // Handle notes editing
+  const handleEditNotes = () => {
+    setNotesValue(mergedGame.notes || '');
+    setEditingNotes(true);
+  };
+
+  const handleCancelNotes = () => {
+    setNotesValue('');
+    setEditingNotes(false);
+  };
+
+  const handleSaveNotes = async () => {
+    if (!mergedGame?.id) return;
+    
+    setUpdatingNotes(true);
+    try {
+      const response = await fetch(`/api/user/games/${mergedGame.id}/notes`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes: notesValue }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to update notes: ${response.status}`);
+      }
+      
+      // Update the merged game with new notes
+      const updatedGame = { ...mergedGame, notes: notesValue };
+      setMergedGame(updatedGame);
+      
+      // Update the parent component's game data
+      if (onGameUpdate) {
+        onGameUpdate(updatedGame);
+      }
+      
+      setEditingNotes(false);
+    } catch (error) {
+      console.error('Failed to update notes:', error);
+    } finally {
+      setUpdatingNotes(false);
+    }
+  };
 
   // Helper functions
   const formatReleaseDate = (timestamp: number) => {
@@ -214,6 +314,8 @@ export function GameDetailsModal({ open,
         >
           <CircularProgress color="inherit" />
         </Backdrop>
+        {!loadingIgdb && (
+          <>
         <DialogTitle sx={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
@@ -390,36 +492,6 @@ export function GameDetailsModal({ open,
             </Box>
             {/* Main Content Area */}
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              {gameType === "local" && (
-                <Accordion sx={{ mt: 1 }}>
-                  <AccordionSummary
-                    expandIcon={<InfoIcon />}
-                    aria-controls="game-condition-content"
-                    id="game-condition-header"
-                  >
-                    <Typography variant="subtitle1" fontWeight="bold">
-                      {t('games_physicalDetails')}
-                    </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Box sx={{
-                      display: 'flex',
-                      flexDirection: { xs: 'column', md: 'row' },
-                      flexWrap: 'wrap',
-                      gap: 2,
-                      alignItems: 'flex-start',
-                    }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 0.5, md: 0 } }}>{t('games_region')}: <b>{mergedGame.region ? (t as any)(`games_region_${mergedGame.region.toLowerCase()}`) : t('games_none')}</b></Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 0.5, md: 0 } }}>{t('games_labelDamage')}: <b>{mergedGame.labelDamage ? t('games_yes') : t('games_no')}</b></Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 0.5, md: 0 } }}>{t('games_discoloration')}: <b>{mergedGame.discoloration ? t('games_yes') : t('games_no')}</b></Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 0.5, md: 0 } }}>{t('games_rentalSticker')}: <b>{mergedGame.rentalSticker ? t('games_yes') : t('games_no')}</b></Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 0.5, md: 0 } }}>{t('games_testedWorking')}: <b>{mergedGame.testedWorking ? t('games_yes') : t('games_no')}</b></Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 0.5, md: 0 } }}>{t('games_reproduction')}: <b>{mergedGame.reproduction ? t('games_yes') : t('games_no')}</b></Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 0.5, md: 0 } }}>{t('games_steelbook')}: <b>{mergedGame.steelbook ? t('games_yes') : t('games_no')}</b></Typography>
-                    </Box>
-                  </AccordionDetails>
-                </Accordion>
-              )}
               {/* Tabs for different content sections */}
               <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
                 <Tabs 
@@ -580,9 +652,140 @@ export function GameDetailsModal({ open,
                   imageAltPrefix="Photo"
                 />
               )}
+              {gameType === "local" && (
+              <>
+                <Accordion sx={{ mt: 1 }} defaultExpanded>
+                  <AccordionSummary
+                    expandIcon={<InfoIcon />}
+                    aria-controls="game-condition-content"
+                    id="game-condition-header"
+                  >
+                    <Typography variant="subtitle1" fontWeight="bold">
+                      {t('games_physicalDetails')}
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    
+                    <Box sx={{
+                      display: 'flex',
+                      flexDirection: { xs: 'column', md: 'row' },
+                      flexWrap: 'wrap',
+                      gap: 2,
+                      alignItems: 'flex-start',
+                    }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 0.5, md: 0 } }}>{t('games_region')}: <b>{mergedGame.region ? (t as any)(`games_region_${mergedGame.region.toLowerCase()}`) : t('games_none')}</b></Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 0.5, md: 0 } }}>{t('games_labelDamage')}: <b>{mergedGame.labelDamage ? t('games_yes') : t('games_no')}</b></Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 0.5, md: 0 } }}>{t('games_discoloration')}: <b>{mergedGame.discoloration ? t('games_yes') : t('games_no')}</b></Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 0.5, md: 0 } }}>{t('games_rentalSticker')}: <b>{mergedGame.rentalSticker ? t('games_yes') : t('games_no')}</b></Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 0.5, md: 0 } }}>{t('games_testedWorking')}: <b>{mergedGame.testedWorking ? t('games_yes') : t('games_no')}</b></Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 0.5, md: 0 } }}>{t('games_reproduction')}: <b>{mergedGame.reproduction ? t('games_yes') : t('games_no')}</b></Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 0.5, md: 0 } }}>{t('games_steelbook')}: <b>{mergedGame.steelbook ? t('games_yes') : t('games_no')}</b></Typography>
+                    </Box>
+                  </AccordionDetails>
+                </Accordion>
+                 <Accordion sx={{ mt: 1 }} defaultExpanded>
+                  <AccordionSummary
+                    expandIcon={<InfoIcon />}
+                    aria-controls="game-location-content"
+                    id="game-location-header"
+                  >
+                    <Typography variant="subtitle1" fontWeight="bold">
+                      {t('games_gameLocation') || t('common_location') || 'Location'}
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    {/* Location Dropdown - only for local games and non-guests */}
+                    {!isGuest && (
+                      <Box sx={{ mb: 3 }}>
+                        <GameLocationDropdown
+                          value={mergedGame.gameLocation?.id || null}
+                          locations={locations}
+                          onChange={handleSetLocation}
+                          disabled={updatingLocation}
+                        />
+                      </Box>
+                    )}
+                  </AccordionDetails>
+                  </Accordion>
+
+                  {/* Notes Section */}
+                  <Accordion sx={{ mt: 1 }} defaultExpanded>
+                    <AccordionSummary
+                      expandIcon={<ExpandMoreIcon />}
+                      aria-controls="game-notes-content"
+                      id="game-notes-header"
+                    >
+                      <Typography variant="subtitle1" fontWeight="bold">
+                        {t('games_notes') || 'Notes'}
+                        {mergedGame.notes && (
+                          <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1, fontWeight: 'normal' }}>
+                            ({mergedGame.notes.length > 50 ? `${mergedGame.notes.substring(0, 50)}...` : mergedGame.notes})
+                          </Typography>
+                        )}
+                      </Typography>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      {!isGuest && editingNotes ? (
+                        <Box>
+                          <TextField
+                            fullWidth
+                            multiline
+                            minRows={3}
+                            maxRows={10}
+                            value={notesValue}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNotesValue(e.target.value)}
+                            placeholder={t('games_notesPlaceholder') || 'Add your notes about this game...'}
+                            variant="outlined"
+                            disabled={updatingNotes}
+                          />
+                          <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+                            <Button
+                              onClick={handleSaveNotes}
+                              variant="contained"
+                              disabled={updatingNotes}
+                              startIcon={updatingNotes ? <CircularProgress size={16} /> : undefined}
+                            >
+                              {updatingNotes ? (t('games_notesSaving') || 'Saving...') : (t('games_notesSave') || 'Save')}
+                            </Button>
+                            <Button
+                              onClick={handleCancelNotes}
+                              variant="outlined"
+                              disabled={updatingNotes}
+                            >
+                              {t('games_notesCancel') || 'Cancel'}
+                            </Button>
+                          </Box>
+                        </Box>
+                      ) : (
+                        <Box>
+                          {mergedGame.notes ? (
+                            <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', mb: 2 }}>
+                              {mergedGame.notes}
+                            </Typography>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                              {t('games_notesEmpty') || 'No notes added yet.'}
+                            </Typography>
+                          )}
+                          {!isGuest && (
+                            <Button
+                              onClick={handleEditNotes}
+                              variant="outlined"
+                              startIcon={<EditIcon />}
+                            >
+                              {mergedGame.notes ? (t('games_notesEdit') || 'Edit Notes') : (t('games_notesAdd') || 'Add Notes')}
+                            </Button>
+                          )}
+                        </Box>
+                      )}
+                    </AccordionDetails>
+                  </Accordion>
+              </>
+              )}
             </Box>
           </Box>
         </DialogContent>
+</>)}
       </Dialog>
     </>
   );

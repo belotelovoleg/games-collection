@@ -193,6 +193,18 @@ export default function GamesPage() {
     }
   };
 
+  const handleGameUpdate = (updatedGame: any) => {
+    // Update the game in the userGames list
+    setUserGames(prev =>
+      prev.map(g => g.id === updatedGame.id ? { ...g, ...updatedGame } : g)
+    );
+    
+    // Update the selectedGame if it's the same game
+    if (selectedGame?.id === updatedGame.id) {
+      setSelectedGame({ ...selectedGame, ...updatedGame });
+    }
+  };
+
   // Save table columns to DB when changed
   const handleTableColumnsChange = async (newColumns: GameTableColumnSetting[]) => {
     // Always merge with default columns to ensure new ones are present
@@ -680,12 +692,17 @@ export default function GamesPage() {
     // Save current scroll position
     setSavedScrollPosition(window.scrollY);
     
-    // Add game ID to URL for mobile back button handling
+    // Add game ID to URL for both mobile and desktop
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set('gameId', game.id);
+    currentUrl.searchParams.set('gameType', type);
+    
     if (isMobile) {
-      const currentUrl = new URL(window.location.href);
-      currentUrl.searchParams.set('gameId', game.id);
-      currentUrl.searchParams.set('gameType', type);
+      // Use pushState for mobile to enable back button functionality
       window.history.pushState({ gameId: game.id, gameType: type }, '', currentUrl.toString());
+    } else {
+      // Use replaceState for desktop to update URL without affecting back button
+      window.history.replaceState({ gameId: game.id, gameType: type }, '', currentUrl.toString());
     }
     
     setSelectedGame(game);
@@ -694,14 +711,14 @@ export default function GamesPage() {
   };
 
   const handleCloseGameDetails = () => {
-    // Remove game ID from URL and restore scroll position
+    // Remove game ID from URL for both mobile and desktop
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.delete('gameId');
+    currentUrl.searchParams.delete('gameType');
+    window.history.replaceState({}, '', currentUrl.toString());
+    
+    // Restore scroll position for mobile
     if (isMobile) {
-      const currentUrl = new URL(window.location.href);
-      currentUrl.searchParams.delete('gameId');
-      currentUrl.searchParams.delete('gameType');
-      window.history.replaceState({}, '', currentUrl.toString());
-      
-      // Restore scroll position after a short delay to ensure DOM is ready
       setTimeout(() => {
         window.scrollTo(0, savedScrollPosition);
       }, 100);
@@ -998,6 +1015,7 @@ export default function GamesPage() {
           setGalleryOpen={setGalleryOpen}
           onToggleCompleted={handleToggleCompleted}
           onToggleFavorite={handleToggleFavorite}
+          onGameUpdate={handleGameUpdate}
           session={session}
         />
 

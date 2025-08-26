@@ -1,5 +1,5 @@
 import React from "react";
-import { MenuItem, Select, FormControl, InputLabel } from "@mui/material";
+import { Autocomplete, TextField } from "@mui/material";
 
 export function GameLocationDropdown({ value, locations, onChange, disabled }: {
   value: string | null;
@@ -7,25 +7,40 @@ export function GameLocationDropdown({ value, locations, onChange, disabled }: {
   onChange: (id: string | null) => void;
   disabled?: boolean;
 }) {
-  // Validate that the current value exists in the available locations
-  const isValidValue = value === null || value === '' || locations.some(loc => loc.id === value);
-  const safeValue = isValidValue ? (value || '') : '';
+  // Sort locations alphabetically by name
+  const sortedLocations = [...locations].sort((a, b) => a.name.localeCompare(b.name));
+  
+  // Add "None" option at the beginning
+  const allOptions = [
+    { id: '', name: 'None' },
+    ...sortedLocations
+  ];
+  
+  // Find the current selected option
+  const selectedOption = allOptions.find(loc => loc.id === (value || '')) || null;
 
   return (
-    <FormControl size="small" fullWidth>
-      <InputLabel id="game-location-label">Location</InputLabel>
-      <Select
-        labelId="game-location-label"
-        value={safeValue}
-        label="Location"
-        onChange={e => onChange(e.target.value === '' ? null : e.target.value as string)}
-        disabled={disabled}
-      >
-        <MenuItem value="">None</MenuItem>
-        {locations.map(loc => (
-          <MenuItem key={loc.id} value={loc.id}>{loc.name}</MenuItem>
-        ))}
-      </Select>
-    </FormControl>
+    <Autocomplete
+      size="small"
+      fullWidth
+      disabled={disabled}
+      options={allOptions}
+      getOptionLabel={(option) => option.name}
+      value={selectedOption}
+      onChange={(event, newValue) => {
+        onChange(newValue ? (newValue.id === '' ? null : newValue.id) : null);
+      }}
+      isOptionEqualToValue={(option, value) => option.id === value.id}
+      renderInput={(params) => (
+        <TextField
+          {...params}
+          label="Location"
+          placeholder="Select or type location..."
+        />
+      )}
+      noOptionsText="No locations found"
+      clearOnBlur
+      selectOnFocus
+    />
   );
 }

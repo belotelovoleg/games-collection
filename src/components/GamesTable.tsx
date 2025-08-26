@@ -135,6 +135,19 @@ export function GamesTable({
       </thead>
       <tbody>
   {games.map((game: any) => {
+
+          const imgClick = (e: React.MouseEvent) => {
+                              e.stopPropagation();
+                              const images: string[] = [];
+                              if (Array.isArray(game.photos)) images.push(...game.photos.filter(Boolean));
+                              if (game.cover) images.push(game.cover);
+                              if (game.screenshot) images.push(game.screenshot);
+                              const uniqueImages = Array.from(new Set(images));
+                              if (uniqueImages.length === 0) return;
+                              if (typeof openPhotoGallery === 'function') {
+                                openPhotoGallery(uniqueImages, 0);
+                              }
+                            };
           // ...existing code for row rendering...
           return (
             <tr key={game.id} style={{ borderBottom: `1px solid ${theme.palette.divider}` }}>
@@ -167,18 +180,7 @@ export function GamesTable({
                         <Tooltip title={t('games_photos') || 'Photos'}>
                           <span
                             style={{ cursor: 'pointer', display: 'inline-block' }}
-                            onClick={e => {
-                              e.stopPropagation();
-                              const images: string[] = [];
-                              if (Array.isArray(game.photos)) images.push(...game.photos.filter(Boolean));
-                              if (game.cover) images.push(game.cover);
-                              if (game.screenshot) images.push(game.screenshot);
-                              const uniqueImages = Array.from(new Set(images));
-                              if (uniqueImages.length === 0) return;
-                              if (typeof openPhotoGallery === 'function') {
-                                openPhotoGallery(uniqueImages, 0);
-                              }
-                            }}
+                            onClick={imgClick}
                           >
                             <Avatar
                               src={
@@ -205,9 +207,11 @@ export function GamesTable({
                         <Avatar
                           src={game.photos?.[0]}
                           variant="rounded"
-                          sx={{ width: 89, height: 67, bgcolor: 'grey.200', mx: 'auto' }}
+                          onClick={imgClick}
+                          sx={{ cursor: 'pointer', width: 89, height: 67, bgcolor: 'grey.200', mx: 'auto' }}
                         >
                           {!game.photos?.[0] && <SportsEsportsIcon />}
+                          
                         </Avatar>
                       </td>
                     );
@@ -217,7 +221,8 @@ export function GamesTable({
                         <Avatar
                           src={game.screenshot}
                           variant="rounded"
-                          sx={{ width: 89, height: 67, bgcolor: 'grey.200', mx: 'auto' }}
+                          onClick={imgClick}
+                          sx={{ cursor: 'pointer', width: 89, height: 67, bgcolor: 'grey.200', mx: 'auto' }}
                         >
                           {!game.screenshot && <SportsEsportsIcon />}
                         </Avatar>
@@ -228,7 +233,8 @@ export function GamesTable({
                       <td key={col.key} style={cellStyle}>
                         <span
                           style={{ cursor: 'pointer', textDecoration: 'underline', color: theme.palette.primary.main, minWidth: col.minWidth, maxWidth: col.maxWidth, display: 'inline-block'}}
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             if (typeof handleViewGameDetails === 'function') {
                               handleViewGameDetails(game);
                             }

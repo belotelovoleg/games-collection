@@ -4,8 +4,8 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
 
 // PATCH /api/user/games/[id]/location - Set game location for a game
-export async function PATCH(req: NextRequest, context: { params: { id: string } }) {
-  const params = context.params;
+export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
   const session = await getServerSession(authOptions);
   if (!session || !session.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -18,9 +18,13 @@ export async function PATCH(req: NextRequest, context: { params: { id: string } 
   
   const gameId = params.id;
   const { gameLocationId } = await req.json();
-  if (!gameLocationId) {
+  
+  // gameLocationId can be null (to set location to "None")
+  // but should be explicitly provided in the request body
+  if (gameLocationId === undefined) {
     return NextResponse.json({ error: 'Missing gameLocationId' }, { status: 400 });
   }
+  
   try {
     // Only allow updating games owned by the current user
     const game = await prisma.game.findUnique({ where: { id: gameId } });
