@@ -380,17 +380,13 @@ export default function GamesPage() {
     if (gameIdFromUrl && gameTypeFromUrl && userGames.length > 0) {
       // Find the game in userGames
       const game = userGames.find(g => g.id === gameIdFromUrl);
-      if (game && !gameDetailsOpen) { // Only open if not already open
+      if (game) { // Removed !gameDetailsOpen condition to allow opening on refresh
         setSelectedGame(game);
         setGameDetailsType(gameTypeFromUrl);
         setGameDetailsOpen(true);
       }
-    } else if (!gameIdFromUrl && gameDetailsOpen) {
-      // Close modal if no gameId in URL but modal is open
-      setGameDetailsOpen(false);
-      setSelectedGame(null);
     }
-  }, [searchParams, userGames, gameDetailsOpen]);
+  }, [searchParams, userGames]);
 
   // Handle browser back button separately
   useEffect(() => {
@@ -717,15 +713,16 @@ export default function GamesPage() {
     currentUrl.searchParams.delete('gameType');
     window.history.replaceState({}, '', currentUrl.toString());
     
+    // Close the modal
+    setGameDetailsOpen(false);
+    setSelectedGame(null);
+    
     // Restore scroll position for mobile
     if (isMobile) {
       setTimeout(() => {
         window.scrollTo(0, savedScrollPosition);
       }, 100);
     }
-    
-    setGameDetailsOpen(false);
-    setSelectedGame(null);
   };
 
   const handleAddGameToCollection = (game: any) => {
